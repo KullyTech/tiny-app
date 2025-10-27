@@ -1,4 +1,5 @@
-name: CI on:
+name: CI 
+on:
   push:
     branches: [ main, develop ]
   pull_request:
