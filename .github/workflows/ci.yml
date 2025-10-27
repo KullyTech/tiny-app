@@ -36,8 +36,8 @@ jobs:
     - name: Build
       run: |
         xcodebuild clean build \
-          -project tiny.xcodeproj \
-          -target tiny \
+          -project Tiny.xcodeproj \
+          -target Tiny \
           -destination 'generic/platform=iOS Simulator' \
           CODE_SIGN_IDENTITY="" \
           CODE_SIGNING_REQUIRED=NO
