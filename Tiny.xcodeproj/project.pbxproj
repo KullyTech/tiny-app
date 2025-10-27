@@ -24,15 +24,15 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
-		433435C42EACD4E4004C6B8C /* tiny.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = tiny.app; sourceTree = BUILT_PRODUCTS_DIR; };
-		433435D12EACD4E5004C6B8C /* tinyTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = tinyTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
-		433435DB2EACD4E5004C6B8C /* tinyUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = tinyUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		433435C42EACD4E4004C6B8C /* Tiny.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Tiny.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		433435D12EACD4E5004C6B8C /* TinyTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = TinyTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		433435DB2EACD4E5004C6B8C /* TinyUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = TinyUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
-		433435C62EACD4E4004C6B8C /* tiny */ = {
+		433435C62EACD4E4004C6B8C /* Tiny */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-			path = tiny;
+			path = Tiny;
 			sourceTree = "<group>";
 		};
 		433435D42EACD4E5004C6B8C /* tinyTests */ = {
@@ -75,7 +75,7 @@
 		433435BB2EACD4E4004C6B8C = {
 			isa = PBXGroup;
 			children = (
-				433435C62EACD4E4004C6B8C /* tiny */,
+				433435C62EACD4E4004C6B8C /* Tiny */,
 				433435D42EACD4E5004C6B8C /* tinyTests */,
 				433435DE2EACD4E5004C6B8C /* tinyUITests */,
 				433435C52EACD4E4004C6B8C /* Products */,
@@ -85,9 +85,9 @@
 		433435C52EACD4E4004C6B8C /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				433435C42EACD4E4004C6B8C /* tiny.app */,
-				433435D12EACD4E5004C6B8C /* tinyTests.xctest */,
-				433435DB2EACD4E5004C6B8C /* tinyUITests.xctest */,
+				433435C42EACD4E4004C6B8C /* Tiny.app */,
+				433435D12EACD4E5004C6B8C /* TinyTests.xctest */,
+				433435DB2EACD4E5004C6B8C /* TinyUITests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -95,9 +95,9 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		433435C32EACD4E4004C6B8C /* tiny */ = {
+		433435C32EACD4E4004C6B8C /* Tiny */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 433435E52EACD4E5004C6B8C /* Build configuration list for PBXNativeTarget "tiny" */;
+			buildConfigurationList = 433435E52EACD4E5004C6B8C /* Build configuration list for PBXNativeTarget "Tiny" */;
 			buildPhases = (
 				433435C02EACD4E4004C6B8C /* Sources */,
 				433435C12EACD4E4004C6B8C /* Frameworks */,
@@ -109,18 +109,18 @@
 			dependencies = (
 			);
 			fileSystemSynchronizedGroups = (
-				433435C62EACD4E4004C6B8C /* tiny */,
+				433435C62EACD4E4004C6B8C /* Tiny */,
 			);
-			name = tiny;
+			name = Tiny;
 			packageProductDependencies = (
 			);
 			productName = tiny;
-			productReference = 433435C42EACD4E4004C6B8C /* tiny.app */;
+			productReference = 433435C42EACD4E4004C6B8C /* Tiny.app */;
 			productType = "com.apple.product-type.application";
 		};
-		433435D02EACD4E5004C6B8C /* tinyTests */ = {
+		433435D02EACD4E5004C6B8C /* TinyTests */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 433435E82EACD4E5004C6B8C /* Build configuration list for PBXNativeTarget "tinyTests" */;
+			buildConfigurationList = 433435E82EACD4E5004C6B8C /* Build configuration list for PBXNativeTarget "TinyTests" */;
 			buildPhases = (
 				433435CD2EACD4E5004C6B8C /* Sources */,
 				433435CE2EACD4E5004C6B8C /* Frameworks */,
@@ -134,16 +134,16 @@
 			fileSystemSynchronizedGroups = (
 				433435D42EACD4E5004C6B8C /* tinyTests */,
 			);
-			name = tinyTests;
+			name = TinyTests;
 			packageProductDependencies = (
 			);
 			productName = tinyTests;
-			productReference = 433435D12EACD4E5004C6B8C /* tinyTests.xctest */;
+			productReference = 433435D12EACD4E5004C6B8C /* TinyTests.xctest */;
 			productType = "com.apple.product-type.bundle.unit-test";
 		};
-		433435DA2EACD4E5004C6B8C /* tinyUITests */ = {
+		433435DA2EACD4E5004C6B8C /* TinyUITests */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 433435EB2EACD4E5004C6B8C /* Build configuration list for PBXNativeTarget "tinyUITests" */;
+			buildConfigurationList = 433435EB2EACD4E5004C6B8C /* Build configuration list for PBXNativeTarget "TinyUITests" */;
 			buildPhases = (
 				433435D72EACD4E5004C6B8C /* Sources */,
 				433435D82EACD4E5004C6B8C /* Frameworks */,
@@ -157,11 +157,11 @@
 			fileSystemSynchronizedGroups = (
 				433435DE2EACD4E5004C6B8C /* tinyUITests */,
 			);
-			name = tinyUITests;
+			name = TinyUITests;
 			packageProductDependencies = (
 			);
 			productName = tinyUITests;
-			productReference = 433435DB2EACD4E5004C6B8C /* tinyUITests.xctest */;
+			productReference = 433435DB2EACD4E5004C6B8C /* TinyUITests.xctest */;
 			productType = "com.apple.product-type.bundle.ui-testing";
 		};
 /* End PBXNativeTarget section */
@@ -187,7 +187,7 @@
 					};
 				};
 			};
-			buildConfigurationList = 433435BF2EACD4E4004C6B8C /* Build configuration list for PBXProject "tiny" */;
+			buildConfigurationList = 433435BF2EACD4E4004C6B8C /* Build configuration list for PBXProject "Tiny" */;
 			developmentRegion = en;
 			hasScannedForEncodings = 0;
 			knownRegions = (
@@ -203,9 +203,9 @@
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
-				433435C32EACD4E4004C6B8C /* tiny */,
-				433435D02EACD4E5004C6B8C /* tinyTests */,
-				433435DA2EACD4E5004C6B8C /* tinyUITests */,
+				433435C32EACD4E4004C6B8C /* Tiny */,
+				433435D02EACD4E5004C6B8C /* TinyTests */,
+				433435DA2EACD4E5004C6B8C /* TinyUITests */,
 			);
 		};
 /* End PBXProject section */
@@ -283,12 +283,12 @@
 /* Begin PBXTargetDependency section */
 		433435D32EACD4E5004C6B8C /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
-			target = 433435C32EACD4E4004C6B8C /* tiny */;
+			target = 433435C32EACD4E4004C6B8C /* Tiny */;
 			targetProxy = 433435D22EACD4E5004C6B8C /* PBXContainerItemProxy */;
 		};
 		433435DD2EACD4E5004C6B8C /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
-			target = 433435C32EACD4E4004C6B8C /* tiny */;
+			target = 433435C32EACD4E4004C6B8C /* Tiny */;
 			targetProxy = 433435DC2EACD4E5004C6B8C /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
@@ -499,7 +499,7 @@
 				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
-				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/tiny.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/tiny";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Tiny.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Tiny";
 			};
 			name = Debug;
 		};
@@ -521,7 +521,7 @@
 				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
-				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/tiny.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/tiny";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Tiny.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Tiny";
 			};
 			name = Release;
 		};
@@ -568,7 +568,7 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		433435BF2EACD4E4004C6B8C /* Build configuration list for PBXProject "tiny" */ = {
+		433435BF2EACD4E4004C6B8C /* Build configuration list for PBXProject "Tiny" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				433435E32EACD4E5004C6B8C /* Debug */,
@@ -577,7 +577,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		433435E52EACD4E5004C6B8C /* Build configuration list for PBXNativeTarget "tiny" */ = {
+		433435E52EACD4E5004C6B8C /* Build configuration list for PBXNativeTarget "Tiny" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				433435E62EACD4E5004C6B8C /* Debug */,
@@ -586,7 +586,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		433435E82EACD4E5004C6B8C /* Build configuration list for PBXNativeTarget "tinyTests" */ = {
+		433435E82EACD4E5004C6B8C /* Build configuration list for PBXNativeTarget "TinyTests" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				433435E92EACD4E5004C6B8C /* Debug */,
@@ -595,7 +595,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		433435EB2EACD4E5004C6B8C /* Build configuration list for PBXNativeTarget "tinyUITests" */ = {
+		433435EB2EACD4E5004C6B8C /* Build configuration list for PBXNativeTarget "TinyUITests" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				433435EC2EACD4E5004C6B8C /* Debug */,
