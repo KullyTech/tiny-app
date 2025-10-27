@@ -5,7 +5,7 @@ Tiny is an iOS application that allows you to listen to your baby's heartbeat.
 
 ## Development
 
-This project uses SwiftLint for code quality and consistency. See the [SwiftLint Guide](SWIFTLINT_GUIDE.md) for setup and usage instructions.
+This project uses SwiftLint for code quality and consistency. See the [SwiftLint Guide](GUIDE.md) for setup and usage instructions.
 
 ## SwiftLint Setup
 If you don't have SwiftLint installed, use Homebrew:
