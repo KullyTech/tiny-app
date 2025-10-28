@@ -1,5 +1,5 @@
 //
-//  SwiftUIView.swift
+//  StartListeningButton.swift
 //  Tiny
 //
 //  Created by Destu Cikal Ramdani on 28/10/25.
@@ -18,7 +18,7 @@ struct StartListeningButton: View {
     @Environment(\.colorScheme) var colorScheme
 
     private var gradientWithShadow: some ShapeStyle {
-        gradientPurple.shadow(.inner(color: Color.white.opacity(0.3), radius: 5, x: 0, y: 0))
+        gradientPurple.shadow(.inner(color: Color.white, radius: 4, x: 0, y: 0))
     }
 
     var body: some View {
@@ -36,7 +36,7 @@ struct StartListeningButton: View {
             .frame(maxWidth: .infinity)
             .padding(.vertical, 18)
             .background(colorScheme == .dark ? AnyShapeStyle(Color.clear) : AnyShapeStyle(gradientWithShadow))
-            .glassEffect(.clear)
+            .glassEffect(.clear.interactive())
             .clipShape(Capsule())
         })
         .sensoryFeedback(.impact(weight: .medium), trigger: isPressed)
