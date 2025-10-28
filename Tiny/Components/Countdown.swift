@@ -25,20 +25,22 @@ import SwiftUI
 
 struct Countdown: View {
     let maxCount: Int
+    let prefixText: String
     @State private var currentCount: Int
     @State private var timer: Timer?
 
     var onCountdownComplete: (() -> Void)?
     
-    init (maxCount: Int = 5, onCountdownComplete: (() -> Void)? = nil) {
+    init (maxCount: Int = 5, prefixText: String = "Starting in", onCountdownComplete: (() -> Void)? = nil) {
         self.maxCount = maxCount
+        self.prefixText = prefixText
         self._currentCount = State(initialValue: maxCount)
         self.onCountdownComplete = onCountdownComplete
     }
     
     var body: some View {
         HStack(spacing: 6) {
-            Text("Starting in")
+            Text(prefixText)
                 .font(.title2)
                 .fontWeight(.bold)
                 .foregroundColor(.primary)
@@ -82,7 +84,7 @@ struct Countdown: View {
 }
 
 #Preview {
-    Countdown(maxCount: 5) {
+    Countdown(maxCount: 5, prefixText: "Memulai dalam") {
         print("Countdown Complete")
     }
 }
