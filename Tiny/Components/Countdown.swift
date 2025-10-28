@@ -5,14 +5,86 @@
 //  Created by Benedictus Yogatama Favian Satyajati on 28/10/25.
 //
 
+/*
+ 
+== Developer Notes ==
+ 
+    DESCRIPTION:
+    This is a component that will display a countdown when called inside a view.
+ 
+    USAGE:
+    Countdown(maxCount: 5){
+        function()
+    }
+ 
+== Developer Notes ==
+ 
+*/
+
 import SwiftUI
 
 struct Countdown: View {
+    let maxCount: Int
+    let prefixText: String
+    @State private var currentCount: Int
+    @State private var timer: Timer?
+
+    var onCountdownComplete: (() -> Void)?
+    
+    init (maxCount: Int = 5, prefixText: String = "Starting in", onCountdownComplete: (() -> Void)? = nil) {
+        self.maxCount = maxCount
+        self.prefixText = prefixText
+        self._currentCount = State(initialValue: maxCount)
+        self.onCountdownComplete = onCountdownComplete
+    }
+    
     var body: some View {
-        Text(/*@START_MENU_TOKEN@*/"Hello, World!"/*@END_MENU_TOKEN@*/)
+        HStack(spacing: 6) {
+            Text(prefixText)
+                .font(.title2)
+                .fontWeight(.bold)
+                .foregroundColor(.primary)
+            HStack(spacing: 0) {
+                Text("\(currentCount)")
+                    .font(.title2)
+                    .fontWeight(.bold)
+                    .foregroundColor(.primary)
+                    .contentTransition(.numericText())
+                Text("...")
+                    .font(.title2)
+                    .fontWeight(.bold)
+                    .foregroundColor(.primary)
+            }
+        }
+        .onAppear {
+            startCountdown()
+        }
+        .onDisappear {
+            stopCountdown()
+        }
+    }
+    
+    private func startCountdown() {
+        timer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { _ in
+            withAnimation(.easeInOut(duration: 0.5)) {
+                if currentCount > 1 {
+                    currentCount -= 1
+                } else {
+                    stopCountdown()
+                    onCountdownComplete?()
+                }
+            }
+        }
+    }
+    
+    private func stopCountdown() {
+        timer?.invalidate()
+        timer = nil
     }
 }
 
 #Preview {
-    Countdown()
+    Countdown(maxCount: 5, prefixText: "Memulai dalam") {
+        print("Countdown Complete")
+    }
 }
