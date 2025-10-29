@@ -82,7 +82,11 @@ struct CustomStopAlert: View {
             .padding()
             .background(
                 RoundedRectangle(cornerRadius: 20)
-                    .fill(Color(.systemBackground))
+                    .fill(
+                        colorScheme == .dark ? Color(.gray).opacity(0.2) : Color(
+                            .systemBackground
+                        )
+                    )
                     .shadow(color: .black.opacity(0.1), radius: 20, x: 0, y: 10)
             )
             .padding(.horizontal, 60)
