@@ -8,21 +8,14 @@
 import SwiftUI
 
 struct ContentView: View {
-    @Environment(\.colorScheme) var colorScheme
-
     var body: some View {
         VStack {
-            ZStack {
-                if colorScheme == .dark {
-                    Image(.backgroundDarkDummy)
-                        .resizable()
-                        .scaledToFill()
-                }
-
-                StartListeningButton()
-            }
-        } 
-        .ignoresSafeArea(.all)
+            Image(systemName: "globe")
+                .imageScale(.large)
+                .foregroundStyle(.tint)
+            Text("Hello, world!")
+        }
+        .padding()
     }
 }
 
