@@ -53,7 +53,7 @@ struct CustomStopAlert: View {
                             .padding(.vertical, 16)
                             .background(Color(.systemGray5))
                             .clipShape(Capsule())
-                            .glassEffect()
+                            .glassEffect(.clear.interactive())
                     }
 
                     // Stop Button with gradient
@@ -66,7 +66,7 @@ struct CustomStopAlert: View {
                         Text("Stop & Save")
                             .fontWeight(.bold)
                             .font(.body)
-                            .foregroundColor(colorScheme == .dark ? .black : .white)
+                            .foregroundColor(colorScheme == .dark ? .white : .white)
                             .frame(maxWidth: .infinity)
                             .padding(.vertical, 16)
                             .background(
@@ -75,7 +75,7 @@ struct CustomStopAlert: View {
                                     AnyShapeStyle(.gradientPurpleWithShadow)
                             )
                             .clipShape(Capsule())
-                            .glassEffect()
+                            .glassEffect(.clear.interactive())
                     }
                 }
             }
