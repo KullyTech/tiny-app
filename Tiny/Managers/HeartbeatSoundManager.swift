@@ -98,4 +98,36 @@ class HeartbeatSoundManager: NSObject, ObservableObject {
             }
         }
     }
+    
+    func getDocumentsDirectory() -> URL {
+        return FileManager.default.urls(for: .documentDirectory, in: .userDomainMask) [0]
+    }
+    
+    func updateGain(_ newGain: Float) {
+        gainVal = newGain
+        gain?.gain = AUValue(newGain)
+    }
+    
+    func updateBandpassRange(lowCutoff: Float, highCutoff: Float) {
+        highPassFilter?.cutoffFrequency = AUValue(lowCutoff)
+        lowPassFilter?.cutoffFrequency = AUValue(highCutoff)
+    }
+    
+    func start() {
+        setupAudio()
+        
+        do{
+            try engine.start()
+            amplitudeTap?.start()
+            isRunning = true
+        } catch {
+            print("Error: \(error.localizedDescription)")
+        }
+    }
+    
+    func stop() {
+        amplitudeTap?.stop()
+        engine.stop()
+        isRunning = false
+    }
 }
