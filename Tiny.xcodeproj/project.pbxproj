@@ -6,6 +6,11 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		DE5E9C862EB354B200485B15 /* AudioKit in Frameworks */ = {isa = PBXBuildFile; productRef = DE5E9C852EB354B200485B15 /* AudioKit */; };
+		DE5E9C882EB354B700485B15 /* AudioKitEX in Frameworks */ = {isa = PBXBuildFile; productRef = DE5E9C872EB354B700485B15 /* AudioKitEX */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXContainerItemProxy section */
 		433435D22EACD4E5004C6B8C /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -52,6 +57,8 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				DE5E9C862EB354B200485B15 /* AudioKit in Frameworks */,
+				DE5E9C882EB354B700485B15 /* AudioKitEX in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -78,6 +85,7 @@
 				433435C62EACD4E4004C6B8C /* Tiny */,
 				433435D42EACD4E5004C6B8C /* tinyTests */,
 				433435DE2EACD4E5004C6B8C /* tinyUITests */,
+				DE5E9C842EB354B200485B15 /* Frameworks */,
 				433435C52EACD4E4004C6B8C /* Products */,
 			);
 			sourceTree = "<group>";
@@ -90,6 +98,13 @@
 				433435DB2EACD4E5004C6B8C /* TinyUITests.xctest */,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		DE5E9C842EB354B200485B15 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			name = Frameworks;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -113,6 +128,8 @@
 			);
 			name = Tiny;
 			packageProductDependencies = (
+				DE5E9C852EB354B200485B15 /* AudioKit */,
+				DE5E9C872EB354B700485B15 /* AudioKitEX */,
 			);
 			productName = tiny;
 			productReference = 433435C42EACD4E4004C6B8C /* Tiny.app */;
@@ -424,7 +441,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = 6PN64DQKLX;
+				DEVELOPMENT_TEAM = YPC2WUCUT5;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
@@ -457,7 +474,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = 6PN64DQKLX;
+				DEVELOPMENT_TEAM = YPC2WUCUT5;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
@@ -626,6 +643,19 @@
 			};
 		};
 /* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		DE5E9C852EB354B200485B15 /* AudioKit */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = DEF686412EB33FA9004CC0C3 /* XCRemoteSwiftPackageReference "AudioKit" */;
+			productName = AudioKit;
+		};
+		DE5E9C872EB354B700485B15 /* AudioKitEX */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = DEF686422EB33FB2004CC0C3 /* XCRemoteSwiftPackageReference "AudioKitEX" */;
+			productName = AudioKitEX;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 433435BC2EACD4E4004C6B8C /* Project object */;
 }
