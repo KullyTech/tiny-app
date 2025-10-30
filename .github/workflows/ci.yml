@@ -32,12 +32,17 @@ jobs:
       
     - name: Select Xcode version
       run: sudo xcode-select -s /Applications/Xcode_26.0.app/Contents/Developer
+
+    - name: Resolve Swift packages
+      run: |
+        xcodebuild -resolvePackageDependencies \
+        -project Tiny.xcodeproj
       
     - name: Build
       run: |
         xcodebuild clean build \
           -project Tiny.xcodeproj \
-          -target Tiny \
+          -scheme Tiny \
           -destination 'generic/platform=iOS Simulator' \
           CODE_SIGN_IDENTITY="" \
           CODE_SIGNING_REQUIRED=NO
