@@ -133,21 +133,18 @@ class HeartbeatSoundManager: NSObject, ObservableObject {
         let session = AVAudioSession.sharedInstance()
         let availableInputs = session.availableInputs ?? []
         
-        for input in availableInputs {
-            if input.portType == .builtInMic {
-                try session.setPreferredInput(input)
-                
-                if let dataSources = input.dataSources {
-                    for dataSource in dataSources {
-                        if dataSource.dataSourceName.lowercased().contains("bottom") {
-                            try input.setPreferredDataSource(dataSource)
-                            break
-                        }
-                    }
+        for input in availableInputs where input.portType == .builtInMic {
+            try session.setPreferredInput(input)
+            
+            if let dataSources = input.dataSources {
+                for dataSource in dataSources where dataSource.dataSourceName.lowercased().contains("bottom") {
+                    try input.setPreferredDataSource(dataSource)
+                    break
                 }
-                return
             }
+            return
         }
+
     }
     
     func getDocumentsDirectory() -> URL {
@@ -220,7 +217,7 @@ class HeartbeatSoundManager: NSObject, ObservableObject {
                 
                 resetEngine()
                 
-                player = try AudioPlayer(url: recording.fileURL)
+                player = AudioPlayer(url: recording.fileURL)
                 player?.completionHandler = { [weak self] in
                     DispatchQueue.main.async {
                         self?.isPlayingPlayback = false
