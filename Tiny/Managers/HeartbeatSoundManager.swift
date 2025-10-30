@@ -14,7 +14,7 @@ import AudioKitEX
 import Combine
 
 class HeartbeatSoundManager: NSObject, ObservableObject {
-    let engine = AudioEngine()
+    var engine: AudioEngine!
     var mic: AudioEngine.InputNode?
     var highPassFilter: HighPassFilter?
     var lowPassFilter: LowPassFilter?
@@ -26,10 +26,11 @@ class HeartbeatSoundManager: NSObject, ObservableObject {
     @Published var isRunning = false
     @Published var frequencyVal: Float = 0.0
     @Published var amplitudeVal: Float = 0.0
-    @Published var gainVal: Float = 0.0
+    @Published var gainVal: Float = 10.0
     
     override init() {
         super.init()
+        engine = AudioEngine()
         AVAudioApplication.requestRecordPermission { granted in
             if granted {
                 print("Microphone Permission granted! ")
@@ -41,6 +42,8 @@ class HeartbeatSoundManager: NSObject, ObservableObject {
     
     func setupAudio() {
         do {
+            cleanupAudio()
+            
             let session = AVAudioSession.sharedInstance()
             
             try session.setCategory(.playAndRecord, mode: .measurement, options: [.allowBluetoothHFP, .allowBluetoothA2DP])
@@ -54,13 +57,11 @@ class HeartbeatSoundManager: NSObject, ObservableObject {
             
             mic = input
             
-//            let currentRoute = session.currentRoute
-            
             highPassFilter = HighPassFilter(input)
-            highPassFilter?.cutoffFrequency = AUValue(20.0)
+            highPassFilter?.cutoffFrequency = AUValue(40.0)  // Increased from 20.0 to reduce bass
             
             lowPassFilter = LowPassFilter(highPassFilter!)
-            lowPassFilter?.cutoffFrequency = AUValue(50.0)
+            lowPassFilter?.cutoffFrequency = AUValue(200.0)  // Increased from 50.0 for more clarity
             
             gain = Fader(lowPassFilter!)
             gain?.gain = AUValue(gainVal)
@@ -76,6 +77,30 @@ class HeartbeatSoundManager: NSObject, ObservableObject {
         } catch {
             print("Error setting up audio!: \(error.localizedDescription)")
         }
+    }
+    
+    private func cleanupAudio() {
+        amplitudeTap?.stop()
+        amplitudeTap = nil
+        
+        if engine.avEngine.isRunning {
+            engine.stop()
+        }
+
+        mixer = nil
+        gain = nil
+        lowPassFilter = nil
+        highPassFilter = nil
+        mic = nil
+
+        engine.output = nil
+    }
+    
+    private func resetEngine() {
+        if engine.avEngine.isRunning {
+            engine.stop()
+        }
+        engine = AudioEngine()
     }
     
     func forceBuiltInMicrophone() throws {
@@ -114,20 +139,37 @@ class HeartbeatSoundManager: NSObject, ObservableObject {
     }
     
     func start() {
+        resetEngine()
         setupAudio()
         
-        do{
+        do {
             try engine.start()
             amplitudeTap?.start()
             isRunning = true
         } catch {
-            print("Error: \(error.localizedDescription)")
+            print("Error starting engine: \(error.localizedDescription)")
+            cleanupAudio()
+            isRunning = false
         }
     }
     
     func stop() {
         amplitudeTap?.stop()
-        engine.stop()
+        
+        if engine.avEngine.isRunning {
+            engine.stop()
+        }
+        
+        cleanupAudio()
+        
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+            do {
+                try AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
+            } catch {
+                print("Error deactivating audio session: \(error.localizedDescription)")
+            }
+        }
+        
         isRunning = false
     }
 }
