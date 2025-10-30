@@ -6,7 +6,7 @@
 //
 
 import XCTest
-@testable import tiny
+@testable import Tiny
 
 final class TinyTests: XCTestCase {
 
