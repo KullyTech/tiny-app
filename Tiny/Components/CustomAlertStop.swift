@@ -49,8 +49,9 @@ struct CustomStopAlert: View {
                             .fontWeight(.regular)
                             .font(.body)
                             .foregroundColor(.gray)
-                            .frame(maxWidth: .infinity)
+                            .buttonSizing(.flexible)
                             .padding(.vertical, 16)
+                            .padding(.horizontal, 16)
                             .background(Color(.systemGray5))
                             .clipShape(Capsule())
                             .glassEffect(.clear.interactive())
@@ -67,8 +68,9 @@ struct CustomStopAlert: View {
                             .fontWeight(.bold)
                             .font(.body)
                             .foregroundColor(colorScheme == .dark ? .white : .white)
-                            .frame(maxWidth: .infinity)
+                            .buttonSizing(.flexible)
                             .padding(.vertical, 16)
+                            .padding(.horizontal, 16)
                             .background(
                                 colorScheme == .dark ?
                                 AnyShapeStyle(.black) :
@@ -89,7 +91,7 @@ struct CustomStopAlert: View {
                     )
                     .shadow(color: .black.opacity(0.1), radius: 20, x: 0, y: 10)
             )
-            .padding(.horizontal, 60)
+            .padding(.horizontal, 40)
         }
     }
 }
