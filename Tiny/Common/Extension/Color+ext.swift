@@ -1,6 +1,6 @@
 //
-//  Color.swift
-//  tiny
+//  Color+ext.swift
+//  Tiny
 //
 //  Created by Tm Revanza Narendra Pradipta on 29/10/25.
 //
