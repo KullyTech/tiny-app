@@ -204,7 +204,7 @@
 					};
 				};
 			};
-			buildConfigurationList = 433435BF2EACD4E4004C6B8C /* Build configuration list for PBXProject "Tiny" */;
+			buildConfigurationList = 433435BF2EACD4E4004C6B8C /* Build configuration list for PBXProject "tiny" */;
 			developmentRegion = en;
 			hasScannedForEncodings = 0;
 			knownRegions = (
@@ -444,7 +444,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = 6PN64DQKLX;
+				DEVELOPMENT_TEAM = LM2TBH9R6C;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
@@ -477,7 +477,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = 6PN64DQKLX;
+				DEVELOPMENT_TEAM = LM2TBH9R6C;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
@@ -590,7 +590,7 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		433435BF2EACD4E4004C6B8C /* Build configuration list for PBXProject "Tiny" */ = {
+		433435BF2EACD4E4004C6B8C /* Build configuration list for PBXProject "tiny" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				433435E32EACD4E5004C6B8C /* Debug */,
