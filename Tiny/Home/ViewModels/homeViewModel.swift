@@ -10,7 +10,7 @@ internal import Combine
 
 @MainActor
 final class HomeViewModel: ObservableObject {
-    @Published private(set) var homeData: HomeData
+    @Published private var homeData: HomeData
     
     init(homeData: HomeData) {
         self.homeData = homeData
