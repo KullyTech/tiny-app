@@ -31,19 +31,7 @@ struct HomeView: View {
                     .font(.title3)
                     .bold()
                 
-                HStack(spacing: 20) {
-                    FeatureCard(title: "Listen to baby's heartbeat",
-                                titleColor: Color(hex: "95436F"),
-                                logo: "soundMemo",
-                                color1: Color(hex: "FFDE90"),
-                                color2: Color(hex: "FFA8E2"))
-                    
-                    FeatureCard(title: "Feels baby's heartbeat",
-                                titleColor: Color(hex: "513C8A"),
-                                logo: "heartBeat",
-                                color1: Color(hex: "FDBBEB"),
-                                color2: Color(hex: "9595E8"))
-                }
+                FeatureCardGroup()
             }
             .frame(maxWidth: .infinity)
             
