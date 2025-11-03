@@ -22,7 +22,7 @@ struct LibraryView: View {
             ScrollView {
                 LazyVGrid(columns: columns, spacing: 16) {
                     ForEach(libraries) { library in
-                        FolderCardView(library: library) {
+                        FolderShapeButton(library: library) {
                             path.append(library) // 👈 trigger navigation
                         }
                     }
