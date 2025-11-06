@@ -11,7 +11,7 @@ import AVFoundation
 import AudioKit
 import AudioKitEX
 
-import Combine
+internal import Combine
 
 struct Recording: Identifiable, Equatable {
     let id = UUID()
