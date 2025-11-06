@@ -15,14 +15,23 @@ class LiveListenView: SKScene {
     private var lastUpdateTime: TimeInterval = 0
     private var isIdle = true
     
-    // Store motion data to be used in the update loop
     private var gravity = (x: 0.0, y: 0.0)
     private var rotation = 0.0
     private var acceleration = (x: 0.0, y: 0.0)
     
+    private var lastBeatTime: TimeInterval = 0
+    private let beatCooldown: TimeInterval = 0.2
+    private let heartbeatThreshold: Float = 0.15
+    var currentAmplitude: Float = 0.0
+    
+    private var smoothedAmplitude: Float = 0.0
+    private let amplitudeSmoothingFactor: Float = 0.3
+    
+    private var isHeartbeatEnabled = true
+    
     override func didMove(to view: SKView) {
         size = view.bounds.size
-        backgroundColor = .black // Set a base color
+        backgroundColor = .black
         setupGradientBackground()
         
         blobNode = BlobNode(screenWidth: size.width)
@@ -38,6 +47,18 @@ class LiveListenView: SKScene {
         let deltaTime = currentTime - lastUpdateTime
         lastUpdateTime = currentTime
         
+        if isHeartbeatEnabled {
+            smoothedAmplitude += (currentAmplitude - smoothedAmplitude) * amplitudeSmoothingFactor
+            
+            if smoothedAmplitude > heartbeatThreshold && 
+               (currentTime - lastBeatTime) > beatCooldown {
+                triggerHeartbeat()
+                lastBeatTime = currentTime
+            }
+        } else {
+            smoothedAmplitude *= 0.9
+        }
+        
         if isIdle {
             blobNode.updateIdleState(deltaTime: deltaTime)
         } else {
@@ -50,6 +71,33 @@ class LiveListenView: SKScene {
                 accelerationY: acceleration.y
             )
         }
+    }
+    
+    func resetHeartbeat() {
+        isHeartbeatEnabled = false
+        currentAmplitude = 0.0
+        smoothedAmplitude = 0.0
+        
+        blobNode.removeAction(forKey: "heartbeat")
+        
+        blobNode.resetToIdleState()
+        
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { [weak self] in
+            self?.isHeartbeatEnabled = true
+        }
+    }
+    
+    private func triggerHeartbeat() {
+        blobNode.removeAction(forKey: "heartbeat")
+        
+        let scaleUp = SKAction.scale(to: 1.12, duration: 0.08)
+        scaleUp.timingMode = .easeOut
+        
+        let scaleDown = SKAction.scale(to: 1.0, duration: 0.12)
+        scaleDown.timingMode = .easeIn
+        
+        let sequence = SKAction.sequence([scaleUp, scaleDown])
+        blobNode.run(sequence, withKey: "heartbeat")
     }
     
     private func setupGradientBackground() {
@@ -84,17 +132,15 @@ class LiveListenView: SKScene {
             return
         }
         
-        motionManager.deviceMotionUpdateInterval = 1.0 / 60.0
+        motionManager.deviceMotionUpdateInterval = 1.0 / 120.0
         motionManager.startDeviceMotionUpdates(to: .main) { [weak self] motion, error in
             guard let motion = motion, let self = self else { return }
             
-            // Store the latest motion data
             self.gravity = (motion.gravity.x, motion.gravity.y)
             self.rotation = motion.rotationRate.z
             self.acceleration = (motion.userAcceleration.x, motion.userAcceleration.y)
             
-            // Check for significant motion to determine if idle
-            let motionThreshold = 0.05
+            let motionThreshold = 0.02
             let isMoving = abs(self.gravity.x) > motionThreshold ||
                            abs(self.gravity.y) > motionThreshold ||
                            abs(self.acceleration.x) > motionThreshold ||
@@ -104,11 +150,8 @@ class LiveListenView: SKScene {
             self.isIdle = !isMoving
         }
     }
+    
     deinit {
-            motionManager.stopDeviceMotionUpdates()
-        }
+        motionManager.stopDeviceMotionUpdates()
+    }
 }
-
-//#Preview {
-//    LiveListenView()
-//}

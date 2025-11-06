@@ -17,8 +17,8 @@ class BlobNode: SKNode {
     private var velocityX: CGFloat = 0
     private var velocityY: CGFloat = 0
     
-    private let springStiffness: CGFloat = 0.15
-    private let damping: CGFloat = 0.85
+    private let springStiffness: CGFloat = 0.25
+    private let damping: CGFloat = 0.88
     private var idleTime: TimeInterval = 0
     
     init(screenWidth: CGFloat) {
@@ -37,7 +37,6 @@ class BlobNode: SKNode {
         shapeNode.fillColor = SKColor(red: 1.0, green: 0.9, blue: 0.2, alpha: 1.0)
         shapeNode.strokeColor = SKColor(red: 1.0, green: 0.9, blue: 0.2, alpha: 1.0)
         shapeNode.lineWidth = 3
-//        shapeNode.glowWidth = 10
         
         addChild(shapeNode)
     }
@@ -45,25 +44,29 @@ class BlobNode: SKNode {
     private func createBlobPath() -> CGPath {
         let path = UIBezierPath(
             arcCenter: .zero, radius: baseRadius, startAngle: 0, endAngle: 2 * CGFloat.pi, clockwise: true
-        
         )
         return path.cgPath
+    }
+    
+    func resetToIdleState() {
+        removeAllActions()
+        
+        let resetScale = SKAction.scale(to: 1.0, duration: 0.2)
+        resetScale.timingMode = .easeOut
+        run(resetScale)
     }
     
     func updateIdleState(deltaTime: TimeInterval) {
         idleTime += deltaTime
         
-        // Create a smooth, periodic "breathing" effect using a sine wave
         let breathScale = 1.0 + 0.03 * sin(idleTime * 1.5)
         
-        // Gently apply the breathing scale
-        currentScaleX += (breathScale - currentScaleX) * 0.05
-        currentScaleY += (breathScale - currentScaleY) * 0.05
+        currentScaleX += (breathScale - currentScaleX) * 0.08
+        currentScaleY += (breathScale - currentScaleY) * 0.08
         
-        // Reset skew and rotation towards neutral
-        currentSkewX += (0 - currentSkewX) * 0.05
-        currentSkewY += (0 - currentSkewY) * 0.05
-        shapeNode.zRotation += (0 - shapeNode.zRotation) * 0.05
+        currentSkewX += (0 - currentSkewX) * 0.08
+        currentSkewY += (0 - currentSkewY) * 0.08
+        shapeNode.zRotation += (0 - shapeNode.zRotation) * 0.08
         
         updateBlobTransform()
     }
@@ -71,7 +74,6 @@ class BlobNode: SKNode {
     func updateWithMotion(deltaTime: TimeInterval, gravityX: Double, gravityY: Double, rotationZ: Double, accelerationX: Double, accelerationY: Double) {
         idleTime += deltaTime
         
-        // Create a smooth, periodic "breathing" effect using a sine wave
         let breathScale = 1.0 + 0.03 * sin(idleTime * 1.5)
         
         let targetSkewX = CGFloat(gravityX * 0.5)
@@ -95,8 +97,8 @@ class BlobNode: SKNode {
         currentSkewX += velocityX
         currentSkewY += velocityY
         
-        currentScaleX += (targetScaleX - currentScaleX) * 0.1
-        currentScaleY += (targetScaleY - currentScaleY) * 0.1
+        currentScaleX += (targetScaleX - currentScaleX) * 0.15
+        currentScaleY += (targetScaleY - currentScaleY) * 0.15
         
         currentSkewX = max(-0.5, min(0.5, currentSkewX))
         currentSkewY = max(-0.3, min(0.3, currentSkewY))
@@ -108,7 +110,7 @@ class BlobNode: SKNode {
         let rotationDamping = 0.3
         let targetRotation = CGFloat(rotationZ * rotationDamping)
         let currentRotation = shapeNode.zRotation
-        shapeNode.zRotation = currentRotation + (targetRotation - currentRotation) * 0.1
+        shapeNode.zRotation = currentRotation + (targetRotation - currentRotation) * 0.15
     }
     
     private func updateBlobTransform() {
@@ -130,11 +132,5 @@ class BlobNode: SKNode {
         let skewOffsetY = currentSkewY * baseRadius * 0.5
         
         shapeNode.position = CGPoint(x: skewOffsetX, y: skewOffsetY)
-        
     }
-    
 }
-
-// #Preview {
-//    BlobNode()
-// }
