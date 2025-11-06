@@ -34,8 +34,8 @@ class LiveListenView: SKScene {
         backgroundColor = .black
         setupGradientBackground()
         
-        blobNode = BlobNode(screenWidth: size.width)
-        blobNode.position = CGPoint(x: size.width / 2, y: -size.width * 0.15)
+        blobNode = BlobNode(screenWidth: size.width * 1.4)
+        blobNode.position = CGPoint(x: size.width / 2, y: -size.height * 0.15)
         addChild(blobNode)
         startMotionUpdates()
     }
@@ -105,11 +105,11 @@ class LiveListenView: SKScene {
         gradientLayer.frame = CGRect(origin: .zero, size: size)
         
         let topColor = UIColor.black.cgColor
-        let bottomColor = UIColor(red: 0.1, green: 0.0, blue: 0.25, alpha: 1.0).cgColor
+        let bottomColor = UIColor(Color(hex: "8647B9")).cgColor
         
         gradientLayer.colors = [bottomColor, topColor]
-        gradientLayer.startPoint = CGPoint(x: 0.5, y: 1.0)
-        gradientLayer.endPoint = CGPoint(x: 0.5, y: 0.0)
+        gradientLayer.startPoint = CGPoint(x: 0.5, y: 0.85)
+        gradientLayer.endPoint = CGPoint(x: 0.5, y: 0.2)
     
         UIGraphicsBeginImageContext(gradientLayer.bounds.size)
         gradientLayer.render(in: UIGraphicsGetCurrentContext()!)
