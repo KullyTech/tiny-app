@@ -19,6 +19,7 @@ class BlobNode: SKNode {
     
     private let springStiffness: CGFloat = 0.15
     private let damping: CGFloat = 0.85
+    private var idleTime: TimeInterval = 0
     
     init(screenWidth: CGFloat) {
         self.baseRadius = screenWidth * 0.75
@@ -49,15 +50,38 @@ class BlobNode: SKNode {
         return path.cgPath
     }
     
-    func updateWithMotion(gravityX: Double, gravityY: Double, rotationZ: Double, accelerationX: Double, accelerationY: Double) {
+    func updateIdleState(deltaTime: TimeInterval) {
+        idleTime += deltaTime
+        
+        // Create a smooth, periodic "breathing" effect using a sine wave
+        let breathScale = 1.0 + 0.03 * sin(idleTime * 1.5)
+        
+        // Gently apply the breathing scale
+        currentScaleX += (breathScale - currentScaleX) * 0.05
+        currentScaleY += (breathScale - currentScaleY) * 0.05
+        
+        // Reset skew and rotation towards neutral
+        currentSkewX += (0 - currentSkewX) * 0.05
+        currentSkewY += (0 - currentSkewY) * 0.05
+        shapeNode.zRotation += (0 - shapeNode.zRotation) * 0.05
+        
+        updateBlobTransform()
+    }
+    
+    func updateWithMotion(deltaTime: TimeInterval, gravityX: Double, gravityY: Double, rotationZ: Double, accelerationX: Double, accelerationY: Double) {
+        idleTime += deltaTime
+        
+        // Create a smooth, periodic "breathing" effect using a sine wave
+        let breathScale = 1.0 + 0.03 * sin(idleTime * 1.5)
+        
         let targetSkewX = CGFloat(gravityX * 0.5)
         let targetSkewY = CGFloat(-gravityY * 0.3)
         
         let accelerationMagnitude = sqrt(accelerationX * accelerationX + accelerationY * accelerationY)
         let squishFactor = min(accelerationMagnitude * 0.3, 0.3)
         
-        let targetScaleX = 1.0 + CGFloat(accelerationX * 0.2) - CGFloat(squishFactor)
-        let targetScaleY = 1.0 - CGFloat(accelerationY * 0.2) + CGFloat(squishFactor)
+        let targetScaleX = breathScale + CGFloat(accelerationX * 0.2) - CGFloat(squishFactor)
+        let targetScaleY = breathScale - CGFloat(accelerationY * 0.2) + CGFloat(squishFactor)
         
         let skewDiffX = targetSkewX - currentSkewX
         let skewDiffY = targetSkewY - currentSkewY

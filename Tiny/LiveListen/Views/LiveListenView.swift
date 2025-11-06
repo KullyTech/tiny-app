@@ -12,6 +12,13 @@ import CoreMotion
 class LiveListenView: SKScene {
     private var blobNode: BlobNode!
     private let motionManager = CMMotionManager()
+    private var lastUpdateTime: TimeInterval = 0
+    private var isIdle = true
+    
+    // Store motion data to be used in the update loop
+    private var gravity = (x: 0.0, y: 0.0)
+    private var rotation = 0.0
+    private var acceleration = (x: 0.0, y: 0.0)
     
     override func didMove(to view: SKView) {
         size = view.bounds.size
@@ -22,6 +29,27 @@ class LiveListenView: SKScene {
         blobNode.position = CGPoint(x: size.width / 2, y: -size.width * 0.15)
         addChild(blobNode)
         startMotionUpdates()
+    }
+    
+    override func update(_ currentTime: TimeInterval) {
+        if lastUpdateTime == 0 {
+            lastUpdateTime = currentTime
+        }
+        let deltaTime = currentTime - lastUpdateTime
+        lastUpdateTime = currentTime
+        
+        if isIdle {
+            blobNode.updateIdleState(deltaTime: deltaTime)
+        } else {
+            blobNode.updateWithMotion(
+                deltaTime: deltaTime,
+                gravityX: gravity.x,
+                gravityY: gravity.y,
+                rotationZ: rotation,
+                accelerationX: acceleration.x,
+                accelerationY: acceleration.y
+            )
+        }
     }
     
     private func setupGradientBackground() {
@@ -59,17 +87,21 @@ class LiveListenView: SKScene {
         motionManager.deviceMotionUpdateInterval = 1.0 / 60.0
         motionManager.startDeviceMotionUpdates(to: .main) { [weak self] motion, error in
             guard let motion = motion, let self = self else { return }
-            let gravity = motion.gravity
-            let rotation = motion.rotationRate
-            let acceleration = motion.userAcceleration
             
-            self.blobNode.updateWithMotion(
-                gravityX: gravity.x,
-                gravityY: gravity.y,
-                rotationZ: rotation.z,
-                accelerationX: acceleration.x,
-                accelerationY: acceleration.y
-            )
+            // Store the latest motion data
+            self.gravity = (motion.gravity.x, motion.gravity.y)
+            self.rotation = motion.rotationRate.z
+            self.acceleration = (motion.userAcceleration.x, motion.userAcceleration.y)
+            
+            // Check for significant motion to determine if idle
+            let motionThreshold = 0.05
+            let isMoving = abs(self.gravity.x) > motionThreshold ||
+                           abs(self.gravity.y) > motionThreshold ||
+                           abs(self.acceleration.x) > motionThreshold ||
+                           abs(self.acceleration.y) > motionThreshold ||
+                           abs(self.rotation) > motionThreshold
+            
+            self.isIdle = !isMoving
         }
     }
     deinit {
