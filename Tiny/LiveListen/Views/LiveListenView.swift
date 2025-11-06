@@ -108,8 +108,8 @@ class LiveListenView: SKScene {
         let bottomColor = UIColor(Color(hex: "8647B9")).cgColor
         
         gradientLayer.colors = [bottomColor, topColor]
-        gradientLayer.startPoint = CGPoint(x: 0.5, y: 0.85)
-        gradientLayer.endPoint = CGPoint(x: 0.5, y: 0.2)
+        gradientLayer.startPoint = CGPoint(x: 0.5, y: 1.2)
+        gradientLayer.endPoint = CGPoint(x: 0.5, y: 0)
     
         UIGraphicsBeginImageContext(gradientLayer.bounds.size)
         gradientLayer.render(in: UIGraphicsGetCurrentContext()!)
