@@ -204,7 +204,7 @@
 					};
 				};
 			};
-			buildConfigurationList = 433435BF2EACD4E4004C6B8C /* Build configuration list for PBXProject "tiny" */;
+			buildConfigurationList = 433435BF2EACD4E4004C6B8C /* Build configuration list for PBXProject "Tiny" */;
 			developmentRegion = en;
 			hasScannedForEncodings = 0;
 			knownRegions = (
@@ -444,7 +444,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = LM2TBH9R6C;
+				DEVELOPMENT_TEAM = 6PN64DQKLX;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Tiny needs to use the microphone to capture heartbeat sounds.";
@@ -478,7 +478,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = LM2TBH9R6C;
+				DEVELOPMENT_TEAM = 6PN64DQKLX;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Tiny needs to use the microphone to capture heartbeat sounds.";
@@ -592,7 +592,7 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		433435BF2EACD4E4004C6B8C /* Build configuration list for PBXProject "tiny" */ = {
+		433435BF2EACD4E4004C6B8C /* Build configuration list for PBXProject "Tiny" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				433435E32EACD4E5004C6B8C /* Debug */,

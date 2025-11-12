@@ -7,18 +7,27 @@
 
 import SwiftUI
 
+// MARK: - Updated ContentView with Enhanced Heartbeat Monitoring
 struct ContentView: View {
     var body: some View {
-        VStack {
-            Image(systemName: "globe")
-                .imageScale(.large)
-                .foregroundStyle(.tint)
-            Text("Hello, world!")
+        TabView {
+            EnhancedLiveListenView()
+                .tabItem {
+                    Label("Listen", systemImage: "waveform")
+                }
+
+            HeartbeatAnalysisTab()
+                .tabItem {
+                    Label("Analysis", systemImage: "chart.line.uptrend.xyaxis")
+                }
+
+            RippleEffectView()
+                .tabItem {
+                    Label("Ripple", systemImage: "water.waves")
+                }
         }
-        .padding()
     }
 }
-
 #Preview {
     ContentView()
 }

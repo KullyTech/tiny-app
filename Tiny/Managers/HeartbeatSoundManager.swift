@@ -7,6 +7,7 @@
 
 import Foundation
 import AVFoundation
+import Accelerate
 
 import AudioKit
 import AudioKitEX
@@ -19,14 +20,31 @@ struct Recording: Identifiable, Equatable {
     var isPlaying: Bool = false
 }
 
+struct HeartbeatData {
+    let timestamp: Date
+    let bpm: Double
+    let s1Amplitude: Float
+    let s2Amplitude: Float
+    let confidence: Float
+}
+
+enum HeartbeatFilterMode {
+    case standard
+    case enhanced
+    case sensitive
+    case noiseReduced
+}
+
 class HeartbeatSoundManager: NSObject, ObservableObject {
     var engine: AudioEngine!
     var mic: AudioEngine.InputNode?
     var highPassFilter: HighPassFilter?
     var lowPassFilter: LowPassFilter?
+    var secondaryLowPassFilter: LowPassFilter?
     var gain: Fader?
     var mixer: Mixer?
     var amplitudeTap: AmplitudeTap?
+    var fftTap: FFTTap?
     var recorder: NodeRecorder?
     var player: AudioPlayer?
     
@@ -37,6 +55,15 @@ class HeartbeatSoundManager: NSObject, ObservableObject {
     @Published var isPlayingPlayback = false
     @Published var amplitudeVal: Float = 0.0
     @Published var gainVal: Float = 10.0
+    @Published var currentBPM: Double = 0.0
+    @Published var heartbeatData: [HeartbeatData] = []
+    @Published var fftData: [Float] = []
+    @Published var filterMode: HeartbeatFilterMode = .standard
+    @Published var noiseFloor: Float = 0.0
+    @Published var signalQuality: Float = 0.0
+    @Published var noiseReductionEnabled: Bool = true
+    @Published var adaptiveGainEnabled: Bool = true
+    @Published var aggressiveFiltering: Bool = false
     
     override init() {
         super.init()
@@ -67,21 +94,35 @@ class HeartbeatSoundManager: NSObject, ObservableObject {
             
             mic = input
             
+            let (lowFreq, highFreq) = getFilterFrequencies(for: filterMode)
+            let adjustedLowFreq = aggressiveFiltering ? max(lowFreq, 40.0) : lowFreq
+            
             highPassFilter = HighPassFilter(input)
-            highPassFilter?.cutoffFrequency = AUValue(40.0)
+            highPassFilter?.cutoffFrequency = AUValue(adjustedLowFreq)
+            highPassFilter?.resonance = AUValue(1.0)
             
             lowPassFilter = LowPassFilter(highPassFilter!)
-            lowPassFilter?.cutoffFrequency = AUValue(200.0)
+            lowPassFilter?.cutoffFrequency = AUValue(highFreq)
+            lowPassFilter?.resonance = AUValue(0.5)
             
-            gain = Fader(lowPassFilter!)
+            secondaryLowPassFilter = LowPassFilter(lowPassFilter!)
+            secondaryLowPassFilter?.cutoffFrequency = AUValue(120.0)
+            secondaryLowPassFilter?.resonance = AUValue(0.3)
+            
+            gain = Fader(secondaryLowPassFilter!)
             gain?.gain = AUValue(gainVal)
             
             mixer = Mixer(gain!)
             
             amplitudeTap = AmplitudeTap(mixer!) { [weak self] amp in
                 DispatchQueue.main.async {
-                    print("Amplitude value: \(amp)")
-                    self?.amplitudeVal = amp
+                    self?.processAmplitude(amp)
+                }
+            }
+            
+            fftTap = FFTTap(mixer!) { [weak self] fftData in
+                DispatchQueue.main.async {
+                    self?.processFFTData(fftData)
                 }
             }
             
@@ -95,7 +136,8 @@ class HeartbeatSoundManager: NSObject, ObservableObject {
             engine.output = mixer
             
             amplitudeTap?.start()
-            print("Amplitude tap started")
+            fftTap?.start()
+            print("Audio analysis taps started")
             
         } catch {
             print("Error setting up audio!: \(error.localizedDescription)")
@@ -106,6 +148,9 @@ class HeartbeatSoundManager: NSObject, ObservableObject {
         amplitudeTap?.stop()
         amplitudeTap = nil
         
+        fftTap?.stop()
+        fftTap = nil
+        
         recorder?.stop()
         recorder = nil
         
@@ -115,6 +160,7 @@ class HeartbeatSoundManager: NSObject, ObservableObject {
 
         mixer = nil
         gain = nil
+        secondaryLowPassFilter = nil
         lowPassFilter = nil
         highPassFilter = nil
         mic = nil
@@ -132,12 +178,27 @@ class HeartbeatSoundManager: NSObject, ObservableObject {
     func forceBuiltInMicrophone() throws {
         let session = AVAudioSession.sharedInstance()
         let availableInputs = session.availableInputs ?? []
-        
+
+        print("🎤 Available audio inputs:")
+        for input in availableInputs {
+            print("Input portType: \(input.portType.rawValue), portName: \(input.portName)")
+
+            if let dataSources = input.dataSources, !dataSources.isEmpty {
+                print("Data sources for \(input.portName):")
+                for dataSource in dataSources {
+                    print("    • \(dataSource.dataSourceName)")
+                }
+            } else {
+                print("No data sources found for \(input.portName)")
+            }
+        }
+
         for input in availableInputs where input.portType == .builtInMic {
             try session.setPreferredInput(input)
             
             if let dataSources = input.dataSources {
                 for dataSource in dataSources where dataSource.dataSourceName.lowercased().contains("bottom") {
+                    print("✅ Setting preferred data source: \(dataSource.dataSourceName)")
                     try input.setPreferredDataSource(dataSource)
                     break
                 }
@@ -159,6 +220,167 @@ class HeartbeatSoundManager: NSObject, ObservableObject {
     func updateBandpassRange(lowCutoff: Float, highCutoff: Float) {
         highPassFilter?.cutoffFrequency = AUValue(lowCutoff)
         lowPassFilter?.cutoffFrequency = AUValue(highCutoff)
+    }
+    
+    func getFilterFrequencies(for mode: HeartbeatFilterMode) -> (Float, Float) {
+        switch mode {
+        case .standard:
+            return (30.0, 100.0)
+        case .enhanced:
+            return (40.0, 120.0)
+        case .sensitive:
+            return (25.0, 150.0)
+        case .noiseReduced:
+            return (50.0, 110.0)
+        }
+    }
+    
+    func setFilterMode(_ mode: HeartbeatFilterMode) {
+        filterMode = mode
+        if isRunning {
+            let (lowFreq, highFreq) = getFilterFrequencies(for: mode)
+            updateBandpassRange(lowCutoff: lowFreq, highCutoff: highFreq)
+        }
+    }
+    
+    private func processAmplitude(_ amplitude: Float) {
+        var processedAmplitude = amplitude
+        
+        if noiseReductionEnabled {
+            processedAmplitude = applyNoiseReduction(processedAmplitude)
+        }
+        
+        if adaptiveGainEnabled {
+            processedAmplitude = applyAdaptiveGain(processedAmplitude)
+        }
+        
+        amplitudeVal = processedAmplitude
+        
+        if processedAmplitude > noiseFloor * 1.5 {
+            signalQuality = min(1.0, (processedAmplitude - noiseFloor) / (noiseFloor * 2))
+        } else {
+            signalQuality = max(0.0, signalQuality - 0.1)
+        }
+        
+        updateNoiseFloor()
+    }
+    
+    private func updateNoiseFloor() {
+        let smoothingFactor: Float = 0.95
+        noiseFloor = noiseFloor * smoothingFactor + amplitudeVal * (1.0 - smoothingFactor)
+    }
+    
+    private func processFFTData(_ fftData: [Float]) {
+        self.fftData = Array(fftData.prefix(128))
+        detectHeartbeatPattern()
+    }
+    
+    private func detectHeartbeatPattern() {
+        guard !fftData.isEmpty else { return }
+        
+        let s1Range = 20...50
+        let s2Range = 50...80
+        
+        let s1Amplitude = calculateAverageAmplitude(in: s1Range)
+        let s2Amplitude = calculateAverageAmplitude(in: s2Range)
+        
+        let confidence = calculateHeartbeatConfidence(s1: s1Amplitude, s2: s2Amplitude)
+        
+        if confidence > 0.3 {
+            let bpm = estimateBPM()
+            let heartbeat = HeartbeatData(
+                timestamp: Date(),
+                bpm: bpm,
+                s1Amplitude: s1Amplitude,
+                s2Amplitude: s2Amplitude,
+                confidence: confidence
+            )
+            
+            DispatchQueue.main.async {
+                self.heartbeatData.append(heartbeat)
+                if self.heartbeatData.count > 10 {
+                    self.heartbeatData.removeFirst()
+                }
+                self.currentBPM = bpm
+            }
+        }
+    }
+    
+    private func calculateAverageAmplitude(in range: ClosedRange<Int>) -> Float {
+        guard fftData.count > range.upperBound else { return 0.0 }
+        
+        let startIndex = max(0, range.lowerBound)
+        let endIndex = min(fftData.count, range.upperBound)
+        
+        let slice = fftData[startIndex..<endIndex]
+        return slice.reduce(0, +) / Float(slice.count)
+    }
+    
+    private func calculateHeartbeatConfidence(s1: Float, s2: Float) -> Float {
+        let ratio = s2 / max(s1, 0.001)
+        let idealRatio: Float = 0.6
+        let ratioScore = 1.0 - abs(ratio - idealRatio)
+        
+        let amplitudeScore = min(1.0, (s1 + s2) / 2.0)
+        
+        return (ratioScore * 0.7 + amplitudeScore * 0.3)
+    }
+    
+    private func estimateBPM() -> Double {
+        guard heartbeatData.count >= 2 else { return 0.0 }
+        
+        let recentData = Array(heartbeatData.suffix(5))
+        guard recentData.count >= 2 else { return 0.0 }
+        
+        let timeDifferences = zip(recentData.dropFirst(), recentData.dropLast())
+            .map { newer, older in
+                newer.timestamp.timeIntervalSince(older.timestamp)
+            }
+        
+        let averageInterval = timeDifferences.reduce(0, +) / Double(timeDifferences.count)
+        
+        return averageInterval > 0 ? 60.0 / averageInterval : 0.0
+    }
+    
+    private func applyNoiseReduction(_ amplitude: Float) -> Float {
+        let threshold = noiseFloor * (aggressiveFiltering ? 1.5 : 1.2)
+        let reductionFactor: Float = aggressiveFiltering ? 0.2 : 0.3
+        
+        if amplitude < threshold {
+            return amplitude * reductionFactor
+        }
+        return amplitude
+    }
+    
+    private func applyAdaptiveGain(_ amplitude: Float) -> Float {
+        let targetAmplitude: Float = 0.3
+        let maxGain: Float = 3.0
+        let minGain: Float = 0.5
+
+        let error = targetAmplitude - amplitude
+        let gain = 1.0 + (error * 0.5)
+
+        let clampedGain = max(minGain, min(maxGain, gain))
+
+        return amplitude * clampedGain
+    }
+
+    func toggleNoiseReduction() {
+        noiseReductionEnabled.toggle()
+    }
+    
+    func toggleAdaptiveGain() {
+        adaptiveGainEnabled.toggle()
+        if !adaptiveGainEnabled {
+            gain?.gain = AUValue(gainVal)
+        }
+    }
+    
+    func toggleAggressiveFiltering() {
+        aggressiveFiltering.toggle()
+        if isRunning {
+            setupAudio()
+        }
     }
     
     func startRecording() {
@@ -287,3 +509,4 @@ class HeartbeatSoundManager: NSObject, ObservableObject {
         isRunning = false
     }
 }
+
