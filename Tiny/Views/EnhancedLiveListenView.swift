@@ -310,10 +310,56 @@ struct EnhancedLiveListenView: View {
                     set: { _ in manager.toggleAggressiveFiltering() }
                 ))
             }
+            
+            VStack(alignment: .leading, spacing: 8) {
+                HStack {
+                    Text("Noise Gate")
+                        .font(.subheadline)
+                    Spacer()
+                    Text(String(format: "%.3f", manager.noiseGateThreshold))
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
+                
+                Slider(value: Binding(
+                    get: { manager.noiseGateThreshold },
+                    set: { manager.updateNoiseGateThreshold($0) }
+                ),
+                in: 0.001...0.1,
+                step: 0.001)
+                .accentColor(.orange)
+                
+                HStack {
+                    Text("Silent")
+                        .font(.caption)
+                    Spacer()
+                    Text("Sensitive")
+                        .font(.caption)
+                }
+                .foregroundColor(.secondary)
+            }
         }
         .padding()
         .background(Color.secondary.opacity(0.1))
         .cornerRadius(15)
+        
+        // Quick noise reduction preset
+        return Button(action: {
+            manager.setFilterMode(.noiseReduced)
+            manager.toggleAggressiveFiltering()
+            manager.updateNoiseGateThreshold(0.05)
+        }) {
+            HStack {
+                Image(systemName: "speaker.wave.3.fill")
+                Text("Apply Noise Reduction Preset")
+            }
+            .font(.subheadline)
+            .foregroundColor(.white)
+            .frame(maxWidth: .infinity)
+            .padding()
+            .background(Color.orange)
+            .cornerRadius(10)
+        }
     }
 }
 
