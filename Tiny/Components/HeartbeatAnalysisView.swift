@@ -222,7 +222,7 @@ struct HeartbeatAnalysisView: View {
 
 extension HeartbeatFilterMode: CaseIterable {
     static var allCases: [HeartbeatFilterMode] {
-        [.standard, .enhanced, .sensitive, .noiseReduced]
+        [.standard, .enhanced, .sensitive, .spatial]
     }
     
     var displayName: String {
@@ -233,21 +233,21 @@ extension HeartbeatFilterMode: CaseIterable {
             return "Enhanced"
         case .sensitive:
             return "Sensitive"
-        case .noiseReduced:
-            return "Noise Reduced"
+        case .spatial:
+            return "Spatial"
         }
     }
     
     var frequencyRange: String {
         switch self {
         case .standard:
-            return "30-100Hz"
+            return "20-2000Hz"
         case .enhanced:
-            return "40-120Hz"
+            return "15-3000Hz"
         case .sensitive:
-            return "25-150Hz"
-        case .noiseReduced:
-            return "50-110Hz"
+            return "10-4000Hz"
+        case .spatial:
+            return "15-2500Hz"
         }
     }
 }

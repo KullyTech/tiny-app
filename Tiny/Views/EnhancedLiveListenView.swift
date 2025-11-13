@@ -298,17 +298,33 @@ struct EnhancedLiveListenView: View {
             
             HStack {
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("Aggressive Filtering")
+                    Text("Spatial Mode")
                         .font(.subheadline)
-                    Text("Reduces humming/bass")
+                    Text("Enhanced proximity audio")
                         .font(.caption)
                         .foregroundColor(.secondary)
                 }
                 Spacer()
                 Toggle("", isOn: Binding(
-                    get: { manager.aggressiveFiltering },
-                    set: { _ in manager.toggleAggressiveFiltering() }
+                    get: { manager.spatialMode },
+                    set: { _ in manager.toggleSpatialMode() }
                 ))
+            }
+            
+            if manager.spatialMode {
+                HStack {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Proximity Gain")
+                            .font(.subheadline)
+                        Text("Boost close sounds")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
+                    Spacer()
+                    Text(String(format: "%.1fx", manager.proximityGain))
+                        .font(.caption)
+                        .foregroundColor(.blue)
+                }
             }
             
             VStack(alignment: .leading, spacing: 8) {
@@ -345,19 +361,20 @@ struct EnhancedLiveListenView: View {
         
         // Quick noise reduction preset
         return Button(action: {
-            manager.setFilterMode(.noiseReduced)
-            manager.toggleAggressiveFiltering()
-            manager.updateNoiseGateThreshold(0.05)
+            manager.setFilterMode(.spatial)
+            manager.toggleSpatialMode()
+            manager.updateProximityGain(3.0)
+            manager.updateNoiseGateThreshold(0.005)
         }) {
             HStack {
-                Image(systemName: "speaker.wave.3.fill")
-                Text("Apply Noise Reduction Preset")
+                Image(systemName: "waveform.and.person.filled")
+                Text("Apply Spatial Audio Preset")
             }
             .font(.subheadline)
             .foregroundColor(.white)
             .frame(maxWidth: .infinity)
             .padding()
-            .background(Color.orange)
+            .background(Color.blue)
             .cornerRadius(10)
         }
     }
@@ -473,6 +490,30 @@ struct AdvancedSettingsView: View {
                         get: { manager.aggressiveFiltering },
                         set: { _ in manager.toggleAggressiveFiltering() }
                     ))
+                    
+                    Toggle("Spatial Mode", isOn: Binding(
+                        get: { manager.spatialMode },
+                        set: { _ in manager.toggleSpatialMode() }
+                    ))
+                }
+                
+                // Spatial Audio Preset
+                Button(action: {
+                    manager.setFilterMode(.spatial)
+                    manager.toggleSpatialMode()
+                    manager.updateProximityGain(3.0)
+                    manager.updateNoiseGateThreshold(0.005)
+                }) {
+                    HStack {
+                        Image(systemName: "waveform.and.person.filled")
+                        Text("Apply Spatial Audio Preset")
+                    }
+                    .font(.subheadline)
+                    .foregroundColor(.white)
+                    .frame(maxWidth: .infinity)
+                    .padding()
+                    .background(Color.blue)
+                    .cornerRadius(10)
                 }
                 
                 Spacer()

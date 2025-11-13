@@ -32,7 +32,7 @@ enum HeartbeatFilterMode {
     case standard
     case enhanced
     case sensitive
-    case noiseReduced
+    case spatial
 }
 
 class HeartbeatSoundManager: NSObject, ObservableObject {
@@ -67,7 +67,9 @@ class HeartbeatSoundManager: NSObject, ObservableObject {
     @Published var noiseReductionEnabled: Bool = true
     @Published var adaptiveGainEnabled: Bool = true
     @Published var aggressiveFiltering: Bool = false
-    @Published var noiseGateThreshold: Float = 0.02
+    @Published var spatialMode: Bool = true
+    @Published var proximityGain: Float = 2.0
+    @Published var noiseGateThreshold: Float = 0.005
     
     override init() {
         super.init()
@@ -99,43 +101,14 @@ class HeartbeatSoundManager: NSObject, ObservableObject {
             mic = input
             
             let (lowFreq, highFreq) = getFilterFrequencies(for: filterMode)
-            let adjustedLowFreq = aggressiveFiltering ? max(lowFreq, 50.0) : lowFreq
             
-            // First stage: Aggressive high-pass filter to remove low frequency noise
-            highPassFilter = HighPassFilter(input)
-            highPassFilter?.cutoffFrequency = AUValue(adjustedLowFreq)
-            highPassFilter?.resonance = AUValue(0.7) // Reduced resonance to avoid ringing
+            if spatialMode {
+                setupSpatialAudioChain(input: input, lowFreq: lowFreq, highFreq: highFreq)
+            } else {
+                setupTraditionalFilterChain(input: input, lowFreq: lowFreq, highFreq: highFreq)
+            }
             
-            // Second stage: Band-pass filter for heartbeat frequency range
-            bandPassFilter = BandPassFilter(highPassFilter!)
-            bandPassFilter?.centerFrequency = AUValue((adjustedLowFreq + highFreq) / 2.0)
-            bandPassFilter?.bandwidth = AUValue(highFreq - adjustedLowFreq)
-            
-            // Third stage: Low-pass filter to remove high frequency noise
-            lowPassFilter = LowPassFilter(bandPassFilter!)
-            lowPassFilter?.cutoffFrequency = AUValue(highFreq)
-            lowPassFilter?.resonance = AUValue(0.5) // Reduced resonance for smoother response
-            
-            // Fourth stage: Secondary low-pass for additional smoothing
-            secondaryLowPassFilter = LowPassFilter(lowPassFilter!)
-            secondaryLowPassFilter?.cutoffFrequency = AUValue(min(highFreq, 120.0))
-            secondaryLowPassFilter?.resonance = AUValue(0.1) // Very low resonance for maximum smoothing
-            
-            // Dynamic range processing with optimized parameters for heartbeat
-            compressor = Compressor(secondaryLowPassFilter!)
-            compressor?.threshold = AUValue(aggressiveFiltering ? -30.0 : -24.0) // Lower threshold for aggressive mode
-            compressor?.headRoom = AUValue(aggressiveFiltering ? 2.0 : 3.0) // Reduced headroom for aggressive mode
-            compressor?.attackTime = AUValue(0.003) // Faster attack for heartbeat transients
-            compressor?.releaseTime = AUValue(0.05) // Faster release
-            compressor?.masterGain = AUValue(0.0)
-            
-            // Peak limiter to prevent clipping
-            peakLimiter = PeakLimiter(compressor!)
-            peakLimiter?.attackTime = AUValue(0.0005) // Faster attack
-            peakLimiter?.decayTime = AUValue(0.005) // Faster decay
-            peakLimiter?.preGain = AUValue(0.0)
-            
-            gain = Fader(peakLimiter!)
+            gain = Fader(secondaryLowPassFilter!)
             gain?.gain = AUValue(gainVal)
             
             mixer = Mixer(gain!)
@@ -247,25 +220,23 @@ class HeartbeatSoundManager: NSObject, ObservableObject {
     }
     
     func updateBandpassRange(lowCutoff: Float, highCutoff: Float) {
-        let adjustedLowFreq = aggressiveFiltering ? max(lowCutoff, 50.0) : lowCutoff
-        
-        highPassFilter?.cutoffFrequency = AUValue(adjustedLowFreq)
-        bandPassFilter?.centerFrequency = AUValue((adjustedLowFreq + highCutoff) / 2.0)
-        bandPassFilter?.bandwidth = AUValue(highCutoff - adjustedLowFreq)
-        lowPassFilter?.cutoffFrequency = AUValue(highCutoff)
-        secondaryLowPassFilter?.cutoffFrequency = AUValue(min(highCutoff, 120.0))
+        if spatialMode {
+            updateSpatialAudioChain(lowCutoff, highCutoff)
+        } else {
+            updateTraditionalFilterChain(lowCutoff, highCutoff)
+        }
     }
     
     func getFilterFrequencies(for mode: HeartbeatFilterMode) -> (Float, Float) {
         switch mode {
         case .standard:
-            return (30.0, 100.0)
+            return (20.0, 2000.0) // Wide range for natural sound
         case .enhanced:
-            return (40.0, 120.0)
+            return (15.0, 3000.0) // Even wider for clarity
         case .sensitive:
-            return (25.0, 150.0)
-        case .noiseReduced:
-            return (50.0, 110.0)
+            return (10.0, 4000.0) // Maximum range
+        case .spatial:
+            return (15.0, 2500.0) // Optimized for spatial processing
         }
     }
     
@@ -409,12 +380,17 @@ class HeartbeatSoundManager: NSObject, ObservableObject {
         let minGain: Float = 0.5
 
         let error = targetAmplitude - amplitude
-        let gain = 1.0 + (error * 0.5)
+        let computedGain = 1.0 + (error * 0.5)
 
-        let clampedGain = max(minGain, min(maxGain, gain))
+        let clampedGain = max(minGain, min(maxGain, computedGain))
 
-        return amplitude * clampedGain
+        // Apply proximity gain for spatial mode
+        let finalGain = spatialMode ? (gainVal * clampedGain * proximityGain) : (gainVal * clampedGain)
+        self.gain?.gain = AUValue(finalGain)
+
+        return amplitude * clampedGain * (spatialMode ? proximityGain : 1.0)
     }
+
 
     func toggleNoiseReduction() {
         noiseReductionEnabled.toggle()
@@ -436,6 +412,114 @@ class HeartbeatSoundManager: NSObject, ObservableObject {
     
     func updateNoiseGateThreshold(_ threshold: Float) {
         noiseGateThreshold = threshold
+    }
+    
+    func toggleSpatialMode() {
+        spatialMode.toggle()
+        if isRunning {
+            setupAudio()
+        }
+    }
+    
+    func updateProximityGain(_ gain: Float) {
+        proximityGain = gain
+    }
+    
+    private func setupSpatialAudioChain(input: AudioEngine.InputNode, lowFreq: Float, highFreq: Float) {
+        // Gentle high-pass to remove only extreme sub-bass
+        highPassFilter = HighPassFilter(input)
+        highPassFilter?.cutoffFrequency = AUValue(lowFreq)
+        highPassFilter?.resonance = AUValue(0.5) // Gentle resonance
+        
+        // Wide band-pass for natural sound preservation
+        bandPassFilter = BandPassFilter(highPassFilter!)
+        bandPassFilter?.centerFrequency = AUValue(500.0) // Center for voice/body sounds
+        bandPassFilter?.bandwidth = AUValue(highFreq - lowFreq)
+        
+        // Gentle low-pass to remove only extreme highs
+        lowPassFilter = LowPassFilter(bandPassFilter!)
+        lowPassFilter?.cutoffFrequency = AUValue(highFreq)
+        lowPassFilter?.resonance = AUValue(0.3) // Very gentle
+        
+        // Secondary gentle low-pass for smoothing
+        secondaryLowPassFilter = LowPassFilter(lowPassFilter!)
+        secondaryLowPassFilter?.cutoffFrequency = AUValue(highFreq)
+        secondaryLowPassFilter?.resonance = AUValue(0.1) // Minimal resonance
+        
+        // Gentle compression for proximity enhancement
+        compressor = Compressor(secondaryLowPassFilter!)
+        compressor?.threshold = AUValue(-18.0) // Higher threshold for natural sound
+        compressor?.headRoom = AUValue(6.0) // More headroom
+        compressor?.attackTime = AUValue(0.01) // Moderate attack
+        compressor?.releaseTime = AUValue(0.1) // Moderate release
+        compressor?.masterGain = AUValue(0.0)
+        
+        // Gentle peak limiting
+        peakLimiter = PeakLimiter(compressor!)
+        peakLimiter?.attackTime = AUValue(0.001) // Moderate attack
+        peakLimiter?.decayTime = AUValue(0.01) // Moderate decay
+        peakLimiter?.preGain = AUValue(0.0)
+    }
+    
+    private func setupTraditionalFilterChain(input: AudioEngine.InputNode, lowFreq: Float, highFreq: Float) {
+        let adjustedLowFreq = aggressiveFiltering ? max(lowFreq, 50.0) : lowFreq
+        
+        // Traditional aggressive filtering
+        highPassFilter = HighPassFilter(input)
+        highPassFilter?.cutoffFrequency = AUValue(adjustedLowFreq)
+        highPassFilter?.resonance = AUValue(0.7)
+        
+        bandPassFilter = BandPassFilter(highPassFilter!)
+        bandPassFilter?.centerFrequency = AUValue((adjustedLowFreq + highFreq) / 2.0)
+        bandPassFilter?.bandwidth = AUValue(highFreq - adjustedLowFreq)
+        
+        lowPassFilter = LowPassFilter(bandPassFilter!)
+        lowPassFilter?.cutoffFrequency = AUValue(highFreq)
+        lowPassFilter?.resonance = AUValue(0.5)
+        
+        secondaryLowPassFilter = LowPassFilter(lowPassFilter!)
+        secondaryLowPassFilter?.cutoffFrequency = AUValue(min(highFreq, 120.0))
+        secondaryLowPassFilter?.resonance = AUValue(0.1)
+        
+        compressor = Compressor(secondaryLowPassFilter!)
+        compressor?.threshold = AUValue(aggressiveFiltering ? -30.0 : -24.0)
+        compressor?.headRoom = AUValue(aggressiveFiltering ? 2.0 : 3.0)
+        compressor?.attackTime = AUValue(0.003)
+        compressor?.releaseTime = AUValue(0.05)
+        compressor?.masterGain = AUValue(0.0)
+        
+        peakLimiter = PeakLimiter(compressor!)
+        peakLimiter?.attackTime = AUValue(0.0005)
+        peakLimiter?.decayTime = AUValue(0.005)
+        peakLimiter?.preGain = AUValue(0.0)
+    }
+    
+    private func updateSpatialAudioChain(_ lowFreq: Float, _ highFreq: Float) {
+        highPassFilter?.cutoffFrequency = AUValue(lowFreq)
+        bandPassFilter?.centerFrequency = AUValue(500.0)
+        bandPassFilter?.bandwidth = AUValue(highFreq - lowFreq)
+        lowPassFilter?.cutoffFrequency = AUValue(highFreq)
+        secondaryLowPassFilter?.cutoffFrequency = AUValue(highFreq)
+        
+        compressor?.threshold = AUValue(-18.0)
+        compressor?.headRoom = AUValue(6.0)
+        compressor?.attackTime = AUValue(0.01)
+        compressor?.releaseTime = AUValue(0.1)
+    }
+    
+    private func updateTraditionalFilterChain(_ lowFreq: Float, _ highFreq: Float) {
+        let adjustedLowFreq = aggressiveFiltering ? max(lowFreq, 50.0) : lowFreq
+
+        highPassFilter?.cutoffFrequency = AUValue(adjustedLowFreq)
+        bandPassFilter?.centerFrequency = AUValue((adjustedLowFreq + highFreq) / 2.0)
+        bandPassFilter?.bandwidth = AUValue(highFreq - adjustedLowFreq)
+        lowPassFilter?.cutoffFrequency = AUValue(highFreq)
+        secondaryLowPassFilter?.cutoffFrequency = AUValue(min(highFreq, 120.0))
+
+        compressor?.threshold = AUValue(aggressiveFiltering ? -30.0 : -24.0)
+        compressor?.headRoom = AUValue(aggressiveFiltering ? 2.0 : 3.0)
+        compressor?.attackTime = AUValue(0.003)
+        compressor?.releaseTime = AUValue(0.05)
     }
     
     func startRecording() {
@@ -564,6 +648,7 @@ class HeartbeatSoundManager: NSObject, ObservableObject {
         isRunning = false
     }
 }
+
 
 
 
