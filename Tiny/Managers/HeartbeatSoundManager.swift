@@ -90,7 +90,7 @@ class HeartbeatSoundManager: NSObject, ObservableObject {
             let session = AVAudioSession.sharedInstance()
             
             try session.setCategory(.playAndRecord, mode: .measurement, options: [.allowBluetoothHFP, .allowBluetoothA2DP])
-            try forceBuiltInMicrophone()
+            try useConnectedAudioInput()
             try session.setActive(true)
             
             guard let input = engine.input else {
@@ -177,11 +177,11 @@ class HeartbeatSoundManager: NSObject, ObservableObject {
         engine = AudioEngine()
     }
     
-    func forceBuiltInMicrophone() throws {
+    func useConnectedAudioInput() throws {
         let session = AVAudioSession.sharedInstance()
         let availableInputs = session.availableInputs ?? []
 
-        print("🎤 Available audio inputs:")
+        print("🎧 Available audio inputs:")
         for input in availableInputs {
             print("Input portType: \(input.portType.rawValue), portName: \(input.portName)")
 
@@ -195,21 +195,29 @@ class HeartbeatSoundManager: NSObject, ObservableObject {
             }
         }
 
-        for input in availableInputs where input.portType == .builtInMic {
-            try session.setPreferredInput(input)
-            
-            if let dataSources = input.dataSources {
-                for dataSource in dataSources where dataSource.dataSourceName.lowercased().contains("bottom") {
-                    print("✅ Setting preferred data source: \(dataSource.dataSourceName)")
-                    try input.setPreferredDataSource(dataSource)
-                    break
+        // Prefer currently connected external input, if any
+        if let currentInput = session.currentRoute.inputs.first {
+            print("🎤 Current active input: \(currentInput.portName) (\(currentInput.portType.rawValue))")
+
+            // Set preferred input to the currently active one (no forcing)
+            try session.setPreferredInput(currentInput)
+
+            if let dataSources = currentInput.dataSources, !dataSources.isEmpty {
+                // Just log which data source is in use
+                let activeDataSource = currentInput.dataSources?.first(where: { $0 == currentInput.selectedDataSource })
+                if let activeDataSource = activeDataSource {
+                    print("✅ Using data source: \(activeDataSource.dataSourceName)")
+                } else {
+                    print("ℹ️ No specific data source selected, using default.")
                 }
             }
+
             return
         }
 
+        print("⚠️ No current audio input found in route.")
     }
-    
+
     func getDocumentsDirectory() -> URL {
         return FileManager.default.urls(for: .documentDirectory, in: .userDomainMask) [0]
     }
