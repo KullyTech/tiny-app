@@ -57,11 +57,11 @@ class HeartbeatSoundManager: NSObject, ObservableObject {
     @Published var lastRecording: Recording?
     @Published var isPlayingPlayback = false
     @Published var amplitudeVal: Float = 0.0
-    @Published var gainVal: Float = 10.0
+    @Published var gainVal: Float = 100.0
     @Published var currentBPM: Double = 0.0
     @Published var heartbeatData: [HeartbeatData] = []
     @Published var fftData: [Float] = []
-    @Published var filterMode: HeartbeatFilterMode = .standard
+    @Published var filterMode: HeartbeatFilterMode = .spatial
     @Published var noiseFloor: Float = 0.0
     @Published var signalQuality: Float = 0.0
     @Published var noiseReductionEnabled: Bool = true
@@ -90,7 +90,7 @@ class HeartbeatSoundManager: NSObject, ObservableObject {
             let session = AVAudioSession.sharedInstance()
             
             try session.setCategory(.playAndRecord, mode: .measurement, options: [.allowBluetoothHFP, .allowBluetoothA2DP])
-            try useConnectedAudioInput()
+            try useBottomMicrophone()
             try session.setActive(true)
             
             guard let input = engine.input else {
@@ -177,7 +177,7 @@ class HeartbeatSoundManager: NSObject, ObservableObject {
         engine = AudioEngine()
     }
     
-    func useConnectedAudioInput() throws {
+    func useBottomMicrophone() throws {
         let session = AVAudioSession.sharedInstance()
         let availableInputs = session.availableInputs ?? []
 
@@ -187,36 +187,38 @@ class HeartbeatSoundManager: NSObject, ObservableObject {
 
             if let dataSources = input.dataSources, !dataSources.isEmpty {
                 print("Data sources for \(input.portName):")
-                for dataSource in dataSources {
-                    print("    • \(dataSource.dataSourceName)")
+                for ds in dataSources {
+                    print("    • \(ds.dataSourceName)")
                 }
-            } else {
-                print("No data sources found for \(input.portName)")
             }
         }
 
-        // Prefer currently connected external input, if any
-        if let currentInput = session.currentRoute.inputs.first {
-            print("🎤 Current active input: \(currentInput.portName) (\(currentInput.portType.rawValue))")
-
-            // Set preferred input to the currently active one (no forcing)
-            try session.setPreferredInput(currentInput)
-
-            if let dataSources = currentInput.dataSources, !dataSources.isEmpty {
-                // Just log which data source is in use
-                let activeDataSource = currentInput.dataSources?.first(where: { $0 == currentInput.selectedDataSource })
-                if let activeDataSource = activeDataSource {
-                    print("✅ Using data source: \(activeDataSource.dataSourceName)")
-                } else {
-                    print("ℹ️ No specific data source selected, using default.")
-                }
-            }
-
+        // 1. Find the built-in microphone
+        guard let builtInMic = availableInputs.first(where: { $0.portType == .builtInMic }) else {
+            print("❌ No built-in mic found.")
             return
         }
 
-        print("⚠️ No current audio input found in route.")
+        print("🎤 Built-in mic found: \(builtInMic.portName)")
+
+        // 2. Look for the BOTTOM mic data source
+        let bottomNames = ["Bottom", "Back", "Primary Bottom", "Microphone (Bottom)"]
+
+        let bottomDataSource = builtInMic.dataSources?.first(where: {
+            bottomNames.contains($0.dataSourceName)
+        })
+
+        // 3. If found, set it
+        if let bottom = bottomDataSource {
+            print("✅ Selecting bottom microphone: \(bottom.dataSourceName)")
+            try session.setPreferredInput(builtInMic)
+            try builtInMic.setPreferredDataSource(bottom)
+        } else {
+            print("⚠️ Bottom microphone data source NOT found; using default.")
+            try session.setPreferredInput(builtInMic)
+        }
     }
+
 
     func getDocumentsDirectory() -> URL {
         return FileManager.default.urls(for: .documentDirectory, in: .userDomainMask) [0]

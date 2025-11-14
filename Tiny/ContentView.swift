@@ -6,15 +6,40 @@
 //
 
 import SwiftUI
-import Orb
 
-// MARK: - Updated ContentView with Enhanced Heartbeat Monitoring
 struct ContentView: View {
+    @StateObject var heartbeatSoundManager = HeartbeatSoundManager()
+    @State private var isListening = false
+    @State private var animateOrb = false
+
     var body: some View {
-        AnimatedOrbView()
-            .tabItem {
-                Label("Orb", systemImage: "apple.image.playground.fill")
+        GeometryReader { geometry in
+            ZStack {
+                // Background
+                Color.black.edgesIgnoringSafeArea(.all)
+
+                // Orb View
+                VStack {
+                    AnimatedOrbView()
+                        .frame(width: 200, height: 200)
+                        .scaleEffect(animateOrb ? 1.5 : 1)
+                        .offset(y: animateOrb ? geometry.size.height / 2 - 150 : 0)
+                        .onTapGesture(count: 2) {
+                            withAnimation(.interpolatingSpring(mass: 2, stiffness: 100, damping: 20)) {
+                                animateOrb.toggle()
+                                isListening.toggle()
+                                if isListening {
+                                    heartbeatSoundManager.start()
+                                } else {
+                                    heartbeatSoundManager.stop()
+                                }
+                            }
+                        }
+                }
+                .frame(width: geometry.size.width, height: geometry.size.height)
             }
+            .preferredColorScheme(.dark)
+        }
     }
 }
 
