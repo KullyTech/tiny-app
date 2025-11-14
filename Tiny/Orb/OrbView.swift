@@ -1,8 +1,13 @@
 //
-//  OrbView.swift
-//  Prototype-Orb
+// OrbView.swift
+// Tiny
 //
-//  Created by Siddhant Mehta on 2024-11-06.
+// Portions of this file are derived from “Orb” by Siddhant Mehta
+// Copyright (c) 2024 Siddhant Mehta
+// Licensed under the MIT License.
+// See: https://github.com/metasidd/Orb/blob/main/LICENSE
+//
+// Modifications made by Destu Cikal Ramdani on 2025-11-14.
 //
 
 import SwiftUI
@@ -33,16 +38,16 @@ public struct OrbView: View {
                     wavyBlobTwo
                 }
 
-                // Adds bright, energetic core glow animations
-                if config.showGlowEffects {
-                    coreGlowEffects(size: size)
-                }
+//                // Adds bright, energetic core glow animations
+//                if config.showGlowEffects {
+//                    coreGlowEffects(size: size)
+//                }
 
-                // Overlays floating particle effects for additional dynamism
-                if config.showParticles {
-                    particleView
-                        .frame(maxWidth: size, maxHeight: size)
-                }
+//                // Overlays floating particle effects for additional dynamism
+//                if config.showParticles {
+//                    particleView
+//                        .frame(maxWidth: size, maxHeight: size)
+//                }
             }
             // Orb outline for depth
             .overlay {

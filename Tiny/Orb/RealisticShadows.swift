@@ -1,9 +1,15 @@
 //
-//  RealisticShadows.swift
-//  Prototype-Orb
+// RealisticShadows.swift
+// Tiny
 //
-//  Created by Siddhant Mehta on 2024-11-06.
+// Portions of this file are derived from “Orb” by Siddhant Mehta
+// Copyright (c) 2024 Siddhant Mehta
+// Licensed under the MIT License.
+// See: https://github.com/metasidd/Orb/blob/main/LICENSE
 //
+// Modifications made by Destu Cikal Ramdani on 2025-11-14.
+//
+
 import SwiftUI
 
 struct RealisticShadowModifier: ViewModifier {

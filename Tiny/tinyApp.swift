@@ -9,9 +9,12 @@ import SwiftUI
 
 @main
 struct TinyApp: App {
+    @StateObject var heartbeatSoundManager = HeartbeatSoundManager()
+
     var body: some Scene {
         WindowGroup {
             ContentView()
+                .environmentObject(heartbeatSoundManager)
         }
     }
 }
