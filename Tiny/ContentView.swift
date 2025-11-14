@@ -51,23 +51,28 @@ struct ContentView: View {
 
                 // Orb View
                 VStack {
-                    AnimatedOrbView()
-                        .frame(width: 200, height: 200)
-                        .scaleEffect(animateOrb ? 1.5 : 1)
-                        .offset(y: animateOrb ? geometry.size.height / 2 - 150 : 0)
-                        .onTapGesture(count: 2) {
-                            withAnimation(.interpolatingSpring(mass: 2, stiffness: 100, damping: 20)) {
-                                animateOrb.toggle()
-                                isListening.toggle()
-                                if isListening {
-                                    heartbeatSoundManager.start()
-                                    heartbeatSoundManager.startRecording()
-                                } else {
-                                    heartbeatSoundManager.stopRecording()
-                                    heartbeatSoundManager.stop()
-                                }
+                    ZStack {
+                        AnimatedOrbView()
+                        if isListening {
+                            BokehEffectView(amplitude: $heartbeatSoundManager.blinkAmplitude)
+                        }
+                    }
+                    .frame(width: 200, height: 200)
+                    .scaleEffect(animateOrb ? 1.5 : 1)
+                    .offset(y: animateOrb ? geometry.size.height / 2 - 150 : 0)
+                    .onTapGesture(count: 2) {
+                        withAnimation(.interpolatingSpring(mass: 2, stiffness: 100, damping: 20)) {
+                            animateOrb.toggle()
+                            isListening.toggle()
+                            if isListening {
+                                heartbeatSoundManager.start()
+                                heartbeatSoundManager.startRecording()
+                            } else {
+                                heartbeatSoundManager.stopRecording()
+                                heartbeatSoundManager.stop()
                             }
                         }
+                    }
                 }
                 .frame(width: geometry.size.width, height: geometry.size.height)
 

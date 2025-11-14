@@ -57,6 +57,7 @@ class HeartbeatSoundManager: NSObject, ObservableObject {
     @Published var lastRecording: Recording?
     @Published var isPlayingPlayback = false
     @Published var amplitudeVal: Float = 0.0
+    @Published var blinkAmplitude: Float = 0.0
     @Published var gainVal: Float = 100.0
     @Published var currentBPM: Double = 0.0
     @Published var heartbeatData: [HeartbeatData] = []
@@ -259,6 +260,17 @@ class HeartbeatSoundManager: NSObject, ObservableObject {
     }
     
     private func processAmplitude(_ amplitude: Float) {
+        // --- New logic for blinkAmplitude ---
+        // Use the raw amplitude, but maybe apply a simple multiplier if it's too low.
+        // Let's also apply the noise gate to avoid blinking from pure noise.
+        let gatedAmplitude = applyNoiseGate(amplitude)
+        DispatchQueue.main.async {
+            // We can apply a multiplier to make the blink more sensitive.
+            // And clamp it to ensure it stays within a 0-1 range for the UI.
+            self.blinkAmplitude = min(gatedAmplitude * 5.0, 1.0)
+        }
+        // --- End of new logic ---
+        
         var processedAmplitude = amplitude
         
         // Apply noise gate to eliminate low-level noise
