@@ -29,29 +29,30 @@ struct CoachMarkView: View {
         }
         .task {
             // Start the animation loop when the view appears
-            await runDoubleTapLoop()
+            // The `try?` handles the cancellation error when the view disappears
+            try? await runDoubleTapLoop()
         }
     }
 
     // MARK: - Double Tap Animation Loop
-    func runDoubleTapLoop() async {
+    func runDoubleTapLoop() async throws {
         // Loop indefinitely
         while true {
             // --- Tap 1 ---
             iconState = 1
-            try? await Task.sleep(for: .milliseconds(200))
+            try await Task.sleep(for: .milliseconds(200))
 
             // --- Lift Up ---
             iconState = 0
-            try? await Task.sleep(for: .milliseconds(150))
+            try await Task.sleep(for: .milliseconds(150))
 
             // --- Tap 2 ---
             iconState = 2
-            try? await Task.sleep(for: .milliseconds(200))
+            try await Task.sleep(for: .milliseconds(200))
 
             // --- Rest ---
             iconState = 0
-            try? await Task.sleep(for: .milliseconds(800))
+            try await Task.sleep(for: .milliseconds(800))
         }
     }
 }
