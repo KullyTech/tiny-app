@@ -38,14 +38,16 @@ enum HeartbeatFilterMode {
 class HeartbeatSoundManager: NSObject, ObservableObject {
     var engine: AudioEngine!
     var mic: AudioEngine.InputNode?
-    var highPassFilter: HighPassFilter?
-    var lowPassFilter: LowPassFilter?
-    var secondaryLowPassFilter: LowPassFilter?
-    var bandPassFilter: BandPassFilter?
-    var peakLimiter: PeakLimiter?
-    var compressor: Compressor?
     var gain: Fader?
     var mixer: Mixer?
+    private let filterChainBuilder = AudioFilterChainBuilder()
+    
+    var highPassFilter: HighPassFilter? { filterChainBuilder.highPassFilter }
+    var lowPassFilter: LowPassFilter? { filterChainBuilder.lowPassFilter }
+    var secondaryLowPassFilter: LowPassFilter? { filterChainBuilder.secondaryLowPassFilter }
+    var bandPassFilter: BandPassFilter? { filterChainBuilder.bandPassFilter }
+    var peakLimiter: PeakLimiter? { filterChainBuilder.peakLimiter }
+    var compressor: Compressor? { filterChainBuilder.compressor }
     var amplitudeTap: AmplitudeTap?
     var fftTap: FFTTap?
     var recorder: NodeRecorder?
@@ -71,6 +73,8 @@ class HeartbeatSoundManager: NSObject, ObservableObject {
     @Published var spatialMode: Bool = true
     @Published var proximityGain: Float = 2.0
     @Published var noiseGateThreshold: Float = 0.005
+    
+    private let heartbeatDetector = HeartbeatDetector()
     
     override init() {
         super.init()
@@ -104,23 +108,38 @@ class HeartbeatSoundManager: NSObject, ObservableObject {
             let (lowFreq, highFreq) = getFilterFrequencies(for: filterMode)
             
             if spatialMode {
-                setupSpatialAudioChain(input: input, lowFreq: lowFreq, highFreq: highFreq)
+                filterChainBuilder.setupSpatialAudioChain(input: input, lowFreq: lowFreq, highFreq: highFreq)
             } else {
-                setupTraditionalFilterChain(input: input, lowFreq: lowFreq, highFreq: highFreq)
+                filterChainBuilder.setupTraditionalFilterChain(input: input, lowFreq: lowFreq, highFreq: highFreq, aggressiveFiltering: aggressiveFiltering)
             }
             
-            gain = Fader(secondaryLowPassFilter!)
+            guard let secondaryLowPass = filterChainBuilder.secondaryLowPassFilter else {
+                print("Error: Secondary low pass filter not initialized")
+                return
+            }
+            
+            gain = Fader(secondaryLowPass)
             gain?.gain = AUValue(gainVal)
             
-            mixer = Mixer(gain!)
+            guard let gainNode = gain else {
+                print("Error: Gain node not initialized")
+                return
+            }
             
-            amplitudeTap = AmplitudeTap(mixer!) { [weak self] amp in
+            mixer = Mixer(gainNode)
+            
+            guard let mixerNode = mixer else {
+                print("Error: Mixer node not initialized")
+                return
+            }
+            
+            amplitudeTap = AmplitudeTap(mixerNode) { [weak self] amp in
                 DispatchQueue.main.async {
                     self?.processAmplitude(amp)
                 }
             }
             
-            fftTap = FFTTap(mixer!) { [weak self] fftData in
+            fftTap = FFTTap(mixerNode) { [weak self] fftData in
                 DispatchQueue.main.async {
                     self?.processFFTData(fftData)
                 }
@@ -128,12 +147,12 @@ class HeartbeatSoundManager: NSObject, ObservableObject {
             
             recorder = nil
             do {
-                recorder = try NodeRecorder(node: gain!)
+                recorder = try NodeRecorder(node: gainNode)
             } catch {
                 print("Error creating recorder: \(error.localizedDescription)")
             }
             
-            engine.output = mixer
+            engine.output = mixerNode
             
             amplitudeTap?.start()
             fftTap?.start()
@@ -160,12 +179,12 @@ class HeartbeatSoundManager: NSObject, ObservableObject {
 
         mixer = nil
         gain = nil
-        peakLimiter = nil
-        compressor = nil
-        secondaryLowPassFilter = nil
-        lowPassFilter = nil
-        bandPassFilter = nil
-        highPassFilter = nil
+        filterChainBuilder.peakLimiter = nil
+        filterChainBuilder.compressor = nil
+        filterChainBuilder.secondaryLowPassFilter = nil
+        filterChainBuilder.lowPassFilter = nil
+        filterChainBuilder.bandPassFilter = nil
+        filterChainBuilder.highPassFilter = nil
         mic = nil
 
         engine.output = nil
@@ -232,9 +251,9 @@ class HeartbeatSoundManager: NSObject, ObservableObject {
     
     func updateBandpassRange(lowCutoff: Float, highCutoff: Float) {
         if spatialMode {
-            updateSpatialAudioChain(lowCutoff, highCutoff)
+            filterChainBuilder.updateSpatialAudioChain(lowCutoff, highCutoff)
         } else {
-            updateTraditionalFilterChain(lowCutoff, highCutoff)
+            filterChainBuilder.updateTraditionalFilterChain(lowCutoff, highCutoff, aggressiveFiltering: aggressiveFiltering)
         }
     }
     
@@ -260,16 +279,22 @@ class HeartbeatSoundManager: NSObject, ObservableObject {
     }
     
     private func processAmplitude(_ amplitude: Float) {
-        // --- New logic for blinkAmplitude ---
-        // Use the raw amplitude, but maybe apply a simple multiplier if it's too low.
-        // Let's also apply the noise gate to avoid blinking from pure noise.
+        // --- Updated logic for blinkAmplitude ---
+        // Only update blinkAmplitude if it's lower than the current value
+        // This allows heartbeat-triggered blinks to persist and decay naturally
+        // Apply noise gate to avoid blinking from pure noise
         let gatedAmplitude = applyNoiseGate(amplitude)
         DispatchQueue.main.async {
-            // We can apply a multiplier to make the blink more sensitive.
-            // And clamp it to ensure it stays within a 0-1 range for the UI.
-            self.blinkAmplitude = min(gatedAmplitude * 5.0, 1.0)
+            let newBlinkValue = min(gatedAmplitude * 5.0, 1.0)
+            // Only update if new value is higher, allowing heartbeat blinks to persist
+            if newBlinkValue > self.blinkAmplitude {
+                self.blinkAmplitude = newBlinkValue
+            } else {
+                // Allow natural decay
+                self.blinkAmplitude = max(self.blinkAmplitude * 0.95, newBlinkValue)
+            }
         }
-        // --- End of new logic ---
+        // --- End of updated logic ---
         
         var processedAmplitude = amplitude
         
@@ -302,74 +327,23 @@ class HeartbeatSoundManager: NSObject, ObservableObject {
     
     private func processFFTData(_ fftData: [Float]) {
         self.fftData = Array(fftData.prefix(128))
-        detectHeartbeatPattern()
-    }
-    
-    private func detectHeartbeatPattern() {
-        guard !fftData.isEmpty else { return }
         
-        let s1Range = 20...50
-        let s2Range = 50...80
-        
-        let s1Amplitude = calculateAverageAmplitude(in: s1Range)
-        let s2Amplitude = calculateAverageAmplitude(in: s2Range)
-        
-        let confidence = calculateHeartbeatConfidence(s1Amplitude: s1Amplitude, s2Amplitude: s2Amplitude)
-        
-        if confidence > 0.3 {
-            let bpm = estimateBPM()
-            let heartbeat = HeartbeatData(
-                timestamp: Date(),
-                bpm: bpm,
-                s1Amplitude: s1Amplitude,
-                s2Amplitude: s2Amplitude,
-                confidence: confidence
-            )
-            
+        if let heartbeat = heartbeatDetector.detectHeartbeat(from: self.fftData) {
             DispatchQueue.main.async {
                 self.heartbeatData.append(heartbeat)
                 if self.heartbeatData.count > 10 {
                     self.heartbeatData.removeFirst()
                 }
-                self.currentBPM = bpm
+                self.currentBPM = heartbeat.bpm
+                
+                // Update blinkAmplitude when heartbeat is detected
+                // Use S1 amplitude (the first, louder sound) to trigger brighter blink
+                // Scale it appropriately and combine with confidence for better visibility
+                let scaledS1 = min(heartbeat.s1Amplitude * 10.0, 1.0)
+                let confidenceBoost = heartbeat.confidence * 0.3
+                self.blinkAmplitude = min(scaledS1 + confidenceBoost, 1.0)
             }
         }
-    }
-    
-    private func calculateAverageAmplitude(in range: ClosedRange<Int>) -> Float {
-        guard fftData.count > range.upperBound else { return 0.0 }
-        
-        let startIndex = max(0, range.lowerBound)
-        let endIndex = min(fftData.count, range.upperBound)
-        
-        let slice = fftData[startIndex..<endIndex]
-        return slice.reduce(0, +) / Float(slice.count)
-    }
-    
-    private func calculateHeartbeatConfidence(s1Amplitude: Float, s2Amplitude: Float) -> Float {
-        let ratio = s2Amplitude / max(s1Amplitude, 0.001)
-        let idealRatio: Float = 0.6
-        let ratioScore = 1.0 - abs(ratio - idealRatio)
-        
-        let amplitudeScore = min(1.0, (s1Amplitude + s2Amplitude) / 2.0)
-        
-        return (ratioScore * 0.7 + amplitudeScore * 0.3)
-    }
-    
-    private func estimateBPM() -> Double {
-        guard heartbeatData.count >= 2 else { return 0.0 }
-        
-        let recentData = Array(heartbeatData.suffix(5))
-        guard recentData.count >= 2 else { return 0.0 }
-        
-        let timeDifferences = zip(recentData.dropFirst(), recentData.dropLast())
-            .map { newer, older in
-                newer.timestamp.timeIntervalSince(older.timestamp)
-            }
-        
-        let averageInterval = timeDifferences.reduce(0, +) / Double(timeDifferences.count)
-        
-        return averageInterval > 0 ? 60.0 / averageInterval : 0.0
     }
     
     private func applyNoiseGate(_ amplitude: Float) -> Float {
@@ -447,102 +421,6 @@ class HeartbeatSoundManager: NSObject, ObservableObject {
         proximityGain = gain
     }
     
-    private func setupSpatialAudioChain(input: AudioEngine.InputNode, lowFreq: Float, highFreq: Float) {
-        // Gentle high-pass to remove only extreme sub-bass
-        highPassFilter = HighPassFilter(input)
-        highPassFilter?.cutoffFrequency = AUValue(lowFreq)
-        highPassFilter?.resonance = AUValue(0.5) // Gentle resonance
-        
-        // Wide band-pass for natural sound preservation
-        bandPassFilter = BandPassFilter(highPassFilter!)
-        bandPassFilter?.centerFrequency = AUValue(500.0) // Center for voice/body sounds
-        bandPassFilter?.bandwidth = AUValue(highFreq - lowFreq)
-        
-        // Gentle low-pass to remove only extreme highs
-        lowPassFilter = LowPassFilter(bandPassFilter!)
-        lowPassFilter?.cutoffFrequency = AUValue(highFreq)
-        lowPassFilter?.resonance = AUValue(0.3) // Very gentle
-        
-        // Secondary gentle low-pass for smoothing
-        secondaryLowPassFilter = LowPassFilter(lowPassFilter!)
-        secondaryLowPassFilter?.cutoffFrequency = AUValue(highFreq)
-        secondaryLowPassFilter?.resonance = AUValue(0.1) // Minimal resonance
-        
-        // Gentle compression for proximity enhancement
-        compressor = Compressor(secondaryLowPassFilter!)
-        compressor?.threshold = AUValue(-18.0) // Higher threshold for natural sound
-        compressor?.headRoom = AUValue(6.0) // More headroom
-        compressor?.attackTime = AUValue(0.01) // Moderate attack
-        compressor?.releaseTime = AUValue(0.1) // Moderate release
-        compressor?.masterGain = AUValue(0.0)
-        
-        // Gentle peak limiting
-        peakLimiter = PeakLimiter(compressor!)
-        peakLimiter?.attackTime = AUValue(0.001) // Moderate attack
-        peakLimiter?.decayTime = AUValue(0.01) // Moderate decay
-        peakLimiter?.preGain = AUValue(0.0)
-    }
-    
-    private func setupTraditionalFilterChain(input: AudioEngine.InputNode, lowFreq: Float, highFreq: Float) {
-        let adjustedLowFreq = aggressiveFiltering ? max(lowFreq, 50.0) : lowFreq
-        
-        // Traditional aggressive filtering
-        highPassFilter = HighPassFilter(input)
-        highPassFilter?.cutoffFrequency = AUValue(adjustedLowFreq)
-        highPassFilter?.resonance = AUValue(0.7)
-        
-        bandPassFilter = BandPassFilter(highPassFilter!)
-        bandPassFilter?.centerFrequency = AUValue((adjustedLowFreq + highFreq) / 2.0)
-        bandPassFilter?.bandwidth = AUValue(highFreq - adjustedLowFreq)
-        
-        lowPassFilter = LowPassFilter(bandPassFilter!)
-        lowPassFilter?.cutoffFrequency = AUValue(highFreq)
-        lowPassFilter?.resonance = AUValue(0.5)
-        
-        secondaryLowPassFilter = LowPassFilter(lowPassFilter!)
-        secondaryLowPassFilter?.cutoffFrequency = AUValue(min(highFreq, 120.0))
-        secondaryLowPassFilter?.resonance = AUValue(0.1)
-        
-        compressor = Compressor(secondaryLowPassFilter!)
-        compressor?.threshold = AUValue(aggressiveFiltering ? -30.0 : -24.0)
-        compressor?.headRoom = AUValue(aggressiveFiltering ? 2.0 : 3.0)
-        compressor?.attackTime = AUValue(0.003)
-        compressor?.releaseTime = AUValue(0.05)
-        compressor?.masterGain = AUValue(0.0)
-        
-        peakLimiter = PeakLimiter(compressor!)
-        peakLimiter?.attackTime = AUValue(0.0005)
-        peakLimiter?.decayTime = AUValue(0.005)
-        peakLimiter?.preGain = AUValue(0.0)
-    }
-    
-    private func updateSpatialAudioChain(_ lowFreq: Float, _ highFreq: Float) {
-        highPassFilter?.cutoffFrequency = AUValue(lowFreq)
-        bandPassFilter?.centerFrequency = AUValue(500.0)
-        bandPassFilter?.bandwidth = AUValue(highFreq - lowFreq)
-        lowPassFilter?.cutoffFrequency = AUValue(highFreq)
-        secondaryLowPassFilter?.cutoffFrequency = AUValue(highFreq)
-        
-        compressor?.threshold = AUValue(-18.0)
-        compressor?.headRoom = AUValue(6.0)
-        compressor?.attackTime = AUValue(0.01)
-        compressor?.releaseTime = AUValue(0.1)
-    }
-    
-    private func updateTraditionalFilterChain(_ lowFreq: Float, _ highFreq: Float) {
-        let adjustedLowFreq = aggressiveFiltering ? max(lowFreq, 50.0) : lowFreq
-
-        highPassFilter?.cutoffFrequency = AUValue(adjustedLowFreq)
-        bandPassFilter?.centerFrequency = AUValue((adjustedLowFreq + highFreq) / 2.0)
-        bandPassFilter?.bandwidth = AUValue(highFreq - adjustedLowFreq)
-        lowPassFilter?.cutoffFrequency = AUValue(highFreq)
-        secondaryLowPassFilter?.cutoffFrequency = AUValue(min(highFreq, 120.0))
-
-        compressor?.threshold = AUValue(aggressiveFiltering ? -30.0 : -24.0)
-        compressor?.headRoom = AUValue(aggressiveFiltering ? 2.0 : 3.0)
-        compressor?.attackTime = AUValue(0.003)
-        compressor?.releaseTime = AUValue(0.05)
-    }
     
     func startRecording() {
         guard let recorder = recorder, !isRecording else { return }
@@ -670,8 +548,3 @@ class HeartbeatSoundManager: NSObject, ObservableObject {
         isRunning = false
     }
 }
-
-
-
-
-
