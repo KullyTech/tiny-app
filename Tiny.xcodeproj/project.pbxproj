@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		430725D62EC5C791006234D7 /* Orb in Frameworks */ = {isa = PBXBuildFile; productRef = 430725D52EC5C791006234D7 /* Orb */; };
 		DE5E9C862EB354B200485B15 /* AudioKit in Frameworks */ = {isa = PBXBuildFile; productRef = DE5E9C852EB354B200485B15 /* AudioKit */; };
 		DE5E9C882EB354B700485B15 /* AudioKitEX in Frameworks */ = {isa = PBXBuildFile; productRef = DE5E9C872EB354B700485B15 /* AudioKitEX */; };
 /* End PBXBuildFile section */
@@ -57,6 +58,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				430725D62EC5C791006234D7 /* Orb in Frameworks */,
 				DE5E9C862EB354B200485B15 /* AudioKit in Frameworks */,
 				DE5E9C882EB354B700485B15 /* AudioKitEX in Frameworks */,
 			);
@@ -130,6 +132,7 @@
 			packageProductDependencies = (
 				DE5E9C852EB354B200485B15 /* AudioKit */,
 				DE5E9C872EB354B700485B15 /* AudioKitEX */,
+				430725D52EC5C791006234D7 /* Orb */,
 			);
 			productName = tiny;
 			productReference = 433435C42EACD4E4004C6B8C /* Tiny.app */;
@@ -217,6 +220,7 @@
 			packageReferences = (
 				DEF686412EB33FA9004CC0C3 /* XCRemoteSwiftPackageReference "AudioKit" */,
 				DEF686422EB33FB2004CC0C3 /* XCRemoteSwiftPackageReference "AudioKitEX" */,
+				430725D42EC5C69D006234D7 /* XCRemoteSwiftPackageReference "Orb" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 433435C52EACD4E4004C6B8C /* Products */;
@@ -631,6 +635,14 @@
 /* End XCConfigurationList section */
 
 /* Begin XCRemoteSwiftPackageReference section */
+		430725D42EC5C69D006234D7 /* XCRemoteSwiftPackageReference "Orb" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/metasidd/Orb";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 0.2.0;
+			};
+		};
 		DEF686412EB33FA9004CC0C3 /* XCRemoteSwiftPackageReference "AudioKit" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/AudioKit/AudioKit.git";
@@ -650,6 +662,11 @@
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
+		430725D52EC5C791006234D7 /* Orb */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 430725D42EC5C69D006234D7 /* XCRemoteSwiftPackageReference "Orb" */;
+			productName = Orb;
+		};
 		DE5E9C852EB354B200485B15 /* AudioKit */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = DEF686412EB33FA9004CC0C3 /* XCRemoteSwiftPackageReference "AudioKit" */;
