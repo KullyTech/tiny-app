@@ -11,12 +11,30 @@ struct ContentView: View {
     @StateObject var heartbeatSoundManager = HeartbeatSoundManager()
     @State private var isListening = false
     @State private var animateOrb = false
+    @State private var showShareSheet = false
 
     var body: some View {
         GeometryReader { geometry in
             ZStack {
                 // Background
                 Color.black.edgesIgnoringSafeArea(.all)
+
+                // Share Button
+                VStack {
+                    HStack {
+                        Spacer()
+                        Button(action: {
+                            self.showShareSheet = true
+                        }) {
+                            Image(systemName: "square.and.arrow.up")
+                                .font(.title)
+                                .foregroundColor(.white)
+                        }
+                        .disabled(heartbeatSoundManager.lastRecording == nil)
+                        .padding()
+                    }
+                    Spacer()
+                }
 
                 // Orb View
                 VStack {
@@ -30,13 +48,27 @@ struct ContentView: View {
                                 isListening.toggle()
                                 if isListening {
                                     heartbeatSoundManager.start()
+                                    heartbeatSoundManager.startRecording()
                                 } else {
+                                    heartbeatSoundManager.stopRecording()
                                     heartbeatSoundManager.stop()
                                 }
                             }
                         }
                 }
                 .frame(width: geometry.size.width, height: geometry.size.height)
+
+                // Coach Mark
+                if !isListening {
+                    CoachMarkView()
+                        .position(x: geometry.size.width / 2, y: geometry.size.height / 2 + 250)
+                        .transition(.opacity)
+                }
+            }
+            .sheet(isPresented: $showShareSheet) {
+                if let lastRecordingURL = heartbeatSoundManager.lastRecording?.fileURL {
+                    ShareSheet(activityItems: [lastRecordingURL])
+                }
             }
             .preferredColorScheme(.dark)
         }

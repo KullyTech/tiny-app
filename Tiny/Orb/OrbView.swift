@@ -38,16 +38,16 @@ public struct OrbView: View {
                     wavyBlobTwo
                 }
 
-//                // Adds bright, energetic core glow animations
-//                if config.showGlowEffects {
-//                    coreGlowEffects(size: size)
-//                }
+                //                // Adds bright, energetic core glow animations
+                //                if config.showGlowEffects {
+                //                    coreGlowEffects(size: size)
+                //                }
 
-//                // Overlays floating particle effects for additional dynamism
-//                if config.showParticles {
-//                    particleView
-//                        .frame(maxWidth: size, maxHeight: size)
-//                }
+                //                // Overlays floating particle effects for additional dynamism
+                //                if config.showParticles {
+                //                    particleView
+                //                        .frame(maxWidth: size, maxHeight: size)
+                //                }
             }
             // Orb outline for depth
             .overlay {
@@ -113,7 +113,7 @@ public struct OrbView: View {
                 .mask {
                     WavyBlobView(color: .white, loopDuration: 60 / config.speed * 1.75)
                         .frame(maxWidth: size * 1.875)
-                        .offset(x: 0, y: size * 0.31)
+                        .offset(x: 0, y: size * 0.21)
                 }
                 .blur(radius: 1)
                 .blendMode(.plusLighter)
@@ -131,7 +131,7 @@ public struct OrbView: View {
                     WavyBlobView(color: .white, loopDuration: 60 / config.speed * 2.25)
                         .frame(maxWidth: size * 1.25)
                         .rotationEffect(.degrees(90))
-                        .offset(x: 0, y: size * -0.31)
+                        .offset(x: -20, y: size * -0.4)
                 }
                 .opacity(0.5)
                 .blur(radius: 1)

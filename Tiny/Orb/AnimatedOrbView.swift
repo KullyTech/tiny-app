@@ -13,7 +13,7 @@ import SwiftUI
 
 struct AnimatedOrbView: View {
     private let configuration = OrbConfiguration(
-        backgroundColors: [.yellow, .orange, .clear], // Custom gradient colors
+        backgroundColors: [.orange, .orange, .clear], // Custom gradient colors
         glowColor: .white,                            // Glow effect color
         coreGlowIntensity: 0.3,                       // Increased intensity for more visibility
         showBackground: true,                         // Toggle background visibility
