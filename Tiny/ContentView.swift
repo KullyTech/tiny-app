@@ -36,6 +36,19 @@ struct ContentView: View {
                     Spacer()
                 }
 
+                // Listening Text at Top
+                if isListening {
+                    VStack {
+                        Text("Listening...")
+                            .font(.title)
+                            .fontWeight(.bold)
+                            .foregroundColor(.white)
+                            .padding(.top, 50) // Top padding
+                        Spacer()
+                    }
+                    .transition(.opacity.animation(.easeInOut))
+                }
+
                 // Orb View
                 VStack {
                     AnimatedOrbView()
