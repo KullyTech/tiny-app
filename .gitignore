@@ -33,7 +33,7 @@ xcuserdata/
 *.xccheckout
 
 # Optional: ignore user data inside workspace or project files
-*.xcodeproj/project.xcworkspace/
+*.xcodeproj/project.xcworkspace/xcuserdata/
 *.xcodeproj/xcuserdata/
 *.xcworkspace/xcuserdata/
 
@@ -64,7 +64,7 @@ playground.xcworkspace
 # Keep Package.swift and Package.resolved if using dependency pinning.
 # - If you want reproducible builds, commit Package.resolved.
 # - If dependencies change often, you may ignore it.
-# Package.resolved
+!Package.resolved
 
 ############################################################
 # COCOAPODS (OPTIONAL)
