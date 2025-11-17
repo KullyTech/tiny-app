@@ -18,11 +18,11 @@ struct OrbLiveListenView: View {
                         Spacer()
                         Button(action: {
                             self.showShareSheet = true
-                        }) {
+                        }, label: {
                             Image(systemName: "square.and.arrow.up")
                                 .font(.title)
                                 .foregroundColor(.white)
-                        }
+                        })
                         .disabled(heartbeatSoundManager.lastRecording == nil)
                         .padding()
                     }

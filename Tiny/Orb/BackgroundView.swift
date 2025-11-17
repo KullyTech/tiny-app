@@ -31,10 +31,11 @@ struct RotatingGlowView: View {
     private let rotationSpeed: Double
     private let direction: RotationDirection
 
-    init(color: Color,
-         rotationSpeed: Double = 30,
-         direction: RotationDirection)
-    {
+    init(
+        color: Color,
+        rotationSpeed: Double = 30,
+        direction: RotationDirection
+    ) {
         self.color = color
         self.rotationSpeed = rotationSpeed
         self.direction = direction

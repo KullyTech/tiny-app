@@ -226,7 +226,13 @@ struct HeartbeatAnalysisTab: View {
                             }
                             
                             ProgressView(value: qualityPercentage / 100.0, total: 1.0)
-                                .progressViewStyle(LinearProgressViewStyle(tint: qualityPercentage > 70 ? .green : qualityPercentage > 40 ? .yellow : .red))
+                                .progressViewStyle(
+                                    LinearProgressViewStyle(
+                                    tint: qualityPercentage > 70 ?
+                                        .green : qualityPercentage > 40 ?
+                                        .yellow : .red
+                                    )
+                                )
                         }
                         .padding()
                         .background(Color.gray.opacity(0.05))

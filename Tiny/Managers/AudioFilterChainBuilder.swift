@@ -114,4 +114,3 @@ class AudioFilterChainBuilder {
         compressor?.releaseTime = AUValue(0.05)
     }
 }
-

@@ -64,7 +64,7 @@ struct HeartbeatAnalysisView: View {
                 ForEach(HeartbeatFilterMode.allCases, id: \.self) { mode in
                     Button(action: {
                         onFilterModeChange(mode)
-                    }) {
+                    }, label: {
                         VStack(spacing: 4) {
                             Text(mode.displayName)
                                 .font(.caption)
@@ -79,7 +79,7 @@ struct HeartbeatAnalysisView: View {
                         .background(filterMode == mode ? Color.blue : Color.gray.opacity(0.2))
                         .foregroundColor(filterMode == mode ? .white : .primary)
                         .cornerRadius(8)
-                    }
+                    })
                     .buttonStyle(PlainButtonStyle())
                 }
             }
@@ -253,12 +253,12 @@ extension HeartbeatFilterMode: CaseIterable {
 }
 
 #Preview {
-    @State var heartbeatData: [HeartbeatData] = [
+    @Previewable @State var heartbeatData: [HeartbeatData] = [
         HeartbeatData(timestamp: Date(), bpm: 72, s1Amplitude: 0.8, s2Amplitude: 0.5, confidence: 0.85),
         HeartbeatData(timestamp: Date().addingTimeInterval(-1), bpm: 74, s1Amplitude: 0.7, s2Amplitude: 0.4, confidence: 0.75)
     ]
-    @State var currentBPM: Double = 72
-    @State var filterMode: HeartbeatFilterMode = .standard
+    @Previewable @State var currentBPM: Double = 72
+    @Previewable @State var filterMode: HeartbeatFilterMode = .standard
     
     return HeartbeatAnalysisView(
         heartbeatData: $heartbeatData,

@@ -26,7 +26,7 @@ struct TestingLiveListenView: View {
             .foregroundColor(.secondary)
           Text(String(format: "%.3f", manager.amplitudeVal))
             .font(.system(size: 30, weight: .semibold, design: .monospaced))
-            .onChange(of: manager.amplitudeVal) { oldValue, newValue in
+            .onChange(of: manager.amplitudeVal) { _, newValue in
               print("UI received amplitude update: \(newValue)")
             }
 
@@ -84,19 +84,22 @@ struct TestingLiveListenView: View {
 
             Button(action: {
               manager.togglePlayback(recording: recording)
-            }) {
-              Label(manager.isPlayingPlayback ? "Stop Playback" : "Play Recording", systemImage: manager.isPlayingPlayback ? "stop.fill" : "play.fill")
+            }, label: {
+              Label(
+                manager.isPlayingPlayback ? "Stop Playback" : "Play Recording",
+                systemImage: manager.isPlayingPlayback ? "stop.fill" : "play.fill"
+              )
                 .font(.headline)
                 .foregroundColor(.white)
                 .frame(maxWidth: .infinity)
                 .padding()
                 .background(Color.orange)
                 .cornerRadius(15)
-            }
+            })
 
             Button(action: {
               self.showShareSheet = true
-            }) {
+            }, label: {
               Label("Share Recording", systemImage: "square.and.arrow.up")
                 .font(.headline)
                 .foregroundColor(.white)
@@ -104,7 +107,7 @@ struct TestingLiveListenView: View {
                 .padding()
                 .background(Color.accentColor)
                 .cornerRadius(15)
-            }
+            })
             .sheet(isPresented: $showShareSheet) {
               ShareSheet(activityItems: [recording.fileURL])
             }
@@ -124,7 +127,7 @@ struct TestingLiveListenView: View {
             } else {
               manager.startRecording()
             }
-          }) {
+          }, label: {
             Label(manager.isRecording ? "Stop Recording" : "Start Recording", systemImage: "mic.circle.fill")
               .font(.headline)
               .foregroundColor(.white)
@@ -132,14 +135,14 @@ struct TestingLiveListenView: View {
               .padding()
               .background(manager.isRecording ? Color.yellow.opacity(0.8) : Color.blue)
               .cornerRadius(15)
-          }
+          })
           .disabled(!manager.isRunning)
 
           // Main control buttons
           HStack(spacing: 20) {
             Button(action: {
               manager.start()
-            }) {
+            }, label: {
               Label("Start", systemImage: "play.fill")
                 .font(.headline)
                 .foregroundColor(.white)
@@ -147,12 +150,12 @@ struct TestingLiveListenView: View {
                 .padding()
                 .background(Color.green)
                 .cornerRadius(15)
-            }
+            })
             .disabled(manager.isRunning)
 
             Button(action: {
               manager.stop()
-            }) {
+            }, label: {
               Label("Stop", systemImage: "stop.fill")
                 .font(.headline)
                 .foregroundColor(.white)
@@ -160,7 +163,7 @@ struct TestingLiveListenView: View {
                 .padding()
                 .background(Color.red)
                 .cornerRadius(15)
-            }
+            })
             .disabled(!manager.isRunning)
           }
         }

@@ -7,6 +7,7 @@
 
 import SwiftUI
 
+// swiftlint:disable type_body_length
 struct EnhancedLiveListenView: View {
     @StateObject private var manager = HeartbeatSoundManager()
     @StateObject private var bluetoothManager = BluetoothManager()
@@ -32,9 +33,9 @@ struct EnhancedLiveListenView: View {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button(action: {
                         showAdvancedSettings.toggle()
-                    }) {
+                    }, label: {
                         Image(systemName: "gearshape.fill")
-                    }
+                    })
                 }
             }
             .sheet(isPresented: $showAdvancedSettings) {
@@ -181,7 +182,7 @@ struct EnhancedLiveListenView: View {
             HStack(spacing: 15) {
                 Button(action: {
                     manager.start()
-                }) {
+                }, label: {
                     Label("Start", systemImage: "play.fill")
                         .font(.headline)
                         .foregroundColor(.white)
@@ -189,12 +190,12 @@ struct EnhancedLiveListenView: View {
                         .padding()
                         .background(Color.green)
                         .cornerRadius(15)
-                }
+                })
                 .disabled(manager.isRunning)
                 
                 Button(action: {
                     manager.stop()
-                }) {
+                }, label: {
                     Label("Stop", systemImage: "stop.fill")
                         .font(.headline)
                         .foregroundColor(.white)
@@ -202,7 +203,7 @@ struct EnhancedLiveListenView: View {
                         .padding()
                         .background(Color.red)
                         .cornerRadius(15)
-                }
+                })
                 .disabled(!manager.isRunning)
             }
         }
@@ -217,7 +218,7 @@ struct EnhancedLiveListenView: View {
                 } else {
                     manager.startRecording()
                 }
-            }) {
+            }, label: {
                 Label(manager.isRecording ? "Stop Recording" : "Start Recording", systemImage: "mic.circle.fill")
                     .font(.headline)
                     .foregroundColor(.white)
@@ -225,7 +226,7 @@ struct EnhancedLiveListenView: View {
                     .padding()
                     .background(manager.isRecording ? Color.orange : Color.blue)
                     .cornerRadius(15)
-            }
+            })
             .disabled(!manager.isRunning)
             
             // Last recording playback
@@ -241,7 +242,7 @@ struct EnhancedLiveListenView: View {
                     HStack(spacing: 10) {
                         Button(action: {
                             manager.togglePlayback(recording: recording)
-                        }) {
+                        }, label: {
                             Label(manager.isPlayingPlayback ? "Stop" : "Play", systemImage: manager.isPlayingPlayback ? "stop.fill" : "play.fill")
                                 .font(.subheadline)
                                 .foregroundColor(.white)
@@ -249,11 +250,11 @@ struct EnhancedLiveListenView: View {
                                 .padding()
                                 .background(Color.orange)
                                 .cornerRadius(10)
-                        }
-                        
+                        })
+
                         Button(action: {
                             showShareSheet = true
-                        }) {
+                        }, label: {
                             Label("Share", systemImage: "square.and.arrow.up")
                                 .font(.subheadline)
                                 .foregroundColor(.white)
@@ -261,7 +262,7 @@ struct EnhancedLiveListenView: View {
                                 .padding()
                                 .background(Color.accentColor)
                                 .cornerRadius(10)
-                        }
+                        })
                     }
                 }
                 .padding()
@@ -276,109 +277,117 @@ struct EnhancedLiveListenView: View {
     
     private var advancedSettingsSection: some View {
         VStack(spacing: 12) {
-            HStack {
-                Text("Noise Reduction")
-                    .font(.subheadline)
-                Spacer()
-                Toggle("", isOn: Binding(
-                    get: { manager.noiseReductionEnabled },
-                    set: { _ in manager.toggleNoiseReduction() }
-                ))
-            }
-            
-            HStack {
-                Text("Adaptive Gain")
-                    .font(.subheadline)
-                Spacer()
-                Toggle("", isOn: Binding(
-                    get: { manager.adaptiveGainEnabled },
-                    set: { _ in manager.toggleAdaptiveGain() }
-                ))
-            }
-            
-            HStack {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("Spatial Mode")
+
+            // === settings toggles ===
+            VStack(spacing: 12) {
+                HStack {
+                    Text("Noise Reduction")
                         .font(.subheadline)
-                    Text("Enhanced proximity audio")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
+                    Spacer()
+                    Toggle("", isOn: Binding(
+                        get: { manager.noiseReductionEnabled },
+                        set: { _ in manager.toggleNoiseReduction() }
+                    ))
                 }
-                Spacer()
-                Toggle("", isOn: Binding(
-                    get: { manager.spatialMode },
-                    set: { _ in manager.toggleSpatialMode() }
-                ))
-            }
-            
-            if manager.spatialMode {
+
+                HStack {
+                    Text("Adaptive Gain")
+                        .font(.subheadline)
+                    Spacer()
+                    Toggle("", isOn: Binding(
+                        get: { manager.adaptiveGainEnabled },
+                        set: { _ in manager.toggleAdaptiveGain() }
+                    ))
+                }
+
                 HStack {
                     VStack(alignment: .leading, spacing: 2) {
-                        Text("Proximity Gain")
+                        Text("Spatial Mode")
                             .font(.subheadline)
-                        Text("Boost close sounds")
+                        Text("Enhanced proximity audio")
                             .font(.caption)
                             .foregroundColor(.secondary)
                     }
                     Spacer()
-                    Text(String(format: "%.1fx", manager.proximityGain))
-                        .font(.caption)
-                        .foregroundColor(.blue)
+                    Toggle("", isOn: Binding(
+                        get: { manager.spatialMode },
+                        set: { _ in manager.toggleSpatialMode() }
+                    ))
+                }
+
+                if manager.spatialMode {
+                    HStack {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("Proximity Gain")
+                                .font(.subheadline)
+                            Text("Boost close sounds")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                        }
+                        Spacer()
+                        Text(String(format: "%.1fx", manager.proximityGain))
+                            .font(.caption)
+                            .foregroundColor(.blue)
+                    }
+                }
+
+                VStack(alignment: .leading, spacing: 8) {
+                    HStack {
+                        Text("Noise Gate")
+                            .font(.subheadline)
+                        Spacer()
+                        Text(String(format: "%.3f", manager.noiseGateThreshold))
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
+
+                    Slider(
+                        value: Binding(
+                            get: { manager.noiseGateThreshold },
+                            set: { manager.updateNoiseGateThreshold($0) }
+                        ),
+                        in: 0.001...0.1,
+                        step: 0.001
+                    )
+                    .accentColor(.orange)
+
+                    HStack {
+                        Text("Silent")
+                            .font(.caption)
+                        Spacer()
+                        Text("Sensitive")
+                            .font(.caption)
+                    }
+                    .foregroundColor(.secondary)
                 }
             }
-            
-            VStack(alignment: .leading, spacing: 8) {
-                HStack {
-                    Text("Noise Gate")
-                        .font(.subheadline)
-                    Spacer()
-                    Text(String(format: "%.3f", manager.noiseGateThreshold))
-                        .font(.caption)
-                        .foregroundColor(.secondary)
+
+            // === spatial preset button ===
+            Button(
+                action: {
+                    manager.setFilterMode(.spatial)
+                    manager.toggleSpatialMode()
+                    manager.updateProximityGain(3.0)
+                    manager.updateNoiseGateThreshold(0.005)
+                },
+                label: {
+                    HStack {
+                        Image(systemName: "waveform.and.person.filled")
+                        Text("Apply Spatial Audio Preset")
+                    }
+                    .font(.subheadline)
+                    .foregroundColor(.white)
+                    .frame(maxWidth: .infinity)
+                    .padding()
+                    .background(Color.blue)
+                    .cornerRadius(10)
                 }
-                
-                Slider(value: Binding(
-                    get: { manager.noiseGateThreshold },
-                    set: { manager.updateNoiseGateThreshold($0) }
-                ),
-                in: 0.001...0.1,
-                step: 0.001)
-                .accentColor(.orange)
-                
-                HStack {
-                    Text("Silent")
-                        .font(.caption)
-                    Spacer()
-                    Text("Sensitive")
-                        .font(.caption)
-                }
-                .foregroundColor(.secondary)
-            }
-        }
-        .padding()
-        .background(Color.secondary.opacity(0.1))
-        .cornerRadius(15)
-        
-        // Quick noise reduction preset
-        return Button(action: {
-            manager.setFilterMode(.spatial)
-            manager.toggleSpatialMode()
-            manager.updateProximityGain(3.0)
-            manager.updateNoiseGateThreshold(0.005)
-        }) {
-            HStack {
-                Image(systemName: "waveform.and.person.filled")
-                Text("Apply Spatial Audio Preset")
-            }
-            .font(.subheadline)
-            .foregroundColor(.white)
-            .frame(maxWidth: .infinity)
-            .padding()
-            .background(Color.blue)
-            .cornerRadius(10)
+            )
         }
     }
+
 }
+// swiftlint:enable type_body_length
 
 struct AdvancedSettingsView: View {
     @ObservedObject var manager: HeartbeatSoundManager
@@ -396,7 +405,7 @@ struct AdvancedSettingsView: View {
                     ForEach(HeartbeatFilterMode.allCases, id: \.self) { mode in
                         Button(action: {
                             manager.setFilterMode(mode)
-                        }) {
+                        }, label: {
                             HStack {
                                 VStack(alignment: .leading, spacing: 2) {
                                     Text(mode.displayName)
@@ -417,7 +426,7 @@ struct AdvancedSettingsView: View {
                             .padding()
                             .background(manager.filterMode == mode ? Color.blue.opacity(0.1) : Color.gray.opacity(0.05))
                             .cornerRadius(10)
-                        }
+                        })
                         .buttonStyle(PlainButtonStyle())
                     }
                 }
@@ -441,11 +450,11 @@ struct AdvancedSettingsView: View {
                         
                         Button(action: {
                             bluetoothManager.refreshConnectionStatus()
-                        }) {
+                        }, label: {
                             Image(systemName: "arrow.clockwise")
                                 .font(.subheadline)
                                 .foregroundColor(.blue)
-                        }
+                        })
                     }
                     
                     if bluetoothManager.isLiveListenActive {
@@ -461,14 +470,14 @@ struct AdvancedSettingsView: View {
                     
                     Button(action: {
                         bluetoothManager.requestBluetoothPermission()
-                    }) {
+                    }, label: {
                         HStack {
                             Image(systemName: "bluetooth")
                             Text("Configure Bluetooth")
                         }
                         .font(.subheadline)
                         .foregroundColor(.blue)
-                    }
+                    })
                 }
                 
                 // Signal Processing Options
@@ -503,7 +512,7 @@ struct AdvancedSettingsView: View {
                     manager.toggleSpatialMode()
                     manager.updateProximityGain(3.0)
                     manager.updateNoiseGateThreshold(0.005)
-                }) {
+                }, label: {
                     HStack {
                         Image(systemName: "waveform.and.person.filled")
                         Text("Apply Spatial Audio Preset")
@@ -514,7 +523,7 @@ struct AdvancedSettingsView: View {
                     .padding()
                     .background(Color.blue)
                     .cornerRadius(10)
-                }
+                })
                 
                 Spacer()
             }

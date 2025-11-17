@@ -60,7 +60,7 @@ struct HeartbeatDataAnalysisView: View {
                 ForEach(TimeRange.allCases, id: \.self) { range in
                     Button(action: {
                         selectedTimeRange = range
-                    }) {
+                    }, label: {
                         Text(range.rawValue)
                             .font(.caption)
                             .fontWeight(.medium)
@@ -69,7 +69,7 @@ struct HeartbeatDataAnalysisView: View {
                             .background(selectedTimeRange == range ? Color.blue : Color.gray.opacity(0.2))
                             .foregroundColor(selectedTimeRange == range ? .white : .primary)
                             .cornerRadius(6)
-                    }
+                    })
                     .buttonStyle(PlainButtonStyle())
                 }
             }
@@ -84,7 +84,7 @@ struct HeartbeatDataAnalysisView: View {
             
             if filteredData.count > 1 {
                 Chart {
-                    ForEach(Array(filteredData.enumerated()), id: \.offset) { index, data in
+                    ForEach(Array(filteredData.enumerated()), id: \.offset) { _, data in
                         LineMark(
                             x: .value("Time", data.timestamp),
                             y: .value("BPM", data.bpm)
@@ -102,7 +102,7 @@ struct HeartbeatDataAnalysisView: View {
                 }
                 .frame(height: 200)
                 .chartXAxis {
-                    AxisMarks(values: .automatic) { value in
+                    AxisMarks(values: .automatic) { _ in
                         AxisGridLine()
                         AxisValueLabel(format: .dateTime.hour().minute())
                     }
@@ -375,14 +375,14 @@ struct StatCard: View {
 }
 
 #Preview {
-    @State var heartbeatData: [HeartbeatData] = [
+    @Previewable @State var heartbeatData: [HeartbeatData] = [
         HeartbeatData(timestamp: Date().addingTimeInterval(-300), bpm: 72, s1Amplitude: 0.8, s2Amplitude: 0.5, confidence: 0.85),
         HeartbeatData(timestamp: Date().addingTimeInterval(-240), bpm: 74, s1Amplitude: 0.7, s2Amplitude: 0.4, confidence: 0.75),
         HeartbeatData(timestamp: Date().addingTimeInterval(-180), bpm: 71, s1Amplitude: 0.9, s2Amplitude: 0.6, confidence: 0.90),
         HeartbeatData(timestamp: Date().addingTimeInterval(-120), bpm: 73, s1Amplitude: 0.6, s2Amplitude: 0.3, confidence: 0.65),
         HeartbeatData(timestamp: Date().addingTimeInterval(-60), bpm: 75, s1Amplitude: 0.8, s2Amplitude: 0.5, confidence: 0.80)
     ]
-    @State var currentBPM: Double = 75
+    @Previewable @State var currentBPM: Double = 75
     
     return HeartbeatDataAnalysisView(
         heartbeatData: $heartbeatData,

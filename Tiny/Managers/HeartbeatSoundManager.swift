@@ -35,6 +35,7 @@ enum HeartbeatFilterMode {
     case spatial
 }
 
+// swiftlint:disable type_body_length
 class HeartbeatSoundManager: NSObject, ObservableObject {
     var engine: AudioEngine!
     var mic: AudioEngine.InputNode?
@@ -207,8 +208,8 @@ class HeartbeatSoundManager: NSObject, ObservableObject {
 
             if let dataSources = input.dataSources, !dataSources.isEmpty {
                 print("Data sources for \(input.portName):")
-                for ds in dataSources {
-                    print("    • \(ds.dataSourceName)")
+                for dataSource in dataSources {
+                    print("    • \(dataSource.dataSourceName)")
                 }
             }
         }
@@ -238,7 +239,6 @@ class HeartbeatSoundManager: NSObject, ObservableObject {
             try session.setPreferredInput(builtInMic)
         }
     }
-
 
     func getDocumentsDirectory() -> URL {
         return FileManager.default.urls(for: .documentDirectory, in: .userDomainMask) [0]
@@ -387,7 +387,6 @@ class HeartbeatSoundManager: NSObject, ObservableObject {
         return amplitude * clampedGain * (spatialMode ? proximityGain : 1.0)
     }
 
-
     func toggleNoiseReduction() {
         noiseReductionEnabled.toggle()
     }
@@ -420,7 +419,6 @@ class HeartbeatSoundManager: NSObject, ObservableObject {
     func updateProximityGain(_ gain: Float) {
         proximityGain = gain
     }
-    
     
     func startRecording() {
         guard let recorder = recorder, !isRecording else { return }
@@ -548,3 +546,4 @@ class HeartbeatSoundManager: NSObject, ObservableObject {
         isRunning = false
     }
 }
+// swiftlint:enable type_body_length

@@ -136,6 +136,7 @@ struct AudioVisualizationView: View {
     
     private var amplitudeWidth: CGFloat {
         let normalizedAmplitude = min(1.0, max(0.0, amplitude / 0.5))
+        // ignore
         return CGFloat(normalizedAmplitude) * UIScreen.main.bounds.width - 40
     }
     
@@ -151,9 +152,12 @@ struct AudioVisualizationView: View {
 }
 
 #Preview {
-    @State var fftData = Array(repeating: Float.random(in: 0...1), count: 128)
-    @State var amplitude: Float = 0.3
-    @State var signalQuality: Float = 0.7
+    @Previewable @State var fftData = Array(
+        repeating: Float.random(in: 0...1),
+        count: 128
+    )
+    @Previewable @State var amplitude: Float = 0.3
+    @Previewable @State var signalQuality: Float = 0.7
     
     return AudioVisualizationView(
         fftData: $fftData,

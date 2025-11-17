@@ -120,8 +120,7 @@ class ParticleScene: SKScene {
         let size = CGSize(width: 8, height: 8)  // Smaller size for better performance
         let renderer = UIGraphicsImageRenderer(size: size)
 
-        let image = renderer.image { context in
-            // Simple filled white circle
+        let image = renderer.image { _ in
             UIColor.white.setFill()
             let circlePath = UIBezierPath(ovalIn: CGRect(origin: .zero, size: size))
             circlePath.fill()

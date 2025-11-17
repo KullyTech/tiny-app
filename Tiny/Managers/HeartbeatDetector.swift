@@ -79,4 +79,3 @@ class HeartbeatDetector {
         return averageInterval > 0 ? 60.0 / averageInterval : 0.0
     }
 }
-
