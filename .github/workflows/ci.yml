@@ -9,7 +9,7 @@ on:
 jobs:
   swiftlint:
     name: SwiftLint
-    runs-on: macos-latest
+    runs-on: macos-26
     
     steps:
     - name: Checkout code
@@ -23,7 +23,7 @@ jobs:
 
   build:
     name: Build
-    runs-on: macos-latest
+    runs-on: macos-26
     needs: swiftlint
     
     steps:
@@ -31,13 +31,18 @@ jobs:
       uses: actions/checkout@v4
       
     - name: Select Xcode version
-      run: sudo xcode-select -s /Applications/Xcode_16.0.app/Contents/Developer
+      run: sudo xcode-select -s /Applications/Xcode_26.0.app/Contents/Developer
+
+    - name: Resolve Swift packages
+      run: |
+        xcodebuild -resolvePackageDependencies \
+        -project Tiny.xcodeproj
       
     - name: Build
       run: |
         xcodebuild clean build \
-          -project tiny.xcodeproj \
-          -target tiny \
+          -project Tiny.xcodeproj \
+          -scheme Tiny \
           -destination 'generic/platform=iOS Simulator' \
           CODE_SIGN_IDENTITY="" \
           CODE_SIGNING_REQUIRED=NO
