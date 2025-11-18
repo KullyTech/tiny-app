@@ -51,7 +51,7 @@ public struct OrbConfiguration {
     }
 
     public init(
-        backgroundColors: [Color] = [.green, .blue, .pink],
+        backgroundColors: [Color] = [.orange, .orange, .clear],
         glowColor: Color = .white,
         coreGlowIntensity: Double = 1.0,
         showBackground: Bool = true,
