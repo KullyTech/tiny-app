@@ -2,6 +2,7 @@ import SwiftUI
 
 struct OrbLiveListenView: View {
     @StateObject var heartbeatSoundManager = HeartbeatSoundManager()
+    @StateObject private var physicsController = OrbPhysicsController()
     @State private var isListening = false
     @State private var animateOrb = false
     @State private var showShareSheet = false
@@ -14,8 +15,8 @@ struct OrbLiveListenView: View {
 
                 Image("background")
                     .resizable()
-                    .scaleEffect(isListening ? 1.4 : 1.0)   // zoom in
-                    .animation(.easeInOut(duration: 1.6), value: isListening)
+                    .scaleEffect(isListening ? 1.2 : 1.0)   // zoom in
+                    .animation(.easeInOut(duration: 1.2), value: isListening)
                     .ignoresSafeArea()
 
                 // Share Button
@@ -54,6 +55,13 @@ struct OrbLiveListenView: View {
                         AnimatedOrbView()
                         if isListening {
                             BokehEffectView(amplitude: $heartbeatSoundManager.blinkAmplitude)
+                            .scaleEffect(x: physicsController.scaleX, y: physicsController.scaleY)
+                            .offset(x: physicsController.offsetX, y: physicsController.offsetY)
+                            .rotationEffect(.degrees(physicsController.rotation))
+                            .onAppear {
+                                physicsController.startPhysics()
+                            }
+                            .frame(width: 18, height: 18)
                         }
                     }
                     .frame(width: 200, height: 200)
