@@ -52,21 +52,21 @@ extension OrbLiveListenView {
         VStack {
             HStack {
                 if isPlaybackMode {
-                    Button(action: handleBackButton) {
+                    Button(action: handleBackButton, label: {
                         Image(systemName: "chevron.left")
                             .font(.title)
                             .foregroundColor(.white)
-                    }
+                    })
                     .transition(.opacity.animation(.easeInOut))
                 }
                 
                 Spacer()
                 
-                Button(action: { showShareSheet = true }) {
+                Button(action: { showShareSheet = true }, label: {
                     Image(systemName: "square.and.arrow.up")
                         .font(.title)
                         .foregroundColor(.white)
-                }
+                })
                 .disabled(heartbeatSoundManager.lastRecording == nil)
             }
             .padding()
@@ -147,9 +147,11 @@ extension OrbLiveListenView {
     private var coachMarkView: some View {
         Group {
             if !isListening && !isPlaybackMode {
-                CoachMarkView()
-                    .position(x: UIScreen.main.bounds.width / 2, y: UIScreen.main.bounds.height / 2 + 250)
-                    .transition(.opacity)
+                GeometryReader { proxy in
+                    CoachMarkView()
+                        .position(x: proxy.size.width / 2, y: proxy.size.height / 2 + 250)
+                }
+                .transition(.opacity)
             }
         }
     }
@@ -210,7 +212,11 @@ extension OrbLiveListenView {
     
     private func handleLongPressChange(pressing: Bool) {
         guard isListening else { return }
-        pressing ? startLongPressCountdown() : cancelLongPressCountdown()
+        if pressing {
+            startLongPressCountdown()
+        } else {
+            cancelLongPressCountdown()
+        }
     }
     
     private func startLongPressCountdown() {
@@ -260,3 +266,4 @@ extension OrbLiveListenView {
 #Preview {
     OrbLiveListenView()
 }
+
