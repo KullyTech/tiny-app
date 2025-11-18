@@ -27,13 +27,13 @@ class AudioPostProcessingManager: ObservableObject {
     }
 
     func setupEQChain(input: Node) -> Node {
-        let eq = ParametricEQ(input,
+        let parametricEQNode = ParametricEQ(input,
                               centerFreq: 200.0,
                               q: 1.70,
                               gain: 20.3)
-        self.parametricEQ = eq
+        self.parametricEQ = parametricEQNode
         
-        let shelf = HighShelfFilter(eq,
+        let shelf = HighShelfFilter(parametricEQNode,
                                     cutOffFrequency: 10000.0,
                                     gain: -10.0)
         self.highShelfFilter = shelf
