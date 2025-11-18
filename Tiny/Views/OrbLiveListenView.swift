@@ -12,6 +12,12 @@ struct OrbLiveListenView: View {
                 // Background
                 Color.black.edgesIgnoringSafeArea(.all)
 
+                Image("background")
+                    .resizable()
+                    .scaleEffect(isListening ? 1.4 : 1.0)   // zoom in
+                    .animation(.easeInOut(duration: 1.6), value: isListening)
+                    .ignoresSafeArea()
+
                 // Share Button
                 VStack {
                     HStack {
