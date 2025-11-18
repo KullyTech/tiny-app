@@ -163,4 +163,3 @@ struct AudioVisualizationView: View {
         signalQuality: $signalQuality
     )
 }
-
