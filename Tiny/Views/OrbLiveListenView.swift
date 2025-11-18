@@ -8,6 +8,12 @@ struct OrbLiveListenView: View {
     @State private var animateOrb = false
     @State private var showShareSheet = false
     @State private var isPlaybackMode = false
+    
+    // Long press countdown states
+    @State private var isLongPressing = false
+    @State private var longPressCountdown = 3
+    @State private var longPressTimer: Timer?
+    @State private var longPressScale: CGFloat = 1.0
 
     var body: some View {
         GeometryReader { geometry in
@@ -36,7 +42,7 @@ struct OrbLiveListenView: View {
                     Spacer()
                 }
 
-                if isListening {
+                if isListening && !isLongPressing {
                     VStack {
                         Text("Listening...")
                             .font(.title)
@@ -63,6 +69,16 @@ struct OrbLiveListenView: View {
                             .padding(.top, 10)
                         }
                         
+                        Spacer()
+                    }
+                    .transition(.opacity.animation(.easeInOut))
+                }
+
+                // Countdown text overlay
+                if isListening && isLongPressing {
+                    VStack {
+                        CountdownTextView(countdown: longPressCountdown, isVisible: isLongPressing)
+                            .padding(.top, 50)
                         Spacer()
                     }
                     .transition(.opacity.animation(.easeInOut))
@@ -96,19 +112,37 @@ struct OrbLiveListenView: View {
                     .frame(width: 200, height: 200)
                     .opacity(isPlaybackMode ? (audioPostProcessingManager.isPlaying ? 1.0 : 0.4) : 1.0)
                     .scaleEffect(
-                        isPlaybackMode ? 
-                            (audioPostProcessingManager.isPlaying ? 1.15 : 0.8) : 
-                            (animateOrb ? 1.5 : 1.0)
+                        isListening ? 
+                            (isLongPressing ? (animateOrb ? 1.6 : 1.1) * longPressScale : (animateOrb ? 1.5 : 1.0)) :
+                            isPlaybackMode ? 
+                                (audioPostProcessingManager.isPlaying ? 1.15 : 0.8) : 
+                                1.0
                     )
                     .animation(.easeInOut(duration: 0.5), value: audioPostProcessingManager.isPlaying)
                     .animation(.interpolatingSpring(mass: 2, stiffness: 100, damping: 20), value: animateOrb)
+                    .animation(.easeInOut(duration: 0.2), value: longPressScale)
                     .offset(y: getOrbOffset(geometry: geometry))
                     .onTapGesture(count: 2) {
-                        handleDoubleTap()
+                        if !isLongPressing {
+                            handleDoubleTap()
+                        }
                     }
                     .onTapGesture(count: 1) {
-                        handleSingleTap()
+                        if !isLongPressing {
+                            handleSingleTap()
+                        }
                     }
+                    .onLongPressGesture(
+                        minimumDuration: 3.0,
+                        maximumDistance: 50,
+                        perform: {
+                            // Long press completed - stop listening
+                            handleLongPressComplete()
+                        },
+                        onPressingChanged: { pressing in
+                            handleLongPressChange(pressing: pressing)
+                        }
+                    )
                 }
                 .frame(width: geometry.size.width, height: geometry.size.height)
 
@@ -138,17 +172,8 @@ struct OrbLiveListenView: View {
     }
     
     private func handleDoubleTap() {
-        if isListening {
-            withAnimation(.interpolatingSpring(mass: 2, stiffness: 100, damping: 20)) {
-                isListening = false
-                animateOrb = false
-                isPlaybackMode = true
-            }
-            
-            heartbeatSoundManager.stopRecording()
-            heartbeatSoundManager.stop()
-            
-        } else if isPlaybackMode {
+        // Remove the listening session stop logic from double tap
+        if isPlaybackMode {
             audioPostProcessingManager.stop()
             
             withAnimation(.interpolatingSpring(mass: 2, stiffness: 100, damping: 20)) {
@@ -160,7 +185,8 @@ struct OrbLiveListenView: View {
             heartbeatSoundManager.start()
             heartbeatSoundManager.startRecording()
             
-        } else if !isPlaybackMode {
+        } else if !isListening && !isPlaybackMode {
+            // Only allow starting listening session from idle state
             withAnimation(.interpolatingSpring(mass: 2, stiffness: 100, damping: 20)) {
                 animateOrb = true
                 isListening = true
@@ -182,12 +208,82 @@ struct OrbLiveListenView: View {
                 audioPostProcessingManager.pause()
             } else {
                 if audioPostProcessingManager.currentTime > 0 && audioPostProcessingManager.duration > 0 {
+                    // Resume from paused state
                     audioPostProcessingManager.resume()
                 } else {
+                    // Load and play fresh
                     audioPostProcessingManager.loadAndPlay(fileURL: lastRecording.fileURL)
                 }
             }
         }
+    }
+    
+    // MARK: - Long Press Handling
+    
+    private func handleLongPressChange(pressing: Bool) {
+        if isListening {
+            if pressing {
+                startLongPressCountdown()
+            } else {
+                cancelLongPressCountdown()
+            }
+        }
+    }
+    
+    private func startLongPressCountdown() {
+        isLongPressing = true
+        longPressCountdown = 3
+        longPressScale = 1.0
+        
+        var tickCount = 0
+        let totalTicks = 30 // 3 seconds * 10 ticks per second
+        let scaleIncrement = 0.15 / 30 // Total growth of 0.15 over 30 ticks
+        
+        longPressTimer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { timer in
+            tickCount += 1
+            
+            // Update countdown every 10 ticks (every second)
+            if tickCount % 10 == 0 {
+                withAnimation(.easeInOut(duration: 0.2)) {
+                    longPressCountdown -= 1
+                }
+            }
+            
+            // Smoothly grow the orb on every tick
+            withAnimation(.linear(duration: 0.1)) {
+                longPressScale += scaleIncrement
+            }
+            
+            // Stop when we reach 3 seconds (30 ticks)
+            if tickCount >= totalTicks {
+                timer.invalidate()
+            }
+        }
+    }
+    
+    private func cancelLongPressCountdown() {
+        isLongPressing = false
+        longPressCountdown = 3
+        longPressScale = 1.0
+        longPressTimer?.invalidate()
+        longPressTimer = nil
+    }
+    
+    private func handleLongPressComplete() {
+        // Long press completed - stop listening session
+        cancelLongPressCountdown()
+        stopListeningSession()
+    }
+    
+    private func stopListeningSession() {
+        withAnimation(.interpolatingSpring(mass: 2, stiffness: 100, damping: 20)) {
+            isListening = false
+            animateOrb = false
+            isPlaybackMode = true
+        }
+        
+        heartbeatSoundManager.stopRecording()
+        heartbeatSoundManager.stop()
     }
 }
 

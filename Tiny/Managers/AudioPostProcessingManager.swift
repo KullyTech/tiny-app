@@ -16,6 +16,7 @@ class AudioPostProcessingManager: ObservableObject {
     private var player: AudioPlayer?
     private var parametricEQ: ParametricEQ?
     private var highShelfFilter: HighShelfFilter?
+    private var timer: Timer?
     
     @Published var isPlaying = false
     @Published var currentTime: TimeInterval = 0
@@ -90,23 +91,18 @@ class AudioPostProcessingManager: ObservableObject {
     }
     
     private func startTimeTracking() {
-        Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { [weak self] timer in
-            guard let self = self, let player = self.player else {
-                timer.invalidate()
-                return
-            }
-            
-            if !self.isPlaying {
-                timer.invalidate()
-                return
-            }
+        // Stop any existing timer first
+        timer?.invalidate()
+        
+        timer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { _ in
+            guard let player = self.player else { return }
             
             DispatchQueue.main.async {
-                if self.isPlaying {
-                    self.currentTime += 0.1
-                    if self.currentTime >= self.duration {
-                        self.currentTime = self.duration
-                    }
+                self.currentTime = player.currentTime
+                
+                // Check if playback finished
+                if self.currentTime >= self.duration && self.isPlaying {
+                    self.stop()
                 }
             }
         }
@@ -115,20 +111,47 @@ class AudioPostProcessingManager: ObservableObject {
     func pause() {
         player?.pause()
         isPlaying = false
+        
+        // Stop time tracking when paused
+        timer?.invalidate()
+        timer = nil
     }
     
     func resume() {
-        player?.play()
+        guard let player = player else {
+            print("❌ No player available to resume")
+            return
+        }
+        
+        // Don't try to restart engine if it's already running
+        if !engine.avEngine.isRunning {
+            do {
+                try engine.start()
+            } catch {
+                print("❌ Failed to start engine on resume: \(error)")
+                return
+            }
+        }
+        
+        player.play()
         isPlaying = true
+        
+        // Restart time tracking when resuming
+        startTimeTracking()
+        
+        print("▶️ Audio resumed from \(currentTime)s")
     }
     
     func stop() {
         player?.stop()
-        if engine.avEngine.isRunning {
-            engine.stop()
-        }
         isPlaying = false
         currentTime = 0
+        
+        // Stop time tracking
+        timer?.invalidate()
+        timer = nil
+        
+        engine.stop()
     }
     
     func seek(to time: TimeInterval) {
