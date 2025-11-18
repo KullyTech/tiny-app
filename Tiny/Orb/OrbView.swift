@@ -70,7 +70,7 @@ public struct OrbView: View {
 
     private var background: some View {
         LinearGradient(colors: config.backgroundColors,
-                       startPoint: .bottom,
+                       startPoint: .bottomLeading,
                        endPoint: .top)
     }
 
@@ -107,7 +107,7 @@ public struct OrbView: View {
         GeometryReader { geometry in
             let size = min(geometry.size.width, geometry.size.height)
 
-            RotatingGlowView(color: .white.opacity(0.75),
+            RotatingGlowView(color: .white.opacity(0.4),
                            rotationSpeed: config.speed * 1.5,
                            direction: .clockwise)
                 .mask {
