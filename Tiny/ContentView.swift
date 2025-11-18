@@ -12,6 +12,11 @@ struct ContentView: View {
                 .tabItem {
                     Label("Debug", systemImage: "waveform.badge.microphone")
                 }
+            
+            AudioPostProcessingTestView()
+                .tabItem {
+                    Label("EQ Test", systemImage: "slider.horizontal.3")
+                }
         }
         .preferredColorScheme(.dark)
     }
