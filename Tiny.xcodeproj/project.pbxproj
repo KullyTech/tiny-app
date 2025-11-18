@@ -38,9 +38,22 @@
 		DEFE64CA2ECB6128004B115A /* Orb */ = {isa = PBXFileReference; lastKnownFileType = wrapper; name = Orb; path = "/Users/benedictusyoga/Library/Developer/Xcode/DerivedData/Tiny-avirkidcxafmvjhegizwaahcarxv/SourcePackages/checkouts/Orb"; sourceTree = "<absolute>"; };
 /* End PBXFileReference section */
 
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		DEFE64CC2ECC4287004B115A /* Exceptions for "Tiny" folder in "Tiny" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 433435C32EACD4E4004C6B8C /* Tiny */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		433435C62EACD4E4004C6B8C /* Tiny */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				DEFE64CC2ECC4287004B115A /* Exceptions for "Tiny" folder in "Tiny" target */,
+			);
 			path = Tiny;
 			sourceTree = "<group>";
 		};
@@ -457,6 +470,7 @@
 				DEVELOPMENT_TEAM = YPC2WUCUT5;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = Tiny/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = Tiny;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.lifestyle";
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Tiny needs to use the microphone to capture heartbeat sounds.";
@@ -497,6 +511,7 @@
 				DEVELOPMENT_TEAM = YPC2WUCUT5;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = Tiny/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = Tiny;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.lifestyle";
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Tiny needs to use the microphone to capture heartbeat sounds.";
