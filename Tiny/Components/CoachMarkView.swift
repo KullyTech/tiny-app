@@ -180,7 +180,7 @@ struct CoachMarkView: View {
     // MARK: - Hold Animation
     private func runHoldAnimation() async throws {
         iconState = 3
-        try await Task.sleep(for: .milliseconds(3000))
+        try await Task.sleep(for: .milliseconds(1500))
         iconState = 0
         try await Task.sleep(for: .milliseconds(1000))
     }
