@@ -58,6 +58,7 @@ extension OrbLiveListenView {
         VStack {
             HStack {
                 if isPlaybackMode {
+                    
                     Button(action: handleBackButton, label: {
                         Image(systemName: "chevron.left")
                             .font(.title)
@@ -194,7 +195,6 @@ extension OrbLiveListenView {
         heartbeatSoundManager.start()
         heartbeatSoundManager.startRecording()
         
-        showListeningTutorialIfNeeded()
     }
     
     private func handleSingleTap() {
@@ -268,6 +268,8 @@ extension OrbLiveListenView {
         
         heartbeatSoundManager.stopRecording()
         heartbeatSoundManager.stop()
+        
+        showListeningTutorialIfNeeded()
     }
     
     // MARK: - Tutorial Logic
