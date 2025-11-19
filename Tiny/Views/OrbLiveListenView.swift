@@ -25,7 +25,11 @@ struct OrbLiveListenView: View {
     // NEW:
     @State private var showTimeline = false
     @State private var canSaveCurrentRecording = false
+<<<<<<< HEAD
     
+=======
+
+>>>>>>> a8ef6da (fix: fix drag to save bug)
     var body: some View {
         GeometryReader { geometry in
             ZStack {
@@ -296,7 +300,11 @@ extension OrbLiveListenView {
     }
     
     private func handleSaveRecording() {
+<<<<<<< HEAD
         guard canSaveCurrentRecording else { return } // NEW
+=======
+        guard canSaveCurrentRecording else { return }
+>>>>>>> a8ef6da (fix: fix drag to save bug)
         withAnimation(.interpolatingSpring(mass: 1, stiffness: 200, damping: 15)) {
             saveButtonScale = 1.8
             orbDragScale = 0.3
