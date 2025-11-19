@@ -14,46 +14,46 @@ struct TutorialOverlay: View {
         ZStack {
             Color.black.opacity(0.8)
                 .ignoresSafeArea()
-            VStack(spacing: 32) {
+            VStack(spacing: 24) {
                 VStack(spacing: 2) {
-                    Text("Replay Your Recording")
+                    Text("Hear Baby's Heartbeat")
                         .font(.body)
                         .fontWeight(.bold)
-                    Text("Here's how to control your recording")
+                    Text("Here's how to control your session")
                         .font(.subheadline)
                 }
                 .foregroundColor(.white)
                 
                 .foregroundColor(.white)
-                VStack(alignment: .leading, spacing: -8) {
-                    HStack(spacing: 12) {
+                VStack(alignment: .leading, spacing: -28) {
+                    HStack(spacing: 0) {
                         CoachMarkView.small(
-                            animationType: .singleTap,
+                            animationType: .doubleTap,
                             showText: false
                         )
                         VStack(alignment: .leading) {
-                            Text("Play or Pause")
+                            Text("Start session")
                                 .font(.headline)
                                 .fontWeight(.bold)
-                            Text("Tap the screen")
+                            Text("Tap twice")
                         }
                         .foregroundColor(.white)
                     }
-                    HStack(spacing: 12) {
+                    HStack(spacing: 0) {
                         CoachMarkView.small(
-                            animationType: .holdAndDrag,
+                            animationType: .hold,
                             showText: false
                         )
                         VStack(alignment: .leading) {
-                            Text("Save or Delete")
+                            Text("Finish Session")
                                 .font(.headline)
                                 .fontWeight(.bold)
-                            Text("Hold then drag the sphere")
+                            Text("Press and hold the sphere")
                         }
                         .foregroundColor(.white)
                     }
                 }
-                Text("Tap to Continue")
+                Text("Tap to Begin")
                     .font(.subheadline)
                     .fontWeight(.bold)
                     .foregroundColor(.white)

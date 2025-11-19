@@ -229,7 +229,7 @@ extension CoachMarkView {
             animationType: animationType,
             showText: showText,
             customText: customText,
-            iconSize: 40,
+            iconSize: 60,
             textSize: .caption,
             spacing: 8
         )
