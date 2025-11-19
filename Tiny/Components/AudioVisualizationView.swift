@@ -63,10 +63,14 @@ struct AudioVisualizationView: View {
                     .fill(Color.gray.opacity(0.3))
                     .frame(height: 20)
                 
-                RoundedRectangle(cornerRadius: 8)
-                    .fill(amplitudeColor)
-                    .frame(width: amplitudeWidth, height: 20)
-                    .animation(.easeInOut(duration: 0.2), value: amplitude)
+                GeometryReader { proxy in
+                    let normalizedAmplitude = min(1.0, max(0.0, amplitude / 0.5))
+                    RoundedRectangle(cornerRadius: 8)
+                        .fill(amplitudeColor)
+                        .frame(width: proxy.size.width * CGFloat(normalizedAmplitude), height: 20)
+                        .animation(.easeInOut(duration: 0.2), value: amplitude)
+                }
+                .frame(height: 20)
             }
             
             Text(String(format: "%.2f", amplitude))
@@ -132,12 +136,6 @@ struct AudioVisualizationView: View {
         } else {
             return .red
         }
-    }
-    
-    private var amplitudeWidth: CGFloat {
-        let normalizedAmplitude = min(1.0, max(0.0, amplitude / 0.5))
-        // ignore
-        return CGFloat(normalizedAmplitude) * UIScreen.main.bounds.width - 40
     }
     
     private var qualityColor: Color {
