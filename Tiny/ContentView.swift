@@ -1,13 +1,17 @@
 import SwiftUI
 
 struct ContentView: View {
+    @AppStorage("hasShownOnboarding") var hasShownOnboarding: Bool = false
+
     var body: some View {
-        NavigationView {
-            OrbLiveListenView()
-                .tabItem {
-                    Label("Orb", systemImage: "microbe.fill")
-                }
+        Group {
+            if hasShownOnboarding {
+                OrbLiveListenView()
+            } else {
+                OnBoardingView(hasShownOnboarding: $hasShownOnboarding)
+            }
         }
+        .ignoresSafeArea()
         .preferredColorScheme(.dark)
     }
 }
