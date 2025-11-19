@@ -1,6 +1,7 @@
 import SwiftUI
 
 struct OrbLiveListenView: View {
+    @State private var activeTutorial: TutorialContext?
     @StateObject var heartbeatSoundManager = HeartbeatSoundManager()
     @StateObject private var audioPostProcessingManager = AudioPostProcessingManager()
     @StateObject private var physicsController = OrbPhysicsController()
@@ -23,6 +24,10 @@ struct OrbLiveListenView: View {
                 statusTextView
                 orbView(geometry: geometry)
                 coachMarkView
+
+                if let context = activeTutorial {
+                    TutorialOverlay(activeTutorial: $activeTutorial, context: context)
+                }
             }
             .sheet(isPresented: $showShareSheet) {
                 if let lastRecordingURL = heartbeatSoundManager.lastRecording?.fileURL {
@@ -30,6 +35,7 @@ struct OrbLiveListenView: View {
                 }
             }
             .preferredColorScheme(.dark)
+            .onAppear(perform: showInitialTutorialIfNeeded)
         }
     }
 }
@@ -187,6 +193,8 @@ extension OrbLiveListenView {
         
         heartbeatSoundManager.start()
         heartbeatSoundManager.startRecording()
+        
+        showListeningTutorialIfNeeded()
     }
     
     private func handleSingleTap() {
@@ -260,6 +268,22 @@ extension OrbLiveListenView {
         
         heartbeatSoundManager.stopRecording()
         heartbeatSoundManager.stop()
+    }
+    
+    // MARK: - Tutorial Logic
+    private func showInitialTutorialIfNeeded() {
+        if !UserDefaults.standard.bool(forKey: "hasShownInitialTutorial") {
+            activeTutorial = .initial
+        }
+    }
+    
+    private func showListeningTutorialIfNeeded() {
+        if !UserDefaults.standard.bool(forKey: "hasShownListeningTutorial") {
+            // Use a delay to allow the listening UI to appear first
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.75) {
+                activeTutorial = .listening
+            }
+        }
     }
 }
 
