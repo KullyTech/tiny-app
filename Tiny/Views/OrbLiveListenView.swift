@@ -15,7 +15,17 @@ struct OrbLiveListenView: View {
     @State private var longPressCountdown = 3
     @State private var longPressTimer: Timer?
     @State private var longPressScale: CGFloat = 1.0
-
+    
+    // Long press to drag states
+    @State private var dragOffset: CGFloat = 0
+    @State private var isDraggingToSave = false
+    @State private var saveButtonScale: CGFloat = 1.0
+    @State private var orbDragScale: CGFloat = 1.0
+    
+    // NEW:
+    @State private var showTimeline = false
+    @State private var canSaveCurrentRecording = false
+    
     var body: some View {
         GeometryReader { geometry in
             ZStack {
@@ -23,12 +33,32 @@ struct OrbLiveListenView: View {
                 topButtonsView
                 statusTextView
                 orbView(geometry: geometry)
+                saveButtonView(geometry: geometry)
                 coachMarkView
-
+                
                 if let context = activeTutorial {
                     TutorialOverlay(activeTutorial: $activeTutorial, context: context)
                 }
+                    
+                    // ⬇️ Overlay: PregnancyTimelineView with fade
+                if showTimeline {
+                    PregnancyTimelineView(
+                        heartbeatSoundManager: heartbeatSoundManager,
+                        onSelectRecording: { recording in
+                            handleSelectRecordingFromTimeline(recording)
+                        },
+                        onClose: {
+                            withAnimation(.easeInOut(duration: 0.4)) {
+                                showTimeline = false
+                            }
+                        }
+                    )
+                    .transition(.opacity)
+                    .ignoresSafeArea()
+                    .zIndex(2)
+                }
             }
+            .animation(.easeInOut(duration: 0.4), value: showTimeline)
             .sheet(isPresented: $showShareSheet) {
                 if let lastRecordingURL = heartbeatSoundManager.lastRecording?.fileURL {
                     ShareSheet(activityItems: [lastRecordingURL])
@@ -91,11 +121,13 @@ extension OrbLiveListenView {
                         .fontWeight(.bold)
                 } else if isPlaybackMode {
                     VStack(spacing: 8) {
-                        Text(audioPostProcessingManager.isPlaying ? "Playing..." : "Tap orb to play")
+                        // CHANGED: Added drag instruction
+                        Text(audioPostProcessingManager.isPlaying ? "Playing..." : (isDraggingToSave ? "Drag to save" : "Tap orb to play"))
                             .font(.title2)
                             .fontWeight(.medium)
                         
-                        if audioPostProcessingManager.duration > 0 {
+                        // CHANGED: Hide duration when dragging
+                        if audioPostProcessingManager.duration > 0 && !isDraggingToSave {
                             Text("\(Int(audioPostProcessingManager.currentTime))s / \(Int(audioPostProcessingManager.duration))s")
                                 .font(.caption)
                                 .foregroundColor(.white.opacity(0.7))
@@ -119,16 +151,22 @@ extension OrbLiveListenView {
             }
             .frame(width: 200, height: 200)
             .opacity(isPlaybackMode ? (audioPostProcessingManager.isPlaying ? 1.0 : 0.4) : 1.0)
-            .scaleEffect(orbScaleEffect)
+            .scaleEffect(orbScaleEffect * orbDragScale) // CHANGED: Added orbDragScale
             .animation(.easeInOut(duration: 0.5), value: audioPostProcessingManager.isPlaying)
             .animation(.interpolatingSpring(mass: 2, stiffness: 100, damping: 20), value: animateOrb)
             .animation(.easeInOut(duration: 0.2), value: longPressScale)
-            .offset(y: orbOffset(geometry: geometry))
+            .animation(.easeInOut(duration: 0.2), value: orbDragScale) // CHANGED: Added animation for orbDragScale
+            .offset(y: orbOffset(geometry: geometry) + dragOffset) // CHANGED: Added dragOffset
             .onTapGesture(count: 2, perform: handleDoubleTap)
             .onTapGesture(count: 1, perform: handleSingleTap)
-            .onLongPressGesture(minimumDuration: 3.0, maximumDistance: 50, 
-                               perform: handleLongPressComplete,
-                               onPressingChanged: handleLongPressChange)
+            .modifier(GestureModifier(
+                isPlaybackMode: isPlaybackMode,
+                geometry: geometry,
+                handleDragChange: handleDragChange,
+                handleDragEnd: handleDragEnd,
+                handleLongPressChange: handleLongPressChange,
+                handleLongPressComplete: handleLongPressComplete
+            ))
         }
         .frame(width: geometry.size.width, height: geometry.size.height)
     }
@@ -148,6 +186,24 @@ extension OrbLiveListenView {
         .rotationEffect(.degrees(physicsController.rotation))
         .onAppear { physicsController.startPhysics() }
         .frame(width: 18, height: 18)
+    }
+    
+    // CHANGED: Updated save button to fade in based on drag progress
+    private func saveButtonView(geometry: GeometryProxy) -> some View {
+        Button {} label: {
+            Image(systemName: "book.fill")
+                .font(.system(size: 28))
+                .foregroundColor(.white)
+                .frame(width: 77, height: 77)
+                .clipShape(Circle())
+        }
+        .glassEffect(.clear)
+        .scaleEffect(saveButtonScale)
+        .animation(.easeInOut(duration: 0.2), value: saveButtonScale)
+        .position(x: geometry.size.width / 2, y: geometry.size.height - 100)
+        .opacity(isDraggingToSave ? min(dragOffset / 100, 1.0) : 0.0)
+        .animation(.easeInOut(duration: 0.2), value: isDraggingToSave)
+        .animation(.easeInOut(duration: 0.2), value: dragOffset)
     }
     
     private var coachMarkView: some View {
@@ -180,7 +236,87 @@ extension OrbLiveListenView {
     }
 }
 
-// MARK: - Actions
+// MARK: - Drag Gesture Actions (NEW SECTION)
+extension OrbLiveListenView {
+    
+    private func handleDragChange(value: SequenceGesture<LongPressGesture, DragGesture>.Value, geometry: GeometryProxy) {
+        guard canSaveCurrentRecording else { return } // NEW
+        switch value {
+        case .second(true, let drag):
+            isDraggingToSave = true
+            
+            // Only allow downward drag
+            let translation = max(0, drag?.translation.height ?? 0)
+            dragOffset = translation
+            
+            // Calculate how far down the orb is dragged
+            let maxDragDistance = geometry.size.height / 2
+            let dragProgress = min(translation / maxDragDistance, 1.0)
+            
+            // Shrink orb as it's dragged down (from 1.0 to 0.5)
+            withAnimation(.easeInOut(duration: 0.2)) {
+                orbDragScale = 1.0 - (dragProgress * 0.5)
+                
+                // Grow save button as orb gets closer (from 1.0 to 1.5)
+                saveButtonScale = 1.0 + (dragProgress * 0.5)
+            }
+            
+        default:
+            break
+        }
+    }
+    
+    private func handleDragEnd(value: SequenceGesture<LongPressGesture, DragGesture>.Value, geometry: GeometryProxy) {
+        guard canSaveCurrentRecording else { return } // NEW
+        switch value {
+        case .second(true, let drag):
+            let translation = drag?.translation.height ?? 0
+            let saveThreshold = geometry.size.height / 3
+            
+            if translation > saveThreshold {
+                // User dragged far enough - save the recording
+                handleSaveRecording()
+            } else {
+                // User didn't drag far enough or dragged back up - cancel
+                resetDragState()
+            }
+            
+        default:
+            resetDragState()
+        }
+    }
+    
+    private func resetDragState() {
+        withAnimation(.easeInOut(duration: 0.3)) {
+            dragOffset = 0
+            orbDragScale = 1.0
+            saveButtonScale = 1.0
+            isDraggingToSave = false
+        }
+    }
+    
+    private func handleSaveRecording() {
+        guard canSaveCurrentRecording else { return } // NEW
+        withAnimation(.interpolatingSpring(mass: 1, stiffness: 200, damping: 15)) {
+            saveButtonScale = 1.8
+            orbDragScale = 0.3
+        }
+        
+        // Call your save function here
+        heartbeatSoundManager.saveRecording()
+        canSaveCurrentRecording = false
+        
+        // After the little save animation, reset + fade into timeline
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+            resetDragState()
+            withAnimation(.easeInOut(duration: 0.5)) {
+                showTimeline = true
+            }
+        }
+    }
+}
+
+// MARK: - Recording Actions
 extension OrbLiveListenView {
     
     private func handleDoubleTap() {
@@ -198,7 +334,8 @@ extension OrbLiveListenView {
     }
     
     private func handleSingleTap() {
-        guard isPlaybackMode, !isListening, !isLongPressing else { return }
+        // CHANGED: Added guard for isDraggingToSave
+        guard isPlaybackMode, !isListening, !isLongPressing, !isDraggingToSave else { return }
         guard let lastRecording = heartbeatSoundManager.lastRecording else { return }
         
         if audioPostProcessingManager.isPlaying {
@@ -264,6 +401,7 @@ extension OrbLiveListenView {
             isListening = false
             animateOrb = false
             isPlaybackMode = true
+            canSaveCurrentRecording = true
         }
         
         heartbeatSoundManager.stopRecording()
@@ -282,6 +420,63 @@ extension OrbLiveListenView {
             // Use a delay to allow the listening UI to appear first
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.75) {
                 activeTutorial = .listening
+            }
+        }
+    }
+    
+    private func handleSelectRecordingFromTimeline(_ recording: Recording) {
+        // Update lastRecording so the playback logic can reuse it
+        heartbeatSoundManager.lastRecording = recording
+        
+        // Make sure we're not listening
+        isListening = false
+        
+        // Close the timeline with a fade and go into playback mode
+        withAnimation(.easeInOut(duration: 0.4)) {
+            showTimeline = false
+            isPlaybackMode = true
+            canSaveCurrentRecording = false
+            animateOrb = true
+        }
+        
+        // Start playback using your existing post-processing manager
+        audioPostProcessingManager.stop()
+        audioPostProcessingManager.loadAndPlay(fileURL: recording.fileURL)
+    }
+    
+    // MARK: - Gesture Modifier (NO CHANGES)
+    struct GestureModifier: ViewModifier {
+        let isPlaybackMode: Bool
+        let geometry: GeometryProxy
+        let handleDragChange: (SequenceGesture<LongPressGesture, DragGesture>.Value, GeometryProxy) -> Void
+        let handleDragEnd: (SequenceGesture<LongPressGesture, DragGesture>.Value, GeometryProxy) -> Void
+        let handleLongPressChange: (Bool) -> Void
+        let handleLongPressComplete: () -> Void
+        
+        func body(content: Content) -> some View {
+            if isPlaybackMode {
+                content
+                    .gesture(
+                        LongPressGesture(minimumDuration: 0.5)
+                            .sequenced(before: DragGesture())
+                            .onChanged { value in
+                                handleDragChange(value, geometry)
+                            }
+                            .onEnded { value in
+                                handleDragEnd(value, geometry)
+                            }
+                    )
+            } else {
+                content
+                    .gesture(
+                        LongPressGesture(minimumDuration: 3.0)
+                            .onChanged { pressing in
+                                handleLongPressChange(pressing)
+                            }
+                            .onEnded { _ in
+                                handleLongPressComplete()
+                            }
+                    )
             }
         }
     }

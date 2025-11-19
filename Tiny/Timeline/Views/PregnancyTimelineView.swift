@@ -6,15 +6,25 @@
 //
 
 import SwiftUI
-import SpriteKit
 
 struct PregnancyTimelineView: View {
+    @ObservedObject var heartbeatSoundManager: HeartbeatSoundManager
+    let onSelectRecording: (Recording) -> Void
+    let onClose: () -> Void
+    
     @State private var isExpanded = false
     @State private var showDates = false
     
+    private static let dateFormatter: DateFormatter = {
+        let dateFormat = DateFormatter()
+        dateFormat.dateStyle = .medium
+        dateFormat.timeStyle = .short
+        return dateFormat
+    }()
+    
     var body: some View {
         ZStack {
-            // Background gradient
+            // Background
             LinearGradient(
                 colors: [Color(red: 0.05, green: 0.05, blue: 0.15), Color.black],
                 startPoint: .top,
@@ -22,57 +32,79 @@ struct PregnancyTimelineView: View {
             )
             .ignoresSafeArea()
             
-            // Main content
+            // Title
             VStack {
                 if isExpanded {
-                    Text("Week 20")
-                        .font(.system(size: 36, weight: .bold))
+                    Text("Heartbeat Timeline")
+                        .font(.system(size: 28, weight: .bold))
                         .foregroundColor(.white)
                         .transition(.opacity)
                         .padding(.top, 80)
+                } else {
+                    Spacer().frame(height: 40)
                 }
-                
                 Spacer()
             }
             
-            // Timeline path with nodes
-            TimelinePathView(isExpanded: isExpanded, showDates: showDates)
-            
-            // Main sphere
-            VStack {
-                Spacer()
-                
-                if !isExpanded {
-                    Text("Week 20")
-                        .font(.system(size: 20, weight: .semibold))
-                        .foregroundColor(.white)
-                        .offset(y: -20)
-                        .transition(.opacity)
-                }
-                
-                Spacer()
-                    .frame(height: isExpanded ? 200 : 400)
-            }
-            
-            // Animated Orb with size parameter
-            AnimatedOrbView(size: isExpanded ? 116 : 48)
-                .offset(y: isExpanded ? -280 : 0)
-                .animation(.spring(response: 0.6, dampingFraction: 0.8), value: isExpanded)
-                .onTapGesture {
-                    if !isExpanded {
-                        withAnimation(.spring(response: 0.6, dampingFraction: 0.8)) {
-                            isExpanded = true
+            GeometryReader { geometry in
+                ZStack {
+                    // Wavy timeline path
+                    WavePath()
+                        .stroke(
+                            Color.white.opacity(0.25),
+                            style: StrokeStyle(
+                                lineWidth: 2,
+                                lineCap: .round,
+                                lineJoin: .round,
+                                dash: [6, 8]
+                            )
+                        )
+                        .frame(width: geometry.size.width, height: geometry.size.height)
+                    
+                    let recordings = heartbeatSoundManager.savedRecordings
+                    let total = recordings.count
+                    
+                    if total == 0 {
+                        VStack {
+                            Spacer()
+                            Text("No saved recordings yet")
+                                .font(.subheadline)
+                                .foregroundColor(.white.opacity(0.6))
+                                .padding(.bottom, 140)
                         }
-                        withAnimation(.spring(response: 0.6, dampingFraction: 0.8).delay(0.3)) {
-                            showDates = true
+                        .frame(width: geometry.size.width, height: geometry.size.height)
+                    } else {
+                        // Orbs along the wavy path
+                        ForEach(recordings.indices, id: \.self) { index in
+                            let recording = recordings[index]
+                            let point = wavePoint(
+                                for: index,
+                                total: total,
+                                in: geometry.size
+                            )
+                            
+                            VStack(spacing: 4) {
+                                AnimatedOrbView(size: 40)
+                                    .onTapGesture {
+                                        onSelectRecording(recording)
+                                    }
+                                
+                                Text(label(for: recording))
+                                    .font(.caption2)
+                                    .foregroundColor(.white.opacity(0.8))
+                                    .lineLimit(1)
+                                    .minimumScaleFactor(0.7)
+                            }
+                            .position(point)
+                            .transition(.scale.combined(with: .opacity))
                         }
                     }
                 }
-                .zIndex(1)
+            }
             
-            // Bottom book button / Back button (morphing animation)
+            // Bottom morphing book/back button (glass)
             GeometryReader { geometry in
-                Button(action: {
+                Button {
                     if !isExpanded {
                         withAnimation(.spring(response: 0.6, dampingFraction: 0.8)) {
                             isExpanded = true
@@ -85,17 +117,18 @@ struct PregnancyTimelineView: View {
                             isExpanded = false
                             showDates = false
                         }
+                        onClose()
                     }
-                }) {
+                } label: {
                     ZStack {
-                        // Book icon
+                        // book icon when collapsed
                         Image(systemName: "book.fill")
                             .font(.system(size: 28))
                             .foregroundColor(.white)
                             .opacity(isExpanded ? 0 : 1)
                             .scaleEffect(isExpanded ? 0.5 : 1)
-                        
-                        // Chevron icon
+
+                        // chevron when expanded
                         Image(systemName: "chevron.left")
                             .font(.system(size: 24, weight: .medium))
                             .foregroundColor(.white)
@@ -103,121 +136,82 @@ struct PregnancyTimelineView: View {
                             .scaleEffect(isExpanded ? 1 : 0.5)
                     }
                     .frame(width: isExpanded ? 50 : 77, height: isExpanded ? 50 : 77)
-                    .background(Color.white.opacity(0.2))
                     .clipShape(Circle())
-                    .overlay(
-                        Circle()
-                            .stroke(Color.white.opacity(isExpanded ? 0 : 0.3), lineWidth: 1)
-                    )
                 }
+                .glassEffect(.clear)
                 .position(
                     x: isExpanded ? 45 : geometry.size.width / 2,
                     y: isExpanded ? 85 : geometry.size.height - 100
                 )
             }
         }
+        .animation(.easeInOut(duration: 0.4), value: isExpanded)
     }
-}
-
-struct TimelinePathView: View {
-    let isExpanded: Bool
-    let showDates: Bool
     
-    let dates = [
-        "10 November 2025",
-        "09 November 2025",
-        "08 November 2025",
-        "07 November 2025"
-    ]
+    // Position along the same wave as the path, from bottom to top
+    private func wavePoint(for index: Int, total: Int, in size: CGSize) -> CGPoint {
+        guard total > 1 else {
+            return CGPoint(x: size.width * 0.5, y: size.height * 0.75)
+        }
+        
+        // 0 = bottom, 1 = top
+        let top = CGFloat(index) / CGFloat(max(total - 1, 1))
+        
+        let yStart = size.height * 0.75
+        let yEnd = size.height * 0.25
+        let yCoordinate = yStart + (yEnd - yStart) * top
+        
+        let centerX = size.width * 0.5
+        let amplitude = size.width * 0.25
+        let xCoordinate = centerX + sin(top * .pi * 1.5) * amplitude
+        
+        return CGPoint(x: xCoordinate, y: yCoordinate)
+    }
     
-    var body: some View {
-        GeometryReader { geometry in
-            ZStack {
-                // Curved path
-                CurvedPath()
-                    .stroke(Color.white.opacity(0.2), lineWidth: 2)
-                    .frame(width: geometry.size.width, height: geometry.size.height)
-                
-                // Nodes along the path
-                if !isExpanded {
-                    // Initial state - small nodes
-                    ForEach(0..<3) { index in
-                        Circle()
-                            .fill(Color.white)
-                            .frame(width: 8, height: 8)
-                            .shadow(color: .white, radius: 8, x: 0, y: 0)
-                            .position(getNodePosition(index: index, in: geometry.size))
-                    }
-                }
-                
-                if showDates {
-                    // Expanded state - date entries
-                    ForEach(0..<dates.count, id: \.self) { index in
-                        HStack(spacing: 15) {
-                            Circle()
-                                .fill(Color.white)
-                                .frame(width: 12, height: 12)
-                                .shadow(color: .white, radius: 10, x: 0, y: 0)
-                            
-                            Text(dates[index])
-                                .font(.system(size: 18, weight: .semibold))
-                                .foregroundColor(.white)
-                        }
-                        .position(getDatePosition(index: index, in: geometry.size))
-                        .transition(.scale.combined(with: .opacity))
-                    }
-                }
-            }
+    private func label(for recording: Recording) -> String {
+        // Try to extract unix timestamp from filename "saved-heartbeat-<timestamp>.caf"
+        let name = recording.fileURL.deletingPathExtension().lastPathComponent
+        
+        let components = name.split(separator: "-")
+        if let last = components.last,
+           let timeSecond = TimeInterval(last) {
+            let date = Date(timeIntervalSince1970: timeSecond)
+            return Self.dateFormatter.string(from: date)
+        } else {
+            // Fallback: show the raw file name
+            return name
         }
     }
-    
-    func getNodePosition(index: Int, in size: CGSize) -> CGPoint {
-        let positions: [(CGFloat, CGFloat)] = [
-            (0.3, 0.25),  // Top node
-            (0.2, 0.45),  // Middle-left node
-            (0.5, 0.85)   // Bottom node
-        ]
-        return CGPoint(x: size.width * positions[index].0, y: size.height * positions[index].1)
-    }
-    
-    func getDatePosition(index: Int, in size: CGSize) -> CGPoint {
-        let yPositions: [CGFloat] = [0.35, 0.50, 0.65, 0.80]
-        let xOffset: CGFloat = 0.35
-        return CGPoint(x: size.width * xOffset, y: size.height * yPositions[index])
-    }
 }
 
-struct CurvedPath: Shape {
+// Wavy timeline path (matches `wavePoint`)
+struct WavePath: Shape {
     func path(in rect: CGRect) -> Path {
         var path = Path()
         
-        let width = rect.width
-        let height = rect.height
+        let centerX = rect.width * 0.5
+        let amplitude = rect.width * 0.25
+        let yStart = rect.height * 0.75
+        let yEnd = rect.height * 0.25
+        let steps = 60
         
-        path.move(to: CGPoint(x: width * 0.3, y: height * 0.15))
+        path.move(to: CGPoint(x: centerX, y: yStart))
         
-        path.addCurve(
-            to: CGPoint(x: width * 0.15, y: height * 0.5),
-            control1: CGPoint(x: width * 0.1, y: height * 0.25),
-            control2: CGPoint(x: width * 0.05, y: height * 0.38)
-        )
-        
-        path.addCurve(
-            to: CGPoint(x: width * 0.5, y: height * 0.85),
-            control1: CGPoint(x: width * 0.25, y: height * 0.62),
-            control2: CGPoint(x: width * 0.35, y: height * 0.75)
-        )
-        
-        path.addCurve(
-            to: CGPoint(x: width * 0.4, y: height * 1.1),
-            control1: CGPoint(x: width * 0.65, y: height * 0.95),
-            control2: CGPoint(x: width * 0.5, y: height * 1.05)
-        )
+        for step in 1...steps {
+            let top = CGFloat(step) / CGFloat(steps)
+            let yCoor = yStart + (yEnd - yStart) * top
+            let xCoor = centerX + sin(top * .pi * 1.5) * amplitude
+            path.addLine(to: CGPoint(x: xCoor, y: yCoor))
+        }
         
         return path
     }
 }
 
 #Preview {
-    PregnancyTimelineView()
+    PregnancyTimelineView(
+        heartbeatSoundManager: HeartbeatSoundManager(),
+        onSelectRecording: { _ in },
+        onClose: {}
+    )
 }

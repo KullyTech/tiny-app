@@ -58,6 +58,7 @@ class HeartbeatSoundManager: NSObject, ObservableObject {
     @Published var isRunning = false
     @Published var isRecording = false
     @Published var lastRecording: Recording?
+    @Published var savedRecordings: [Recording] = []   // new saved recordings
     @Published var isPlayingPlayback = false
     @Published var amplitudeVal: Float = 0.0
     @Published var blinkAmplitude: Float = 0.0
@@ -455,7 +456,7 @@ class HeartbeatSoundManager: NSObject, ObservableObject {
             } catch {
                 print("Error saving recording: \(error.localizedDescription)")
             }
-        }
+        } 
     }
     
     func togglePlayback(recording: Recording) {
@@ -544,6 +545,42 @@ class HeartbeatSoundManager: NSObject, ObservableObject {
         }
         
         isRunning = false
+    }
+    
+    func saveRecording() {
+        guard let recording = lastRecording else {
+            print("No recording to save")
+            return
+        }
+        
+        let fileManager = FileManager.default
+        let documentsURL = getDocumentsDirectory()
+        
+        // Create a permanent filename (without timestamp prefix)
+        let permanentURL = documentsURL.appendingPathComponent("saved-heartbeat-\(Date().timeIntervalSince1970).caf")
+        
+        do {
+            // Check if file already exists at permanent location
+            if fileManager.fileExists(atPath: permanentURL.path) {
+                try fileManager.removeItem(at: permanentURL)
+            }
+            
+            // Copy the recording to permanent location
+            try fileManager.copyItem(at: recording.fileURL, to: permanentURL)
+            
+            print("Recording permanently saved to \(permanentURL)")
+            
+            let newRecording = Recording(fileURL: permanentURL)
+            
+            // Update lastRecording AND append to the timeline list
+            DispatchQueue.main.async {
+                self.lastRecording = newRecording
+                self.savedRecordings.append(newRecording)
+            }
+            
+        } catch {
+            print("Error saving recording permanently: \(error.localizedDescription)")
+        }
     }
 }
 // swiftlint:enable type_body_length
