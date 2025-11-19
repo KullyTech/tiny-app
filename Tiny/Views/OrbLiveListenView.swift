@@ -1,6 +1,7 @@
 import SwiftUI
 
 struct OrbLiveListenView: View {
+    @State private var showTutorial = !UserDefaults.standard.bool(forKey: "hasShownTutorial")
     @StateObject var heartbeatSoundManager = HeartbeatSoundManager()
     @StateObject private var audioPostProcessingManager = AudioPostProcessingManager()
     @StateObject private var physicsController = OrbPhysicsController()
@@ -23,6 +24,10 @@ struct OrbLiveListenView: View {
                 statusTextView
                 orbView(geometry: geometry)
                 coachMarkView
+
+                if showTutorial {
+                    TutorialOverlay(showTutorial: $showTutorial)
+                }
             }
             .sheet(isPresented: $showShareSheet) {
                 if let lastRecordingURL = heartbeatSoundManager.lastRecording?.fileURL {

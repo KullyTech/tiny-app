@@ -8,6 +8,8 @@
 import SwiftUI
 
 struct TutorialOverlay: View {
+    @Binding var showTutorial: Bool
+
     var body: some View {
         ZStack {
             Color.black.opacity(0.8)
@@ -57,9 +59,13 @@ struct TutorialOverlay: View {
                     .foregroundColor(.white)
             }
         }
+        .onTapGesture {
+            showTutorial = false
+            UserDefaults.standard.set(true, forKey: "hasShownTutorial")
+        }
     }
 }
 
 #Preview {
-    TutorialOverlay()
+    TutorialOverlay(showTutorial: .constant(true))
 }
