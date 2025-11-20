@@ -14,6 +14,7 @@ import SpriteKit
 
 struct AnimatedOrbView: View {
     @StateObject private var physicsController = OrbPhysicsController()
+    var size: CGFloat = 200
 
     private let configuration = OrbConfiguration(
         backgroundColors: [.orange, .orbOrange, .clear],
@@ -46,11 +47,11 @@ struct AnimatedOrbView: View {
                     lineWidth: 1.5
                 )
                 .blur(radius: 5)
-                .frame(width: 235, height: 235)
+                .frame(width: size * 1.175, height: size * 1.175)
 
             // 2. The Orb (in front)
             OrbView(configuration: configuration)
-                .frame(width: 200, height: 200)
+                .frame(width: size, height: size)
         }
         // animate the ring AND the orb together as one unit.
         .scaleEffect(x: physicsController.scaleX, y: physicsController.scaleY)
