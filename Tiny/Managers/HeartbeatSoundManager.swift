@@ -42,7 +42,7 @@ class HeartbeatSoundManager: NSObject, ObservableObject {
     var gain: Fader?
     var mixer: Mixer?
     private let filterChainBuilder = AudioFilterChainBuilder()
-    
+
     var highPassFilter: HighPassFilter? { filterChainBuilder.highPassFilter }
     var lowPassFilter: LowPassFilter? { filterChainBuilder.lowPassFilter }
     var secondaryLowPassFilter: LowPassFilter? { filterChainBuilder.secondaryLowPassFilter }
@@ -53,11 +53,12 @@ class HeartbeatSoundManager: NSObject, ObservableObject {
     var fftTap: FFTTap?
     var recorder: NodeRecorder?
     var player: AudioPlayer?
-    
+
     @Published var isPlaying = false
     @Published var isRunning = false
     @Published var isRecording = false
     @Published var lastRecording: Recording?
+    @Published var savedRecordings: [Recording] = []   // new saved recordings
     @Published var isPlayingPlayback = false
     @Published var amplitudeVal: Float = 0.0
     @Published var blinkAmplitude: Float = 0.0
@@ -74,106 +75,107 @@ class HeartbeatSoundManager: NSObject, ObservableObject {
     @Published var spatialMode: Bool = true
     @Published var proximityGain: Float = 2.0
     @Published var noiseGateThreshold: Float = 0.005
-    
+
     private let heartbeatDetector = HeartbeatDetector()
     
     override init() {
         super.init()
         engine = AudioEngine()
+    }
+
+    func requestMicrophonePermission(completion: @escaping (Bool) -> Void) {
         AVAudioApplication.requestRecordPermission { granted in
-            if granted {
-                print("Microphone Permission granted! ")
-            } else {
-                print("Micrphone Denied!")
+            DispatchQueue.main.async {
+                completion(granted)
             }
         }
     }
-    
+
     func setupAudio() {
         do {
             cleanupAudio()
-            
+
             let session = AVAudioSession.sharedInstance()
-            
+
             try session.setCategory(.playAndRecord, mode: .measurement, options: [.allowBluetoothHFP, .allowBluetoothA2DP])
             try useBottomMicrophone()
             try session.setActive(true)
-            
+
             guard let input = engine.input else {
                 print("No input available!")
                 return
             }
-            
+
             mic = input
-            
+
             let (lowFreq, highFreq) = getFilterFrequencies(for: filterMode)
-            
+
             if spatialMode {
                 filterChainBuilder.setupSpatialAudioChain(input: input, lowFreq: lowFreq, highFreq: highFreq)
             } else {
                 filterChainBuilder.setupTraditionalFilterChain(input: input, lowFreq: lowFreq, highFreq: highFreq, aggressiveFiltering: aggressiveFiltering)
             }
-            
+
             guard let secondaryLowPass = filterChainBuilder.secondaryLowPassFilter else {
                 print("Error: Secondary low pass filter not initialized")
                 return
             }
-            
+
             gain = Fader(secondaryLowPass)
             gain?.gain = AUValue(gainVal)
-            
+
             guard let gainNode = gain else {
                 print("Error: Gain node not initialized")
                 return
             }
-            
+
             mixer = Mixer(gainNode)
-            
+
             guard let mixerNode = mixer else {
                 print("Error: Mixer node not initialized")
                 return
             }
-            
+
             amplitudeTap = AmplitudeTap(mixerNode) { [weak self] amp in
                 DispatchQueue.main.async {
                     self?.processAmplitude(amp)
                 }
             }
-            
+
             fftTap = FFTTap(mixerNode) { [weak self] fftData in
                 DispatchQueue.main.async {
                     self?.processFFTData(fftData)
                 }
             }
-            
+
             recorder = nil
             do {
                 recorder = try NodeRecorder(node: gainNode)
             } catch {
                 print("Error creating recorder: \(error.localizedDescription)")
             }
-            
+
             engine.output = mixerNode
-            
+
             amplitudeTap?.start()
             fftTap?.start()
             print("Audio analysis taps started")
-            
+
         } catch {
             print("Error setting up audio!: \(error.localizedDescription)")
         }
     }
-    
+
     private func cleanupAudio() {
         amplitudeTap?.stop()
         amplitudeTap = nil
-        
+
         fftTap?.stop()
         fftTap = nil
-        
+
         recorder?.stop()
         recorder = nil
-        
+
         if engine.avEngine.isRunning {
             engine.stop()
         }
@@ -190,14 +192,14 @@ class HeartbeatSoundManager: NSObject, ObservableObject {
 
         engine.output = nil
     }
-    
+
     private func resetEngine() {
         if engine.avEngine.isRunning {
             engine.stop()
         }
         engine = AudioEngine()
     }
-    
+
     func useBottomMicrophone() throws {
         let session = AVAudioSession.sharedInstance()
         let availableInputs = session.availableInputs ?? []
@@ -243,12 +245,12 @@ class HeartbeatSoundManager: NSObject, ObservableObject {
     func getDocumentsDirectory() -> URL {
         return FileManager.default.urls(for: .documentDirectory, in: .userDomainMask) [0]
     }
-    
+
     func updateGain(_ newGain: Float) {
         gainVal = newGain
         gain?.gain = AUValue(newGain)
     }
-    
+
     func updateBandpassRange(lowCutoff: Float, highCutoff: Float) {
         if spatialMode {
             filterChainBuilder.updateSpatialAudioChain(lowCutoff, highCutoff)
@@ -256,7 +258,7 @@ class HeartbeatSoundManager: NSObject, ObservableObject {
             filterChainBuilder.updateTraditionalFilterChain(lowCutoff, highCutoff, aggressiveFiltering: aggressiveFiltering)
         }
     }
-    
+
     func getFilterFrequencies(for mode: HeartbeatFilterMode) -> (Float, Float) {
         switch mode {
         case .standard:
@@ -269,7 +271,7 @@ class HeartbeatSoundManager: NSObject, ObservableObject {
             return (15.0, 2500.0) // Optimized for spatial processing
         }
     }
-    
+
     func setFilterMode(_ mode: HeartbeatFilterMode) {
         filterMode = mode
         if isRunning {
@@ -277,7 +279,7 @@ class HeartbeatSoundManager: NSObject, ObservableObject {
             updateBandpassRange(lowCutoff: lowFreq, highCutoff: highFreq)
         }
     }
-    
+
     private func processAmplitude(_ amplitude: Float) {
         // --- Updated logic for blinkAmplitude ---
         // Only update blinkAmplitude if it's lower than the current value
@@ -295,39 +297,39 @@ class HeartbeatSoundManager: NSObject, ObservableObject {
             }
         }
         // --- End of updated logic ---
-        
+
         var processedAmplitude = amplitude
-        
+
         // Apply noise gate to eliminate low-level noise
         if noiseReductionEnabled {
             processedAmplitude = applyNoiseGate(processedAmplitude)
             processedAmplitude = applyNoiseReduction(processedAmplitude)
         }
-        
+
         if adaptiveGainEnabled {
             processedAmplitude = applyAdaptiveGain(processedAmplitude)
         }
-        
+
         amplitudeVal = processedAmplitude
-        
+
         if processedAmplitude > noiseFloor * 1.5 {
             signalQuality = min(1.0, (processedAmplitude - noiseFloor) / (noiseFloor * 2))
         } else {
             signalQuality = max(0.0, signalQuality - 0.1)
         }
-        
+
         updateNoiseFloor()
     }
-    
+
     private func updateNoiseFloor() {
         let smoothingFactor: Float = aggressiveFiltering ? 0.98 : 0.95
         let targetNoiseFloor = amplitudeVal * 0.3 // Use 30% of current amplitude as noise estimate
         noiseFloor = noiseFloor * smoothingFactor + targetNoiseFloor * (1.0 - smoothingFactor)
     }
-    
+
     private func processFFTData(_ fftData: [Float]) {
         self.fftData = Array(fftData.prefix(128))
-        
+
         if let heartbeat = heartbeatDetector.detectHeartbeat(from: self.fftData) {
             DispatchQueue.main.async {
                 self.heartbeatData.append(heartbeat)
@@ -335,7 +337,7 @@ class HeartbeatSoundManager: NSObject, ObservableObject {
                     self.heartbeatData.removeFirst()
                 }
                 self.currentBPM = heartbeat.bpm
-                
+
                 // Update blinkAmplitude when heartbeat is detected
                 // Use S1 amplitude (the first, louder sound) to trigger brighter blink
                 // Scale it appropriately and combine with confidence for better visibility
@@ -345,31 +347,31 @@ class HeartbeatSoundManager: NSObject, ObservableObject {
             }
         }
     }
-    
+
     private func applyNoiseGate(_ amplitude: Float) -> Float {
         let threshold = max(noiseGateThreshold, noiseFloor * 1.5)
-        
+
         if amplitude < threshold {
             return 0.0
         }
-        
+
         // Smooth transition to avoid clicking
         let smoothingFactor: Float = 0.1
         let smoothedAmplitude = amplitude * smoothingFactor + (amplitude - threshold) * (1.0 - smoothingFactor)
-        
+
         return max(0.0, smoothedAmplitude)
     }
-    
+
     private func applyNoiseReduction(_ amplitude: Float) -> Float {
         let threshold = noiseFloor * (aggressiveFiltering ? 1.8 : 1.5)
         let reductionFactor: Float = aggressiveFiltering ? 0.1 : 0.2
-        
+
         if amplitude < threshold {
             return amplitude * reductionFactor
         }
         return amplitude
     }
-    
+
     private func applyAdaptiveGain(_ amplitude: Float) -> Float {
         let targetAmplitude: Float = 0.3
         let maxGain: Float = 3.0
@@ -390,36 +392,36 @@ class HeartbeatSoundManager: NSObject, ObservableObject {
     func toggleNoiseReduction() {
         noiseReductionEnabled.toggle()
     }
-    
+
     func toggleAdaptiveGain() {
         adaptiveGainEnabled.toggle()
         if !adaptiveGainEnabled {
             gain?.gain = AUValue(gainVal)
         }
     }
-    
+
     func toggleAggressiveFiltering() {
         aggressiveFiltering.toggle()
         if isRunning {
             setupAudio()
         }
     }
-    
+
     func updateNoiseGateThreshold(_ threshold: Float) {
         noiseGateThreshold = threshold
     }
-    
+
     func toggleSpatialMode() {
         spatialMode.toggle()
         if isRunning {
             setupAudio()
         }
     }
-    
+
     func updateProximityGain(_ gain: Float) {
         proximityGain = gain
     }
-    
+
     func startRecording() {
         guard let recorder = recorder, !isRecording else { return }
         do {
@@ -432,17 +434,17 @@ class HeartbeatSoundManager: NSObject, ObservableObject {
             print("Error starting recording: \(error.localizedDescription)")
         }
     }
-    
+
     func stopRecording() {
         guard let recorder = recorder, recorder.isRecording else { return }
         recorder.stop()
         isRecording = false
-        
+
         if let audioFile = recorder.audioFile {
             let fileManager = FileManager.default
             let documentsURL = getDocumentsDirectory()
             let outputURL = documentsURL.appendingPathComponent("recording-\(Date().timeIntervalSince1970).caf")
-            
+
             do {
                 if fileManager.fileExists(atPath: outputURL.path) {
                     try fileManager.removeItem(at: outputURL)
@@ -455,9 +457,9 @@ class HeartbeatSoundManager: NSObject, ObservableObject {
             } catch {
                 print("Error saving recording: \(error.localizedDescription)")
             }
-        }
+        } 
     }
-    
+
     func togglePlayback(recording: Recording) {
         if player?.isPlaying == true {
             player?.stop()
@@ -473,9 +475,9 @@ class HeartbeatSoundManager: NSObject, ObservableObject {
                 if isRunning {
                     stop()
                 }
-                
+
                 resetEngine()
-                
+
                 player = AudioPlayer(url: recording.fileURL)
                 player?.completionHandler = { [weak self] in
                     DispatchQueue.main.async {
@@ -485,7 +487,7 @@ class HeartbeatSoundManager: NSObject, ObservableObject {
                         }
                     }
                 }
-                
+
                 engine.output = player
                 try engine.start()
                 player?.play()
@@ -498,7 +500,7 @@ class HeartbeatSoundManager: NSObject, ObservableObject {
             }
         }
     }
-    
+
     func start() {
         if isPlayingPlayback {
             player?.stop()
@@ -509,12 +511,12 @@ class HeartbeatSoundManager: NSObject, ObservableObject {
         }
         resetEngine()
         setupAudio()
-        
+
         do {
             try engine.start()
             isRunning = true
             print("Audio engine started successfully")
-            
+
             if amplitudeTap?.isStarted == false {
                 amplitudeTap?.start()
                 print("Amplitude tap restarted")
@@ -525,16 +527,16 @@ class HeartbeatSoundManager: NSObject, ObservableObject {
             isRunning = false
         }
     }
-    
+
     func stop() {
         amplitudeTap?.stop()
-        
+
         if engine.avEngine.isRunning {
             engine.stop()
         }
-        
+
         cleanupAudio()
-        
+
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
             do {
                 try AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
@@ -542,8 +544,44 @@ class HeartbeatSoundManager: NSObject, ObservableObject {
                 print("Error deactivating audio session: \(error.localizedDescription)")
             }
         }
-        
+
         isRunning = false
+    }
+    
+    func saveRecording() {
+        guard let recording = lastRecording else {
+            print("No recording to save")
+            return
+        }
+        
+        let fileManager = FileManager.default
+        let documentsURL = getDocumentsDirectory()
+        
+        // Create a permanent filename (without timestamp prefix)
+        let permanentURL = documentsURL.appendingPathComponent("saved-heartbeat-\(Date().timeIntervalSince1970).caf")
+        
+        do {
+            // Check if file already exists at permanent location
+            if fileManager.fileExists(atPath: permanentURL.path) {
+                try fileManager.removeItem(at: permanentURL)
+            }
+            
+            // Copy the recording to permanent location
+            try fileManager.copyItem(at: recording.fileURL, to: permanentURL)
+            
+            print("Recording permanently saved to \(permanentURL)")
+            
+            let newRecording = Recording(fileURL: permanentURL)
+            
+            // Update lastRecording AND append to the timeline list
+            DispatchQueue.main.async {
+                self.lastRecording = newRecording
+                self.savedRecordings.append(newRecording)
+            }
+            
+        } catch {
+            print("Error saving recording permanently: \(error.localizedDescription)")
+        }
     }
 }
 // swiftlint:enable type_body_length
