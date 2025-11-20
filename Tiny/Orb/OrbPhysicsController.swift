@@ -26,7 +26,7 @@ class OrbPhysicsController: ObservableObject {
 
     @objc private func update() {
         // Increment time. A smaller number means a slower, more "amniotic" feel.
-        time += 0.05
+        time = 0.05
 
         // --- Tunable Parameters ---
         let driftAmount: CGFloat = 10.0   // How far it wanders from the center
