@@ -1,3 +1,10 @@
+//
+//  ContentView.swift
+//  tiny
+//
+//  Created by Destu Cikal Ramdani on 25/10/25.
+//
+
 import SwiftUI
 
 struct ContentView: View {
@@ -11,7 +18,6 @@ struct ContentView: View {
                 OnBoardingView(hasShownOnboarding: $hasShownOnboarding)
             }
         }
-        .ignoresSafeArea()
         .preferredColorScheme(.dark)
     }
 }

@@ -6,30 +6,10 @@
 //
 
 import SwiftUI
+import UIKit
 
 struct OnBoardingView: View {
     @Binding var hasShownOnboarding: Bool
-    
-    var body: some View {
-        ZStack {
-            TabView {
-                OnboardingPage1()
-                OnboardingPage2(hasShownOnboarding: $hasShownOnboarding)
-            }
-            .tabViewStyle(.page)
-        }
-    }
-}
-
-private struct OnboardingPage1: View {
-
-    var titleText: AttributedString {
-        var string = AttributedString("What can you do with Tiny?")
-        if let range = string.range(of: "Tiny") {
-            string[range].foregroundColor = Color("mainYellow")
-        }
-        return string
-    }
 
     var body: some View {
         ZStack {
@@ -37,26 +17,74 @@ private struct OnboardingPage1: View {
                 .resizable()
                 .ignoresSafeArea()
 
-            VStack {
-                Image("handHoldingPhone")
-                Image("stomach")
+            TabView {
+                OnboardingPage1()
+                    .ignoresSafeArea()
+                OnboardingPage2(hasShownOnboarding: $hasShownOnboarding)  // Pass it to page 2
+                    .ignoresSafeArea()
+            }
+            .tabViewStyle(.page)
+        }
+        .ignoresSafeArea()
+    }
+}
+
+private struct OnboardingPage1: View {
+    @State private var scanOffset: CGFloat = -40   // Start left
+    @State private var rotation: Double = -5       // Small tilt
+
+    var titleText: AttributedString {
+        var string = AttributedString("What can you do with tiny?")
+        if let range = string.range(of: "tiny") {
+            string[range].foregroundColor = Color("mainYellow")
+        }
+        return string
+    }
+
+    var body: some View {
+        ZStack {
+            Image("bgOnboarding1")
+                .scaledToFill()
+                .offset(y: 130)
+
+            VStack(spacing: 16) {
+
+                ZStack {
+                    VStack {
+                        Image("handHoldingPhone")
+                            .offset(x: scanOffset)
+                            .rotationEffect(.degrees(rotation))
+                            .onAppear {
+                                withAnimation(
+                                    .easeInOut(duration: 2.4)
+                                    .repeatForever(autoreverses: true)
+                                ) {
+                                    scanOffset = 40       // move right
+                                    rotation = 5          // tilt to the right
+                                }
+                            }
+
+                        Image("stomach")
+                    }
+                }
 
                 Text(titleText)
                     .font(.title)
                     .fontWeight(.bold)
-                    .padding()
+                    .padding(.top, 20)
 
-                Text("You can listen to your baby’s heartbeat live and record it to listen again later")
+                Text("You can listen to your baby's heartbeat live and record it to listen again later")
                     .font(.body)
                     .fontWeight(.medium)
                     .multilineTextAlignment(.center)
+                    .padding(.horizontal, 30)
             }
         }
     }
 }
 
 private struct OnboardingPage2: View {
-    @Binding var hasShownOnboarding: Bool
+    @Binding var hasShownOnboarding: Bool  // Add this line
     @StateObject private var manager = HeartbeatSoundManager()
     @State private var showDeniedAlert = false
 
@@ -70,21 +98,31 @@ private struct OnboardingPage2: View {
 
     var body: some View {
         ZStack {
-            Image("background")
-                .resizable()
-                .ignoresSafeArea()
+            Image("bgOnboarding2")
+                .scaledToFill()
+                .offset(y: -340)
 
             VStack {
                 HStack {
                     Image(systemName: "airpod.gen3.right")
                         .font(.system(size: 80))
-                        .rotationEffect(.degrees(-10))   // rotate LEFT
+                        .rotationEffect(.degrees(-10))
 
                     Image(systemName: "airpod.gen3.left")
                         .font(.system(size: 80))
-                        .rotationEffect(.degrees(10))    // rotate RIGHT
+                        .rotationEffect(.degrees(10))
                         .offset(y: 10)
                 }
+                .mask(
+                    LinearGradient(
+                        gradient: Gradient(colors: [
+                            .white,
+                            .white.opacity(0.3)
+                        ]),
+                        startPoint: .top,
+                        endPoint: .bottom
+                    )
+                )
 
                 Text(titleText)
                     .font(.title)
@@ -97,18 +135,16 @@ private struct OnboardingPage2: View {
                     .multilineTextAlignment(.center)
 
                 Button(action: {
-                    // Action to ask microphone permission
                     manager.requestMicrophonePermission { granted in
                         if granted {
                             print("Permission granted")
+                            hasShownOnboarding = true  // Dismiss onboarding when permission is granted
                         } else {
                             showDeniedAlert = true
                         }
-                        hasShownOnboarding = true
                     }
-
                 }, label: {
-                    Text("Allow Access")
+                    Text("Let's go")
                         .font(.headline)
                         .fontWeight(.semibold)
                         .padding(.vertical, 14)
@@ -116,7 +152,17 @@ private struct OnboardingPage2: View {
                         .foregroundColor(.white)
                         .glassEffect()
                 })
-                .padding()
+                .padding(.top, 20)
+                .alert("Microphone Access Denied", isPresented: $showDeniedAlert) {
+                    Button("OK", role: .cancel) { }
+                    Button("Open Settings") {
+                        if let url = URL(string: UIApplication.openSettingsURLString) {
+                            UIApplication.shared.open(url)
+                        }
+                    }
+                } message: {
+                    Text("Please enable microphone access in Settings to use this feature.")
+                }
             }
         }
     }
@@ -124,16 +170,4 @@ private struct OnboardingPage2: View {
 
 #Preview {
     OnBoardingView(hasShownOnboarding: .constant(false))
-        .ignoresSafeArea()
-        .preferredColorScheme(.dark)
-}
-
-#Preview("Page 1") {
-    OnboardingPage1()
-        .ignoresSafeArea()
-}
-
-#Preview("Page 2") {
-    OnboardingPage2(hasShownOnboarding: .constant(false))
-        .ignoresSafeArea()
 }
