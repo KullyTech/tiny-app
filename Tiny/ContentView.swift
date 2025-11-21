@@ -1,17 +1,14 @@
 import SwiftUI
+import SwiftData
 
 struct ContentView: View {
     var body: some View {
-        NavigationView {
-            OrbLiveListenView()
-                .tabItem {
-                    Label("Orb", systemImage: "microbe.fill")
-                }
-        }
-        .preferredColorScheme(.dark)
+        HeartbeatMainView()
+            .preferredColorScheme(.dark)
     }
 }
 
 #Preview {
     ContentView()
+        .modelContainer(for: SavedHeartbeat.self, inMemory: true)
 }

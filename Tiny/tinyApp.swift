@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import SwiftData
 
 @main
 struct TinyApp: App {
@@ -16,5 +17,6 @@ struct TinyApp: App {
             ContentView()
                 .environmentObject(heartbeatSoundManager)
         }
+        .modelContainer(for: SavedHeartbeat.self)
     }
 }

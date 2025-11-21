@@ -14,6 +14,10 @@ import AudioKitEX
 
 internal import Combine
 
+import SwiftData
+import UIKit
+import SwiftUI
+
 struct Recording: Identifiable, Equatable {
     let id = UUID()
     let fileURL: URL
@@ -36,7 +40,10 @@ enum HeartbeatFilterMode {
 }
 
 // swiftlint:disable type_body_length
+@MainActor
 class HeartbeatSoundManager: NSObject, ObservableObject {
+    var modelContext: ModelContext?
+    
     var engine: AudioEngine!
     var mic: AudioEngine.InputNode?
     var gain: Fader?
@@ -58,7 +65,7 @@ class HeartbeatSoundManager: NSObject, ObservableObject {
     @Published var isRunning = false
     @Published var isRecording = false
     @Published var lastRecording: Recording?
-    @Published var savedRecordings: [Recording] = []   // new saved recordings
+    @Published var savedRecordings: [Recording] = []
     @Published var isPlayingPlayback = false
     @Published var amplitudeVal: Float = 0.0
     @Published var blinkAmplitude: Float = 0.0
@@ -87,6 +94,24 @@ class HeartbeatSoundManager: NSObject, ObservableObject {
             } else {
                 print("Micrphone Denied!")
             }
+        }
+    }
+    
+    func loadFromSwiftData() {
+        guard let modelContext = modelContext else {
+            print("💾 No modelContext set on HeartbeatSoundManager; cannot load SwiftData")
+            return
+        }
+        
+        do {
+            let results = try modelContext.fetch(FetchDescriptor<SavedHeartbeat>())
+            DispatchQueue.main.async {
+                self.savedRecordings = results.map {
+                    Recording(fileURL: URL(fileURLWithPath: $0.filePath))
+                }
+            }
+        } catch {
+            print("SwiftData load error: \(error)")
         }
     }
     
@@ -548,38 +573,27 @@ class HeartbeatSoundManager: NSObject, ObservableObject {
     }
     
     func saveRecording() {
-        guard let recording = lastRecording else {
-            print("No recording to save")
+        guard let recording = lastRecording else { return }
+
+        let fileURL = recording.fileURL
+        let path = fileURL.path
+        
+        // We can still update in-memory list even without SwiftData
+        self.savedRecordings.append(recording)
+        
+        guard let modelContext = modelContext else {
+            print("💾 No modelContext set; skipping SwiftData persistence")
             return
         }
-        
-        let fileManager = FileManager.default
-        let documentsURL = getDocumentsDirectory()
-        
-        // Create a permanent filename (without timestamp prefix)
-        let permanentURL = documentsURL.appendingPathComponent("saved-heartbeat-\(Date().timeIntervalSince1970).caf")
-        
+
+        let entry = SavedHeartbeat(filePath: path, timestamp: Date())
+        modelContext.insert(entry)
+
         do {
-            // Check if file already exists at permanent location
-            if fileManager.fileExists(atPath: permanentURL.path) {
-                try fileManager.removeItem(at: permanentURL)
-            }
-            
-            // Copy the recording to permanent location
-            try fileManager.copyItem(at: recording.fileURL, to: permanentURL)
-            
-            print("Recording permanently saved to \(permanentURL)")
-            
-            let newRecording = Recording(fileURL: permanentURL)
-            
-            // Update lastRecording AND append to the timeline list
-            DispatchQueue.main.async {
-                self.lastRecording = newRecording
-                self.savedRecordings.append(newRecording)
-            }
-            
+            try modelContext.save()
+            print("Recording persisted → SwiftData + Local File")
         } catch {
-            print("Error saving recording permanently: \(error.localizedDescription)")
+            print("SwiftData save failed: \(error)")
         }
     }
 }
