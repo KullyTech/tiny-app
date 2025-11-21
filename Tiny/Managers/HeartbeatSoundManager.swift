@@ -14,9 +14,14 @@ import AudioKitEX
 
 internal import Combine
 
+import SwiftData
+import UIKit
+import SwiftUI
+
 struct Recording: Identifiable, Equatable {
     let id = UUID()
     let fileURL: URL
+    let createdAt: Date
     var isPlaying: Bool = false
 }
 
@@ -36,7 +41,10 @@ enum HeartbeatFilterMode {
 }
 
 // swiftlint:disable type_body_length
+@MainActor
 class HeartbeatSoundManager: NSObject, ObservableObject {
+    var modelContext: ModelContext?
+    
     var engine: AudioEngine!
     var mic: AudioEngine.InputNode?
     var gain: Fader?
@@ -58,7 +66,7 @@ class HeartbeatSoundManager: NSObject, ObservableObject {
     @Published var isRunning = false
     @Published var isRecording = false
     @Published var lastRecording: Recording?
-    @Published var savedRecordings: [Recording] = []   // new saved recordings
+    @Published var savedRecordings: [Recording] = []
     @Published var isPlayingPlayback = false
     @Published var amplitudeVal: Float = 0.0
     @Published var blinkAmplitude: Float = 0.0
@@ -90,7 +98,32 @@ class HeartbeatSoundManager: NSObject, ObservableObject {
             }
         }
     }
-
+    
+    func loadFromSwiftData() {
+        guard let modelContext = modelContext else { return }
+        do {
+            let results = try modelContext.fetch(FetchDescriptor<SavedHeartbeat>())
+            let documentsURL = getDocumentsDirectory()
+            
+            DispatchQueue.main.async {
+                // ✅ Map the REAL timestamp from SwiftData
+                self.savedRecordings = results.map { savedItem in
+                    let fileName = URL(fileURLWithPath: savedItem.filePath).lastPathComponent
+                    
+                    let currentURL = documentsURL.appendingPathComponent(fileName)
+                    
+                    return Recording(
+                        fileURL: currentURL,
+                        createdAt: savedItem.timestamp
+                    )
+                }
+            }
+            print("✅ Loaded \(self.savedRecordings.count) recordings from SwiftData")
+        } catch {
+            print("SwiftData load error: \(error)")
+        }
+    }
+    
     func setupAudio() {
         do {
             cleanupAudio()
@@ -439,25 +472,23 @@ class HeartbeatSoundManager: NSObject, ObservableObject {
         guard let recorder = recorder, recorder.isRecording else { return }
         recorder.stop()
         isRecording = false
-
+        
         if let audioFile = recorder.audioFile {
             let fileManager = FileManager.default
-            let documentsURL = getDocumentsDirectory()
-            let outputURL = documentsURL.appendingPathComponent("recording-\(Date().timeIntervalSince1970).caf")
-
+            let outputURL = getDocumentsDirectory().appendingPathComponent("recording-\(Date().timeIntervalSince1970).caf")
+            
             do {
                 if fileManager.fileExists(atPath: outputURL.path) {
                     try fileManager.removeItem(at: outputURL)
                 }
                 try fileManager.moveItem(at: audioFile.url, to: outputURL)
                 DispatchQueue.main.async {
-                    self.lastRecording = Recording(fileURL: outputURL)
+                    self.lastRecording = Recording(fileURL: outputURL, createdAt: Date())
                 }
-                print("Recording saved to \(outputURL)")
             } catch {
-                print("Error saving recording: \(error.localizedDescription)")
+                print(error)
             }
-        } 
+        }
     }
 
     func togglePlayback(recording: Recording) {
@@ -549,38 +580,21 @@ class HeartbeatSoundManager: NSObject, ObservableObject {
     }
     
     func saveRecording() {
-        guard let recording = lastRecording else {
-            print("No recording to save")
-            return
-        }
+        guard let recording = lastRecording else { return }
+        self.savedRecordings.append(recording)
         
-        let fileManager = FileManager.default
-        let documentsURL = getDocumentsDirectory()
+        guard let modelContext = modelContext else { return }
+    
+        let entry = SavedHeartbeat(
+            filePath: recording.fileURL.path,
+            timestamp: recording.createdAt
+        )
         
-        // Create a permanent filename (without timestamp prefix)
-        let permanentURL = documentsURL.appendingPathComponent("saved-heartbeat-\(Date().timeIntervalSince1970).caf")
-        
+        modelContext.insert(entry)
         do {
-            // Check if file already exists at permanent location
-            if fileManager.fileExists(atPath: permanentURL.path) {
-                try fileManager.removeItem(at: permanentURL)
-            }
-            
-            // Copy the recording to permanent location
-            try fileManager.copyItem(at: recording.fileURL, to: permanentURL)
-            
-            print("Recording permanently saved to \(permanentURL)")
-            
-            let newRecording = Recording(fileURL: permanentURL)
-            
-            // Update lastRecording AND append to the timeline list
-            DispatchQueue.main.async {
-                self.lastRecording = newRecording
-                self.savedRecordings.append(newRecording)
-            }
-            
+            try modelContext.save()
         } catch {
-            print("Error saving recording permanently: \(error.localizedDescription)")
+            print("SwiftData save failed: \(error)")
         }
     }
 }

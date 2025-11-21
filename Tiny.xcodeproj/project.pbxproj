@@ -33,9 +33,6 @@
 		433435C42EACD4E4004C6B8C /* Tiny.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Tiny.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		433435D12EACD4E5004C6B8C /* TinyTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = TinyTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		433435DB2EACD4E5004C6B8C /* TinyUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = TinyUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
-		DEFE64C82ECB6123004B115A /* AudioKit */ = {isa = PBXFileReference; lastKnownFileType = wrapper; name = AudioKit; path = "/Users/benedictusyoga/Library/Developer/Xcode/DerivedData/Tiny-avirkidcxafmvjhegizwaahcarxv/SourcePackages/checkouts/AudioKit"; sourceTree = "<absolute>"; };
-		DEFE64C92ECB6126004B115A /* AudioKitEX */ = {isa = PBXFileReference; lastKnownFileType = wrapper; name = AudioKitEX; path = "/Users/benedictusyoga/Library/Developer/Xcode/DerivedData/Tiny-avirkidcxafmvjhegizwaahcarxv/SourcePackages/checkouts/AudioKitEX"; sourceTree = "<absolute>"; };
-		DEFE64CA2ECB6128004B115A /* Orb */ = {isa = PBXFileReference; lastKnownFileType = wrapper; name = Orb; path = "/Users/benedictusyoga/Library/Developer/Xcode/DerivedData/Tiny-avirkidcxafmvjhegizwaahcarxv/SourcePackages/checkouts/Orb"; sourceTree = "<absolute>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -121,9 +118,6 @@
 		DE5E9C842EB354B200485B15 /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
-				DEFE64C82ECB6123004B115A /* AudioKit */,
-				DEFE64C92ECB6126004B115A /* AudioKitEX */,
-				DEFE64CA2ECB6128004B115A /* Orb */,
 			);
 			name = Frameworks;
 			sourceTree = "<group>";
@@ -467,7 +461,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = 6PN64DQKLX;
+				DEVELOPMENT_TEAM = YPC2WUCUT5;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = Tiny/Info.plist;
@@ -508,7 +502,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = 6PN64DQKLX;
+				DEVELOPMENT_TEAM = YPC2WUCUT5;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = Tiny/Info.plist;

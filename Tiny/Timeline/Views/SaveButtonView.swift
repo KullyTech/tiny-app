@@ -25,4 +25,5 @@ struct SaveButtonView: View {
         Color.black
         SaveButtonView()
     }
+    .ignoresSafeArea()
 }
