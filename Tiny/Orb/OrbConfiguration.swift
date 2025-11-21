@@ -75,3 +75,20 @@ public struct OrbConfiguration {
         )
     }
 }
+
+extension OrbConfiguration {
+    init(style: OrbStyles) {
+        self.init(
+            backgroundColors: style.backgorundColors,
+            glowColor: style.glowColor,
+            particleColor: style.particleColor,
+            coreGlowIntensity: 0.1,
+            showBackground: true,
+            showWavyBlobs: true,
+            showParticles: false,
+            showGlowEffects: false,
+            showShadow: false,
+            speed: 30
+        )
+    }
+}

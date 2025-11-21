@@ -15,18 +15,11 @@ import SpriteKit
 struct AnimatedOrbView: View {
     @StateObject private var physicsController = OrbPhysicsController()
     var size: CGFloat = 200
-
-    private let configuration = OrbConfiguration(
-        backgroundColors: [.orange, .orbOrange, .clear],
-        glowColor: .white.opacity(0.1),
-        coreGlowIntensity: 0.1,
-        showBackground: true,
-        showWavyBlobs: true,
-        showParticles: false,
-        showGlowEffects: false,
-        showShadow: false,
-        speed: 30
-    )
+    var style: OrbStyles = .defaultStyle
+    
+    private var configuration: OrbConfiguration {
+        OrbConfiguration(style: style)
+    }
 
     var body: some View {
         ZStack {
@@ -36,9 +29,9 @@ struct AnimatedOrbView: View {
                 .stroke(
                     AngularGradient(
                         colors: [
-                            .orbOrange.opacity(0.8),
-                            .orbOrange.opacity(2),
-                            .orbOrange.opacity(0.6)
+                            style.glowColor.opacity(0.8),
+                            style.glowColor.opacity(2),
+                            style.glowColor.opacity(0.6)
                         ],
                         center: .center,
                         startAngle: .degrees(0),
