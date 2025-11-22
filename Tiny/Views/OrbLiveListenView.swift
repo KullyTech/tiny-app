@@ -330,7 +330,6 @@ extension OrbLiveListenView {
         }
         heartbeatSoundManager.start()
         heartbeatSoundManager.startRecording()
-        showListeningTutorialIfNeeded()
     }
     
     private func handleSingleTap() {
