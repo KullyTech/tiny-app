@@ -8,6 +8,12 @@
 import Foundation
 import Accelerate
 
+struct HeartbeatStats {
+    let avgBPM: Double
+    let confidence: Float
+    let beatCount: Int
+}
+
 class HeartbeatDetector {
     private var heartbeatData: [HeartbeatData] = []
     private var recentPeaks: [Date] = []
@@ -251,14 +257,14 @@ class HeartbeatDetector {
     }
 
     // Get recent heartbeat statistics
-    func getHeartbeatStats() -> (avgBPM: Double, confidence: Float, beatCount: Int) {
-        guard !heartbeatData.isEmpty else { return (0.0, 0.0, 0) }
+    func getHeartbeatStats() -> HeartbeatStats {
+        guard !heartbeatData.isEmpty else { return HeartbeatStats(avgBPM: 0.0, confidence: 0.0, beatCount: 0) }
 
         let recentData = Array(heartbeatData.suffix(10))
         let avgBPM = recentData.map { $0.bpm }.reduce(0, +) / Double(recentData.count)
         let avgConfidence = recentData.map { $0.confidence }.reduce(0, +) / Float(recentData.count)
 
-        return (avgBPM, avgConfidence, recentPeaks.count)
+        return HeartbeatStats(avgBPM: avgBPM, confidence: avgConfidence, beatCount: recentPeaks.count)
     }
 
     // Reset detector state
