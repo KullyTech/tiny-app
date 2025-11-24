@@ -9,6 +9,7 @@ import Foundation
 import AVFoundation
 import AudioKit
 import AudioKitEX
+import CoreHaptics
 internal import Combine
 
 class AudioPostProcessingManager: ObservableObject {
@@ -17,13 +18,17 @@ class AudioPostProcessingManager: ObservableObject {
     private var parametricEQ: ParametricEQ?
     private var highShelfFilter: HighShelfFilter?
     private var timer: Timer?
-    
+    private var hapticManager: HapticManager?
+    private var amplitudeTap: AmplitudeTap?
+
     @Published var isPlaying = false
     @Published var currentTime: TimeInterval = 0
     @Published var duration: TimeInterval = 0
-    
+    @Published var amplitude: Float = 0.0
+
     init() {
         engine = AudioEngine()
+        hapticManager = HapticManager()
     }
 
     func setupEQChain(input: Node) -> Node {
@@ -56,16 +61,22 @@ class AudioPostProcessingManager: ObservableObject {
                 print("Failed to create audio player")
                 return
             }
-            
-            let processedOutput = setupEQChain(input: player)
-            
-            engine.output = processedOutput
 
             if let audioFile = try? AVAudioFile(forReading: fileURL) {
-                let sampleRate = audioFile.processingFormat.sampleRate
+                let sampleRate = Float(audioFile.processingFormat.sampleRate)
                 let frameCount = Double(audioFile.length)
-                duration = frameCount / sampleRate
+                duration = frameCount / Double(sampleRate)
+                print("▶️ File loaded: \(sampleRate) Hz | Duration: \(String(format: "%.1f", duration))s")
             }
+
+            let processedOutput = setupEQChain(input: player)
+
+            // Attach Amplitude tap for haptic analysis
+            amplitudeTap = AmplitudeTap(processedOutput) { [weak self] amplitude in
+                self?.processAmplitude(amplitude: amplitude)
+            }
+
+            engine.output = processedOutput
 
             player.completionHandler = { [weak self] in
                 DispatchQueue.main.async {
@@ -74,7 +85,9 @@ class AudioPostProcessingManager: ObservableObject {
                 }
             }
 
+            hapticManager?.prepareHaptics()
             try engine.start()
+            amplitudeTap?.start()
             player.play()
             isPlaying = true
   
@@ -89,7 +102,15 @@ class AudioPostProcessingManager: ObservableObject {
             print("❌ Error loading audio: \(error.localizedDescription)")
         }
     }
-    
+
+    // Process amplitude data for haptic feedback
+    private func processAmplitude(amplitude: Float) {
+        DispatchQueue.main.async {
+            self.amplitude = amplitude
+            self.hapticManager?.playHapticFromAmplitude(amplitude)
+        }
+    }
+
     private func startTimeTracking() {
         // Stop any existing timer first
         timer?.invalidate()
@@ -115,6 +136,7 @@ class AudioPostProcessingManager: ObservableObject {
         // Stop time tracking when paused
         timer?.invalidate()
         timer = nil
+        hapticManager?.stopHaptics()
     }
     
     func resume() {
@@ -122,7 +144,9 @@ class AudioPostProcessingManager: ObservableObject {
             print("❌ No player available to resume")
             return
         }
-        
+
+        hapticManager?.prepareHaptics()
+
         // Don't try to restart engine if it's already running
         if !engine.avEngine.isRunning {
             do {
@@ -150,8 +174,14 @@ class AudioPostProcessingManager: ObservableObject {
         // Stop time tracking
         timer?.invalidate()
         timer = nil
-        
+
+        amplitudeTap?.stop()
+        amplitudeTap = nil
         engine.stop()
+        hapticManager?.stopHaptics()
+
+        // Reset haptic state
+        hapticManager?.reset()
     }
     
     func seek(to time: TimeInterval) {
