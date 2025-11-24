@@ -39,7 +39,7 @@
 		DEFE64CC2ECC4287004B115A /* Exceptions for "Tiny" folder in "Tiny" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
-				Resources/Info.plist,
+				Info.plist,
 			);
 			target = 433435C32EACD4E4004C6B8C /* Tiny */;
 		};
