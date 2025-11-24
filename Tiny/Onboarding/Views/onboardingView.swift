@@ -8,24 +8,47 @@
 import SwiftUI
 import UIKit
 
+import SwiftUI
+import UIKit
+
 struct OnBoardingView: View {
     @Binding var hasShownOnboarding: Bool
 
-    var body: some View {
-        ZStack {
-            Image("background")
-                .resizable()
-                .ignoresSafeArea()
+    enum OnboardingPageType: CaseIterable, Identifiable {
+        case page1
+        case page2
 
-            TabView {
-                OnboardingPage1()
+        var id: Self { self }
+    }
+
+    var body: some View {
+        GeometryReader { geometry in
+            ZStack {
+                Image("background")
+                    .resizable()
                     .ignoresSafeArea()
-                OnboardingPage2(hasShownOnboarding: $hasShownOnboarding)  // Pass it to page 2
-                    .ignoresSafeArea()
+
+                ScrollView(.vertical) {
+                    VStack(spacing: 0) {
+                        ForEach(OnboardingPageType.allCases) { pageType in
+                            Group {
+                                switch pageType {
+                                case .page1:
+                                    OnboardingPage1()
+                                case .page2:
+                                    OnboardingPage2(hasShownOnboarding: $hasShownOnboarding)
+                                }
+                            }
+                            .frame(width: geometry.size.width, height: geometry.size.height)
+                        }
+                    }
+                    .scrollTargetLayout()
+                }
+                .scrollTargetBehavior(.paging)
+                .scrollIndicators(.hidden)
+                .ignoresSafeArea()
             }
-            .tabViewStyle(.page)
         }
-        .ignoresSafeArea()
     }
 }
 
@@ -170,4 +193,10 @@ private struct OnboardingPage2: View {
 
 #Preview {
     OnBoardingView(hasShownOnboarding: .constant(false))
+        .preferredColorScheme(.dark)
+}
+
+#Preview {
+    OnBoardingView(hasShownOnboarding: .constant(false))
+        .preferredColorScheme(.dark)
 }
