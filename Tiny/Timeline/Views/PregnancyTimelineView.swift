@@ -24,17 +24,43 @@ struct PregnancyTimelineView: View {
             
             ZStack {
                 if let week = selectedWeek {
-                    TimelineDetailView(week: week, animation: animation, onSelectRecording: onSelectRecording)
-                        .transition(.opacity)
+                    TimelineDetailView(
+                        week: week,
+                        animation: animation,
+                        onSelectRecording: onSelectRecording,
+                        onDeleteRecording: { recording in
+                            withAnimation {
+                                heartbeatSoundManager.deleteSavedRecording(recording)
+                                // If week becomes empty, go back? Optional.
+                                // Force refresh of local selectedWeek state:
+                                if let index = selectedWeek?.recordings.firstIndex(of: recording) {
+                                    // We need to refresh 'groupedData' first, then re-select this week
+                                    // groupRecordings() will happen automatically via onChange below
+                                }
+                            }
+                        }
+                    )
+                    .transition(.opacity)
                 } else {
-                    MainTimelineListView(groupedData: groupedData, selectedWeek: $selectedWeek, animation: animation)
-                        .transition(.opacity)
+                    MainTimelineListView(groupedData: groupedData, selectedWeek: $selectedWeek, animation: animation).transition(.opacity)
                 }
             }
             
             navigationButtons
         }
         .onAppear(perform: groupRecordings)
+        // refresh when data changes (e.g. after delete)
+        .onChange(of: heartbeatSoundManager.savedRecordings) { _, _ in
+            groupRecordings()
+            // Also update the currently selected week object so the detail view updates immediately
+            if let currentWeek = selectedWeek {
+                selectedWeek = groupedData.first(where: { $0.weekNumber == currentWeek.weekNumber })
+                // If the week is now empty/gone, go back to main list
+                if selectedWeek == nil {
+                    withAnimation { selectedWeek = nil }
+                }
+            }
+        }
     }
     
     private var navigationButtons: some View {
@@ -97,6 +123,10 @@ struct PregnancyTimelineView: View {
     let week1Date = now
     let week2Date = Calendar.current.date(byAdding: .day, value: -7, to: now)! // 1 week ago
     let week3Date = Calendar.current.date(byAdding: .day, value: -21, to: now)! // 3 weeks ago
+    let week4Date = Calendar.current.date(byAdding: .day, value: -28, to: now)! // 4 weeks ago
+    let week5Date = Calendar.current.date(byAdding: .day, value: -35, to: now)! // 5 weeks ago
+    let week6Date = Calendar.current.date(byAdding: .day, value: -42, to: now)! // 6 weeks ago
+    let week7Date = Calendar.current.date(byAdding: .day, value: -49, to: now)! // 7 weeks ago
     
     mockManager.savedRecordings = [
         // Week A (Current Week)
@@ -108,7 +138,15 @@ struct PregnancyTimelineView: View {
         
         // Week C (3 Weeks Ago)
         Recording(fileURL: URL(fileURLWithPath: "first-time.caf"), createdAt: week3Date),
-        Recording(fileURL: URL(fileURLWithPath: "doctor-visit.caf"), createdAt: week3Date.addingTimeInterval(-50))
+        Recording(fileURL: URL(fileURLWithPath: "doctor-visit.caf"), createdAt: week3Date.addingTimeInterval(-50)),
+        
+        Recording(fileURL: URL(fileURLWithPath: "first-time1.caf"), createdAt: week4Date),
+        
+        Recording(fileURL: URL(fileURLWithPath: "first-time2.caf"), createdAt: week5Date),
+        
+        Recording(fileURL: URL(fileURLWithPath: "first-time3.caf"), createdAt: week6Date),
+        
+        Recording(fileURL: URL(fileURLWithPath: "first-time4.caf"), createdAt: week7Date)
     ]
     
     return PregnancyTimelineView(

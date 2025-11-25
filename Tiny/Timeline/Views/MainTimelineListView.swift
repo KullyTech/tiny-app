@@ -17,14 +17,21 @@ struct MainTimelineListView: View {
     private let wavePeriod: CGFloat = 600
     private let topPadding: CGFloat = 150
     private let bottomPadding: CGFloat = 200
+    private let buttonHeight: CGFloat = 77
+    private let buttonBottomPadding: CGFloat = 50
     
     var body: some View {
         GeometryReader { geometry in
             let totalItems = groupedData.count
+            
             let contentHeight = max(
                 geometry.size.height,
                 topPadding + (CGFloat(totalItems) * itemSpacing) + bottomPadding
             )
+            
+            let pathHeight = contentHeight - (buttonHeight + buttonBottomPadding)
+            
+            let phase = -((pathHeight / wavePeriod) * .pi * 2)
             
             ScrollView(showsIndicators: false) {
                 // Reader to scroll to bottom if needed (optional)
@@ -32,9 +39,10 @@ struct MainTimelineListView: View {
                     ZStack(alignment: .top) {
                         // 1. Wavy Line
                         ContinuousWave(
-                            totalHeight: contentHeight,
+                            totalHeight: pathHeight,
                             period: wavePeriod,
-                            amplitude: geometry.size.width * 0.35
+                            amplitude: geometry.size.width * 0.35,
+                            phase: phase
                         )
                         .stroke(
                             LinearGradient(
@@ -61,7 +69,8 @@ struct MainTimelineListView: View {
                                 yCoor: yPos,
                                 width: geometry.size.width,
                                 period: wavePeriod,
-                                amplitude: geometry.size.width * 0.35
+                                amplitude: geometry.size.width * 0.35,
+                                phase: phase
                             )
                             
                             VStack(spacing: 8) {
@@ -69,6 +78,15 @@ struct MainTimelineListView: View {
                                 ZStack {
                                     AnimatedOrbView(size: 20)
                                         .shadow(color: .orange.opacity(0.4), radius: 15)
+                                    Circle()
+                                        .fill(Color.blue) // The base color of your dot
+                                        .frame(width: 1, height: 1) // Size of the dot
+                                        .shadow(color: .blue.opacity(0.7), radius: 20, x: 0, y: 0) // The glowing effect
+                                        .overlay(
+                                            Circle()
+                                                .stroke(Color.white.opacity(0.8), lineWidth: 2) // Optional: add a subtle highlight
+                                                .blur(radius: 1) // Blur the highlight for a softer edge
+                                        )
                                 }
                                 .matchedGeometryEffect(id: "orb_\(week.weekNumber)", in: animation)
                                 .onTapGesture {

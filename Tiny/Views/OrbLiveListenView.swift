@@ -24,7 +24,9 @@ struct OrbLiveListenView: View {
     @State private var longPressScale: CGFloat = 1.0
     @State private var dragOffset: CGFloat = 0
     @State private var isDraggingToSave = false
+    @State private var isDraggingToDelete = false
     @State private var saveButtonScale: CGFloat = 1.0
+    @State private var deleteButtonScale: CGFloat = 1.0
     @State private var orbDragScale: CGFloat = 1.0
     @State private var canSaveCurrentRecording = false
 
@@ -32,16 +34,13 @@ struct OrbLiveListenView: View {
         GeometryReader { geometry in
             ZStack {
                 backgroundView
-                topControlsView
+                statusTextView
+                deleteButton(geometry: geometry)
                 statusTextView
                 orbView(geometry: geometry)
-                
-                // Save/Library Button (Only visible when dragging)
                 saveButton(geometry: geometry)
                 
-                // ⬇️ NEW: Temporary Floating Button to Open Timeline manually
-                // (Since the dragging saveButton is hidden by default)
-                if !isListening && !isDraggingToSave {
+                if !isListening && !isDraggingToSave && !isDraggingToDelete {
                     libraryOpenButton(geometry: geometry)
                 }
                 
@@ -92,27 +91,6 @@ struct OrbLiveListenView: View {
         }
     }
     
-    private var topControlsView: some View {
-        VStack {
-            HStack {
-                if isPlaybackMode {
-                    Button(action: handleBackButton, label: {
-                        Image(systemName: "chevron.left")
-                            .font(.system(size: 22, weight: .semibold))
-                            .foregroundColor(.white)
-                            .frame(width: 50, height: 50)
-                            .clipShape(Circle())
-                    })
-                    .glassEffect(.clear)
-                    .transition(.opacity.animation(.easeInOut))
-                }
-                Spacer()
-            }
-            .padding()
-            Spacer()
-        }
-    }
-    
     // ⬇️ This is the button users tap to see the timeline
     private func libraryOpenButton(geometry: GeometryProxy) -> some View {
         VStack {
@@ -139,17 +117,38 @@ struct OrbLiveListenView: View {
     
     // This is the hidden target for "Drag to Save"
     private func saveButton(geometry: GeometryProxy) -> some View {
-        Image(systemName: "book.fill")
-            .font(.system(size: 28))
-            .foregroundColor(.white)
-            .frame(width: 77, height: 77)
-            .background(Circle().fill(Color.white.opacity(0.1))) // Added background for visibility debug
-            .clipShape(Circle())
-            .scaleEffect(saveButtonScale)
-            .position(x: geometry.size.width / 2, y: geometry.size.height - 100)
-            .opacity(isDraggingToSave ? min(dragOffset / 150.0, 1.0) : 0.0)
-            .animation(.easeOut(duration: 0.2), value: isDraggingToSave)
-            .animation(.easeOut(duration: 0.2), value: dragOffset)
+        Button {
+        } label: {
+            Image(systemName: "book.fill")
+                .font(.system(size: 28))
+                .foregroundColor(.white)
+                .frame(width: 77, height: 77)
+                .clipShape(Circle())
+        }
+        .glassEffect(.clear)
+        .scaleEffect(saveButtonScale)
+        .position(x: geometry.size.width / 2, y: geometry.size.height - 100)
+        .opacity(isDraggingToSave ? min(dragOffset / 150.0, 1.0) : 0.0)
+        .animation(.easeOut(duration: 0.2), value: isDraggingToSave)
+        .animation(.easeOut(duration: 0.2), value: dragOffset)
+    }
+    
+    // This is the hidden target for "Drag to Save"
+    private func deleteButton(geometry: GeometryProxy) -> some View {
+        Button {
+        } label: {
+            Image(systemName: "trash.fill")
+                .font(.system(size: 28))
+                .foregroundColor(Color(hex: "FF383C"))
+                .frame(width: 77, height: 77)
+                .clipShape(Circle())
+        }
+        .glassEffect(.clear)
+        .scaleEffect(deleteButtonScale)
+        .position(x: geometry.size.width / 2, y: geometry.safeAreaInsets.top)
+        .opacity(isDraggingToDelete ? min(abs(dragOffset) / 150.0, 1.0) : 0.0)
+        .animation(.easeOut(duration: 0.2), value: isDraggingToDelete)
+        .animation(.easeOut(duration: 0.2), value: dragOffset)
     }
     
     private var statusTextView: some View {
@@ -163,9 +162,9 @@ struct OrbLiveListenView: View {
                         .fontWeight(.bold)
                 } else if isPlaybackMode {
                     VStack(spacing: 8) {
-                        Text(audioPostProcessingManager.isPlaying ? "Playing..." : (isDraggingToSave ? "Drag to save" : "Tap orb to play"))
-                            .font(.title2)
-                            .fontWeight(.medium)
+                        if !isDraggingToSave && !isDraggingToDelete {
+                            Text(audioPostProcessingManager.isPlaying ? "Playing..." : "Drag Up/Down").font(.title2).fontWeight(.medium)
+                        }
                         
                         if audioPostProcessingManager.duration > 0 && !isDraggingToSave {
                             Text("\(Int(audioPostProcessingManager.currentTime))s / \(Int(audioPostProcessingManager.duration))s")
@@ -257,30 +256,53 @@ extension OrbLiveListenView {
     
     // MARK: - Drag & Save Logic
     private func handleDragChange(value: SequenceGesture<LongPressGesture, DragGesture>.Value, geometry: GeometryProxy) {
-        guard canSaveCurrentRecording else { return }
-        switch value {
-        case .second(true, let drag):
-            isDraggingToSave = true
-            let translation = max(0, drag?.translation.height ?? 0)
-            dragOffset = translation
-            let maxDragDistance = geometry.size.height / 2
-            let dragProgress = min(translation / maxDragDistance, 1.0)
-            withAnimation(.interactiveSpring(response: 0.3, dampingFraction: 0.7)) {
-                orbDragScale = 1.0 - (dragProgress * 0.4)
-                saveButtonScale = 1.0 + (dragProgress * 0.4)
+            guard canSaveCurrentRecording else { return }
+            switch value {
+            case .second(true, let drag):
+                let translation = drag?.translation.height ?? 0
+                dragOffset = translation
+                let maxDragDistance = geometry.size.height / 2.5
+                
+                // Calculate progress based on direction
+                let dragProgress = min(abs(translation) / maxDragDistance, 1.0)
+                
+                withAnimation(.interactiveSpring(response: 0.3, dampingFraction: 0.7)) {
+                    // Shrink orb regardless of direction
+                    orbDragScale = 1.0 - (dragProgress * 0.4)
+                    
+                    if translation > 0 {
+                        // Dragging Down -> Save
+                        isDraggingToSave = true
+                        isDraggingToDelete = false
+                        saveButtonScale = 1.0 + (dragProgress * 0.4)
+                        deleteButtonScale = 1.0
+                    } else {
+                        // Dragging Up -> Delete
+                        isDraggingToDelete = true
+                        isDraggingToSave = false
+                        deleteButtonScale = 1.0 + (dragProgress * 0.4)
+                        saveButtonScale = 1.0
+                    }
+                }
+            default: break
             }
-        default: break
         }
-    }
     
     private func handleDragEnd(value: SequenceGesture<LongPressGesture, DragGesture>.Value, geometry: GeometryProxy) {
         guard canSaveCurrentRecording else { return }
         switch value {
         case .second(true, let drag):
             let translation = drag?.translation.height ?? 0
-            if translation > geometry.size.height / 4 {
+            let threshold = geometry.size.height / 4
+            
+            if translation > threshold {
+                // Dragged DOWN enough -> SAVE
                 handleSaveRecording()
+            } else if translation < -threshold {
+                // Dragged UP enough -> DELETE
+                handleDeleteRecording()
             } else {
+                // Didn't drag enough -> Reset
                 resetDragState()
             }
         default: resetDragState()
@@ -292,7 +314,9 @@ extension OrbLiveListenView {
             dragOffset = 0
             orbDragScale = 1.0
             saveButtonScale = 1.0
+            deleteButtonScale = 1.0
             isDraggingToSave = false
+            isDraggingToDelete = false
         }
     }
     
@@ -312,12 +336,38 @@ extension OrbLiveListenView {
         }
     }
     
+    private func handleDeleteRecording() {
+        guard canSaveCurrentRecording else { return }
+        // Animate delete success (poof effect or swallow)
+        withAnimation(.interpolatingSpring(mass: 1, stiffness: 200, damping: 15)) {
+            deleteButtonScale = 1.6
+            orbDragScale = 0.05 // Shrink to nothing
+        }
+        
+        // Perform delete
+        heartbeatSoundManager.discardRecording()
+        audioPostProcessingManager.stop()
+        
+        canSaveCurrentRecording = false
+        isPlaybackMode = false // Exit playback mode
+        
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+            resetDragState()
+            // Return to idle state
+            withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) {
+                animateOrb = false
+            }
+        }
+    }
+    
     private func handleBackButton() {
+        handleDeleteRecording()
         audioPostProcessingManager.stop()
         withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) {
             isPlaybackMode = false
             animateOrb = false
             isDraggingToSave = false
+            isDraggingToDelete = false
             dragOffset = 0
         }
     }

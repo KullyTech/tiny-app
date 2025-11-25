@@ -7,12 +7,27 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		278912752ED4633900CA640F /* FirebaseAI in Frameworks */ = {isa = PBXBuildFile; productRef = 278912742ED4633900CA640F /* FirebaseAI */; };
+		278912772ED4633900CA640F /* FirebaseAILogic in Frameworks */ = {isa = PBXBuildFile; productRef = 278912762ED4633900CA640F /* FirebaseAILogic */; };
+		278912792ED4633900CA640F /* FirebaseAnalytics in Frameworks */ = {isa = PBXBuildFile; productRef = 278912782ED4633900CA640F /* FirebaseAnalytics */; };
+		2789127B2ED4633900CA640F /* FirebaseAnalyticsCore in Frameworks */ = {isa = PBXBuildFile; productRef = 2789127A2ED4633900CA640F /* FirebaseAnalyticsCore */; };
+		2789127D2ED4633900CA640F /* FirebaseAnalyticsIdentitySupport in Frameworks */ = {isa = PBXBuildFile; productRef = 2789127C2ED4633900CA640F /* FirebaseAnalyticsIdentitySupport */; };
+		278912A22ED5947D00CA640F /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 278912832ED586A200CA640F /* WidgetKit.framework */; };
+		278912A32ED5947D00CA640F /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 278912852ED586A200CA640F /* SwiftUI.framework */; };
+		278912B42ED5947E00CA640F /* MoodWidgetExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 278912A12ED5947D00CA640F /* MoodWidgetExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		430725D62EC5C791006234D7 /* Orb in Frameworks */ = {isa = PBXBuildFile; productRef = 430725D52EC5C791006234D7 /* Orb */; };
 		DE5E9C862EB354B200485B15 /* AudioKit in Frameworks */ = {isa = PBXBuildFile; productRef = DE5E9C852EB354B200485B15 /* AudioKit */; };
 		DE5E9C882EB354B700485B15 /* AudioKitEX in Frameworks */ = {isa = PBXBuildFile; productRef = DE5E9C872EB354B700485B15 /* AudioKitEX */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
+		278912B22ED5947E00CA640F /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 433435BC2EACD4E4004C6B8C /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 278912A02ED5947D00CA640F;
+			remoteInfo = MoodWidgetExtension;
+		};
 		433435D22EACD4E5004C6B8C /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 433435BC2EACD4E4004C6B8C /* Project object */;
@@ -29,7 +44,24 @@
 		};
 /* End PBXContainerItemProxy section */
 
+/* Begin PBXCopyFilesBuildPhase section */
+		2789129C2ED586A400CA640F /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				278912B42ED5947E00CA640F /* MoodWidgetExtension.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
 /* Begin PBXFileReference section */
+		278912832ED586A200CA640F /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = System/Library/Frameworks/WidgetKit.framework; sourceTree = SDKROOT; };
+		278912852ED586A200CA640F /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = System/Library/Frameworks/SwiftUI.framework; sourceTree = SDKROOT; };
+		278912A12ED5947D00CA640F /* MoodWidgetExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = MoodWidgetExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		433435C42EACD4E4004C6B8C /* Tiny.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Tiny.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		433435D12EACD4E5004C6B8C /* TinyTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = TinyTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		433435DB2EACD4E5004C6B8C /* TinyUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = TinyUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -39,6 +71,21 @@
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		278912B82ED5947E00CA640F /* Exceptions for "MoodWidget" folder in "MoodWidgetExtension" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 278912A02ED5947D00CA640F /* MoodWidgetExtension */;
+		};
+		278912BA2ED5969800CA640F /* Exceptions for "MoodWidget" folder in "Tiny" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				AppIntent.swift,
+				MoodWidget.swift,
+			);
+			target = 433435C32EACD4E4004C6B8C /* Tiny */;
+		};
 		DEFE64CC2ECC4287004B115A /* Exceptions for "Tiny" folder in "Tiny" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
@@ -49,6 +96,15 @@
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
+		278912A42ED5947D00CA640F /* MoodWidget */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				278912BA2ED5969800CA640F /* Exceptions for "MoodWidget" folder in "Tiny" target */,
+				278912B82ED5947E00CA640F /* Exceptions for "MoodWidget" folder in "MoodWidgetExtension" target */,
+			);
+			path = MoodWidget;
+			sourceTree = "<group>";
+		};
 		433435C62EACD4E4004C6B8C /* Tiny */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
@@ -70,13 +126,27 @@
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
+		2789129E2ED5947D00CA640F /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				278912A32ED5947D00CA640F /* SwiftUI.framework in Frameworks */,
+				278912A22ED5947D00CA640F /* WidgetKit.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		433435C12EACD4E4004C6B8C /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				2789127D2ED4633900CA640F /* FirebaseAnalyticsIdentitySupport in Frameworks */,
 				430725D62EC5C791006234D7 /* Orb in Frameworks */,
+				278912752ED4633900CA640F /* FirebaseAI in Frameworks */,
+				278912792ED4633900CA640F /* FirebaseAnalytics in Frameworks */,
 				DE5E9C862EB354B200485B15 /* AudioKit in Frameworks */,
 				DE5E9C882EB354B700485B15 /* AudioKitEX in Frameworks */,
+				2789127B2ED4633900CA640F /* FirebaseAnalyticsCore in Frameworks */,
+				278912772ED4633900CA640F /* FirebaseAILogic in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -103,6 +173,7 @@
 				433435C62EACD4E4004C6B8C /* Tiny */,
 				433435D42EACD4E5004C6B8C /* tinyTests */,
 				433435DE2EACD4E5004C6B8C /* tinyUITests */,
+				278912A42ED5947D00CA640F /* MoodWidget */,
 				DE5E9C842EB354B200485B15 /* Frameworks */,
 				433435C52EACD4E4004C6B8C /* Products */,
 			);
@@ -114,6 +185,7 @@
 				433435C42EACD4E4004C6B8C /* Tiny.app */,
 				433435D12EACD4E5004C6B8C /* TinyTests.xctest */,
 				433435DB2EACD4E5004C6B8C /* TinyUITests.xctest */,
+				278912A12ED5947D00CA640F /* MoodWidgetExtension.appex */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -124,6 +196,8 @@
 				DEFE64C82ECB6123004B115A /* AudioKit */,
 				DEFE64C92ECB6126004B115A /* AudioKitEX */,
 				DEFE64CA2ECB6128004B115A /* Orb */,
+				278912832ED586A200CA640F /* WidgetKit.framework */,
+				278912852ED586A200CA640F /* SwiftUI.framework */,
 			);
 			name = Frameworks;
 			sourceTree = "<group>";
@@ -131,6 +205,28 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
+		278912A02ED5947D00CA640F /* MoodWidgetExtension */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 278912B52ED5947E00CA640F /* Build configuration list for PBXNativeTarget "MoodWidgetExtension" */;
+			buildPhases = (
+				2789129D2ED5947D00CA640F /* Sources */,
+				2789129E2ED5947D00CA640F /* Frameworks */,
+				2789129F2ED5947D00CA640F /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				278912A42ED5947D00CA640F /* MoodWidget */,
+			);
+			name = MoodWidgetExtension;
+			packageProductDependencies = (
+			);
+			productName = MoodWidgetExtension;
+			productReference = 278912A12ED5947D00CA640F /* MoodWidgetExtension.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
 		433435C32EACD4E4004C6B8C /* Tiny */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = 433435E52EACD4E5004C6B8C /* Build configuration list for PBXNativeTarget "Tiny" */;
@@ -139,10 +235,12 @@
 				433435C12EACD4E4004C6B8C /* Frameworks */,
 				433435C22EACD4E4004C6B8C /* Resources */,
 				43F58B582EAF9A82001F3EFE /* Run Script */,
+				2789129C2ED586A400CA640F /* Embed Foundation Extensions */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+				278912B32ED5947E00CA640F /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
 				433435C62EACD4E4004C6B8C /* Tiny */,
@@ -152,6 +250,11 @@
 				DE5E9C852EB354B200485B15 /* AudioKit */,
 				DE5E9C872EB354B700485B15 /* AudioKitEX */,
 				430725D52EC5C791006234D7 /* Orb */,
+				278912742ED4633900CA640F /* FirebaseAI */,
+				278912762ED4633900CA640F /* FirebaseAILogic */,
+				278912782ED4633900CA640F /* FirebaseAnalytics */,
+				2789127A2ED4633900CA640F /* FirebaseAnalyticsCore */,
+				2789127C2ED4633900CA640F /* FirebaseAnalyticsIdentitySupport */,
 			);
 			productName = tiny;
 			productReference = 433435C42EACD4E4004C6B8C /* Tiny.app */;
@@ -213,6 +316,9 @@
 				LastSwiftUpdateCheck = 2600;
 				LastUpgradeCheck = 2600;
 				TargetAttributes = {
+					278912A02ED5947D00CA640F = {
+						CreatedOnToolsVersion = 26.0.1;
+					};
 					433435C32EACD4E4004C6B8C = {
 						CreatedOnToolsVersion = 26.0;
 					};
@@ -240,6 +346,7 @@
 				DEF686412EB33FA9004CC0C3 /* XCRemoteSwiftPackageReference "AudioKit" */,
 				DEF686422EB33FB2004CC0C3 /* XCRemoteSwiftPackageReference "AudioKitEX" */,
 				430725D42EC5C69D006234D7 /* XCRemoteSwiftPackageReference "Orb" */,
+				278912732ED4633900CA640F /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 433435C52EACD4E4004C6B8C /* Products */;
@@ -249,11 +356,19 @@
 				433435C32EACD4E4004C6B8C /* Tiny */,
 				433435D02EACD4E5004C6B8C /* TinyTests */,
 				433435DA2EACD4E5004C6B8C /* TinyUITests */,
+				278912A02ED5947D00CA640F /* MoodWidgetExtension */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
+		2789129F2ED5947D00CA640F /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		433435C22EACD4E4004C6B8C /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -300,6 +415,13 @@
 /* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
+		2789129D2ED5947D00CA640F /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		433435C02EACD4E4004C6B8C /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -324,6 +446,11 @@
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
+		278912B32ED5947E00CA640F /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 278912A02ED5947D00CA640F /* MoodWidgetExtension */;
+			targetProxy = 278912B22ED5947E00CA640F /* PBXContainerItemProxy */;
+		};
 		433435D32EACD4E5004C6B8C /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = 433435C32EACD4E4004C6B8C /* Tiny */;
@@ -337,6 +464,68 @@
 /* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
+		278912B62ED5947E00CA640F /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = LM2TBH9R6C;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = MoodWidget/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = MoodWidget;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.miracle.tiny.MoodWidget;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		278912B72ED5947E00CA640F /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = LM2TBH9R6C;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = MoodWidget/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = MoodWidget;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.miracle.tiny.MoodWidget;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
 		433435E32EACD4E5004C6B8C /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -629,6 +818,15 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
+		278912B52ED5947E00CA640F /* Build configuration list for PBXNativeTarget "MoodWidgetExtension" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				278912B62ED5947E00CA640F /* Debug */,
+				278912B72ED5947E00CA640F /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 		433435BF2EACD4E4004C6B8C /* Build configuration list for PBXProject "Tiny" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
@@ -668,6 +866,14 @@
 /* End XCConfigurationList section */
 
 /* Begin XCRemoteSwiftPackageReference section */
+		278912732ED4633900CA640F /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/firebase/firebase-ios-sdk";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 12.6.0;
+			};
+		};
 		430725D42EC5C69D006234D7 /* XCRemoteSwiftPackageReference "Orb" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/metasidd/Orb";
@@ -695,6 +901,31 @@
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
+		278912742ED4633900CA640F /* FirebaseAI */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 278912732ED4633900CA640F /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseAI;
+		};
+		278912762ED4633900CA640F /* FirebaseAILogic */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 278912732ED4633900CA640F /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseAILogic;
+		};
+		278912782ED4633900CA640F /* FirebaseAnalytics */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 278912732ED4633900CA640F /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseAnalytics;
+		};
+		2789127A2ED4633900CA640F /* FirebaseAnalyticsCore */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 278912732ED4633900CA640F /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseAnalyticsCore;
+		};
+		2789127C2ED4633900CA640F /* FirebaseAnalyticsIdentitySupport */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 278912732ED4633900CA640F /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseAnalyticsIdentitySupport;
+		};
 		430725D52EC5C791006234D7 /* Orb */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = 430725D42EC5C69D006234D7 /* XCRemoteSwiftPackageReference "Orb" */;
