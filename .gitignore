@@ -22,6 +22,7 @@ Icon
 # These are local to your environment and should not be shared.
 DerivedData/
 xcuserdata/
+*.xcodeproj/xcshareddata/
 
 # Session-specific state data — avoid polluting commits
 *.xcuserstate
