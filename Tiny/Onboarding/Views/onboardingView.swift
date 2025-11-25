@@ -72,12 +72,15 @@ struct OnBoardingView: View {
 
                     // 2. PATH DEFINITION AND FRAME CAPTURE
                     LinePath()
-                        .stroke(.red, lineWidth: 1) // Clear stroke
+                        .stroke(.clear, lineWidth: 1) // Clear stroke
                         .offset(y: 375) // Use the same offset as the background line image
                         .frame(
                             width: geometry.size.width,
                             height: geometry.size.height * 4.42
                         )
+                        .onAppear {
+                            pathSize = CGSize(width: geometry.size.width, height: geometry.size.height * 4.42)
+                        }
 
                     // 3. YELLOW HEART MOVEMENT LOGIC
                     if pathSize != .zero {
@@ -89,14 +92,14 @@ struct OnBoardingView: View {
                         let heartSize: CGFloat = 40
 
                         // 1. Calculate the path's starting X-point (relative to its own bounding box)
-                        let pathStartXRelative: CGFloat = pathSize.width * 0.46853
+                        let _: CGFloat = pathSize.width * 0.46853
 
                         // 2. The FollowEffect already translates the heart by pathStartXRelative when progress is 0.
                         // We need the external offset to cancel out that translation and apply the center correction.
 
                         // 3. Calculate the required Horizontal Offset for Centering at X=pathStartXRelative:
                         // This value places the heart's center at the path's start X coordinate.
-                        let xOffsetCorrection = pathStartXRelative - (heartSize / 2)
+                        let xOffsetCorrection = -(heartSize / 2)
 
                         // 4. Calculate the required Vertical Offset for the path's position (375):
                         // This value places the heart's center at the path's start Y coordinate (375).
