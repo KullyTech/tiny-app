@@ -39,4 +39,3 @@ struct TinyApp: App {
         .modelContainer(sharedModelContainer)
     }
 }
-

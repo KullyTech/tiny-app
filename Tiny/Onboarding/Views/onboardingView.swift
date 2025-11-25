@@ -8,8 +8,19 @@
 import SwiftUI
 import UIKit
 
+struct ScrollOffsetKey: PreferenceKey {
+    static var defaultValue: CGFloat = 0
+    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
+        value = nextValue()
+    }
+}
+
 struct OnBoardingView: View {
     @Binding var hasShownOnboarding: Bool
+    @State private var scrollOffset: CGFloat = 0
+    @State private var pathSize: CGSize = .zero
+    // ⚠️ Change lineFrame to use Global coordinates to correctly offset the heart
+    @State private var lineFrameGlobal: CGRect = .zero
 
     enum OnboardingPageType: CaseIterable, Identifiable {
         case page0
@@ -27,7 +38,15 @@ struct OnBoardingView: View {
         GeometryReader { geometry in
             ScrollView(.vertical) {
                 ZStack(alignment: .top) {
-
+                    Color.clear
+                        .frame(height: 0)
+                        .background(
+                            GeometryReader { geo in
+                                let offset = -geo.frame(in: .named("scroll")).minY
+                                Color.clear
+                                    .preference(key: ScrollOffsetKey.self, value: offset)
+                            }
+                        )
                     // Purple blur background image
                     Image("bgPurpleOnboarding")
                         .resizable()
@@ -46,17 +65,61 @@ struct OnBoardingView: View {
                         .scaledToFit()
                         .frame(
                             width: geometry.size.width,
-                            height: geometry.size.height * CGFloat(pages.count)
+                            height: geometry.size.height * CGFloat(pages.count),
                         )
                         .clipped()
                         .offset(y: 120)
 
-                    // Yellow heart scrolling down following lineOnboarding image
-                    Image("yellowHeart")
-                        .resizable()
-                        .aspectRatio(contentMode: .fit)
-                        .frame(width: 40)
-                        .offset(y: 370)
+                    // 2. PATH DEFINITION AND FRAME CAPTURE
+                    LinePath()
+                        .stroke(.red, lineWidth: 1) // Clear stroke
+                        .offset(y: 375) // Use the same offset as the background line image
+                        .frame(
+                            width: geometry.size.width,
+                            height: geometry.size.height * 4.42
+                        )
+
+                    // 3. YELLOW HEART MOVEMENT LOGIC
+                    if pathSize != .zero {
+                        let totalHeight = geometry.size.height * CGFloat(pages.count)
+                        let travelHeight = totalHeight - geometry.size.height
+                        let progress = min(max(scrollOffset / travelHeight, 0), 1)
+
+                        let pathRect = CGRect(origin: .zero, size: pathSize)
+                        let heartSize: CGFloat = 40
+
+                        // 1. Calculate the path's starting X-point (relative to its own bounding box)
+                        let pathStartXRelative: CGFloat = pathSize.width * 0.46853
+
+                        // 2. The FollowEffect already translates the heart by pathStartXRelative when progress is 0.
+                        // We need the external offset to cancel out that translation and apply the center correction.
+
+                        // 3. Calculate the required Horizontal Offset for Centering at X=pathStartXRelative:
+                        // This value places the heart's center at the path's start X coordinate.
+                        let xOffsetCorrection = pathStartXRelative - (heartSize / 2)
+
+                        // 4. Calculate the required Vertical Offset for the path's position (375):
+                        // This value places the heart's center at the path's start Y coordinate (375).
+                        let yOffsetCorrection = 375 - (heartSize / 2)
+
+                        Image("yellowHeart")
+                            .resizable()
+                            .frame(width: heartSize, height: heartSize)
+                            .modifier(
+                                FollowEffect(
+                                    pct: progress,
+                                    path: LinePath().path(in: pathRect),
+                                    rotate: false
+                                )
+                            )
+                            // 🔥 The key is to shift the view so the initial center of the heart
+                            // is placed at the path's visual start point (which is pathStartXRelative
+                            // horizontally, and 375 vertically in the ZStack).
+                            .offset(
+                                x: xOffsetCorrection, // Uses the actual path start X point
+                                y: yOffsetCorrection  // Uses the fixed Y offset (375)
+                            )
+                    }
 
                     VStack(spacing: 0) {
                         ForEach(pages) { page in
@@ -69,6 +132,10 @@ struct OnBoardingView: View {
                     }
                 }
             }
+            .onPreferenceChange(ScrollOffsetKey.self) { value in
+                scrollOffset = value
+            }
+            .coordinateSpace(name: "scroll")
             .scrollTargetBehavior(.paging)
             .scrollIndicators(.hidden)
         }
@@ -298,6 +365,31 @@ private struct OnboardingPage4: View {
             }
         }
         .padding(50)
+    }
+}
+
+// MARK: - FollowEffect
+struct FollowEffect: GeometryEffect {
+    var pct: CGFloat = 0
+    let path: Path
+    var rotate = false
+
+    var animatableData: CGFloat {
+        get { pct }
+        set { pct = newValue }
+    }
+
+    func effectValue(size: CGSize) -> ProjectionTransform {
+        let pt1 = percentPoint(pct)
+        return ProjectionTransform(CGAffineTransform(translationX: pt1.x, y: pt1.y))
+    }
+
+    private func percentPoint(_ percent: CGFloat) -> CGPoint {
+        let pct = max(0, min(percent, 1))
+        let varf = pct > 0.999 ? 0.999 : pct
+        let vart = pct + 0.001
+        let vartp = path.trimmedPath(from: varf, to: vart)
+        return CGPoint(x: vartp.boundingRect.midX, y: vartp.boundingRect.midY)
     }
 }
 
