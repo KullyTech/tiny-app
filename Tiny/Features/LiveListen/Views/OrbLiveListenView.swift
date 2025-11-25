@@ -48,7 +48,7 @@ struct OrbLiveListenView: View {
     private var backgroundView: some View {
         ZStack {
             Color.black.ignoresSafeArea()
-            Image("background")
+            Image("backgroundPurple")
                 .resizable()
                 .scaleEffect(viewModel.isListening ? 1.2 : 1.0)
                 .animation(.easeInOut(duration: 1.2), value: viewModel.isListening)
@@ -163,7 +163,6 @@ struct OrbLiveListenView: View {
                 viewModel.handleDoubleTap {
                     heartbeatSoundManager.start()
                     heartbeatSoundManager.startRecording()
-                    tutorialViewModel.showListeningTutorialIfNeeded()
                 }
             }
             .onTapGesture(count: 1) {

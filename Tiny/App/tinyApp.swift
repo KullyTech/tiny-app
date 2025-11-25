@@ -11,6 +11,8 @@ import SwiftData
 @main
 struct TinyApp: App {
     @StateObject var heartbeatSoundManager = HeartbeatSoundManager()
+    @State private var isShowingSplashScreen: Bool = true // Add state to control splash screen
+
     // Define the container configuration
     var sharedModelContainer: ModelContainer = {
         let schema = Schema([
@@ -27,8 +29,12 @@ struct TinyApp: App {
 
     var body: some Scene {
         WindowGroup {
-            ContentView()
-                .environmentObject(heartbeatSoundManager)
+            if isShowingSplashScreen {
+                SplashScreenView(isShowingSplashScreen: $isShowingSplashScreen)
+            } else {
+                ContentView()
+                    .environmentObject(heartbeatSoundManager)
+            }
         }
         .modelContainer(sharedModelContainer)
     }
