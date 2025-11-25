@@ -12,9 +12,9 @@ enum TutorialContext {
 }
 
 struct TutorialOverlay: View {
-    @Binding var activeTutorial: TutorialContext?
+    @ObservedObject var viewModel: TutorialViewModel
     let context: TutorialContext
-
+    
     var body: some View {
         ZStack {
             Color.black.opacity(0.9)
@@ -28,16 +28,10 @@ struct TutorialOverlay: View {
             }
         }
         .onTapGesture {
-            switch context {
-            case .initial:
-                UserDefaults.standard.set(true, forKey: "hasShownInitialTutorial")
-            case .listening:
-                UserDefaults.standard.set(true, forKey: "hasShownListeningTutorial")
-            }
-            activeTutorial = nil
+            viewModel.dismissTutorial(context: context)
         }
     }
-
+    
     private var initialTutorialView: some View {
         VStack(spacing: 24) {
             VStack(spacing: 2) {
@@ -132,5 +126,7 @@ struct TutorialOverlay: View {
 }
 
 #Preview {
-    TutorialOverlay(activeTutorial: .constant(.initial), context: .listening)
+    let viewModel = TutorialViewModel()
+    viewModel.activeTutorial = .initial
+    return TutorialOverlay(viewModel: viewModel, context: .listening)
 }

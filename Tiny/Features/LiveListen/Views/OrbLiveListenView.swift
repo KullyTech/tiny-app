@@ -3,31 +3,13 @@ import SwiftData
 
 struct OrbLiveListenView: View {
     @Environment(\.modelContext) private var modelContext
-    
-    @ObservedObject var heartbeatSoundManager: HeartbeatSoundManager
-    // ⬇️ CHANGED: Boolean binding instead of Tab Int
-    @Binding var showTimeline: Bool
-    
-    @State private var activeTutorial: TutorialContext?
-    @StateObject private var audioPostProcessingManager = AudioPostProcessingManager()
-    @StateObject private var physicsController = OrbPhysicsController()
-    
-    @State private var isListening = false
-    @State private var animateOrb = false
-    @State private var showShareSheet = false
-    @State private var isPlaybackMode = false
-    
-    // Long press / Drag states
-    @State private var isLongPressing = false
-    @State private var longPressCountdown = 3
-    @State private var longPressTimer: Timer?
-    @State private var longPressScale: CGFloat = 1.0
-    @State private var dragOffset: CGFloat = 0
-    @State private var isDraggingToSave = false
-    @State private var saveButtonScale: CGFloat = 1.0
-    @State private var orbDragScale: CGFloat = 1.0
-    @State private var canSaveCurrentRecording = false
 
+    @ObservedObject var heartbeatSoundManager: HeartbeatSoundManager
+    @Binding var showTimeline: Bool
+
+    @StateObject private var viewModel = OrbLiveListenViewModel()
+    @StateObject private var tutorialViewModel = TutorialViewModel()
+    
     var body: some View {
         GeometryReader { geometry in
             ZStack {
@@ -39,55 +21,37 @@ struct OrbLiveListenView: View {
                 // Save/Library Button (Only visible when dragging)
                 saveButton(geometry: geometry)
                 
-                // ⬇️ NEW: Temporary Floating Button to Open Timeline manually
-                // (Since the dragging saveButton is hidden by default)
-                if !isListening && !isDraggingToSave {
+                // Floating Button to Open Timeline manually
+                if !viewModel.isListening && !viewModel.isDraggingToSave {
                     libraryOpenButton(geometry: geometry)
                 }
                 
                 coachMarkView
                 
-                if let context = activeTutorial {
-                    TutorialOverlay(activeTutorial: $activeTutorial, context: context)
+                if let context = tutorialViewModel.activeTutorial {
+                    TutorialOverlay(viewModel: tutorialViewModel, context: context)
                 }
             }
-            .sheet(isPresented: $showShareSheet) {
+            .sheet(isPresented: $viewModel.showShareSheet) {
                 if let lastRecordingURL = heartbeatSoundManager.lastRecording?.fileURL {
                     ShareSheet(activityItems: [lastRecordingURL])
                 }
             }
             .preferredColorScheme(.dark)
-            .onAppear(perform: showInitialTutorialIfNeeded)
-            // Auto-play if we return from timeline with a selected recording
-            .onAppear(perform: handleOnAppear)
-        }
-    }
-    
-    private func handleOnAppear() {
-        showInitialTutorialIfNeeded()
-        if let recording = heartbeatSoundManager.lastRecording, !isListening, !isPlaybackMode {
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                setupPlayback(for: recording)
+            .onAppear {
+                tutorialViewModel.showInitialTutorialIfNeeded()
+                viewModel.handleOnAppear(recording: heartbeatSoundManager.lastRecording)
             }
         }
     }
-    
-    private func setupPlayback(for recording: Recording) {
-        isPlaybackMode = true
-        animateOrb = true
-        audioPostProcessingManager.stop()
-        audioPostProcessingManager.loadAndPlay(fileURL: recording.fileURL)
-    }
-    
-    // MARK: - UI Components
     
     private var backgroundView: some View {
         ZStack {
             Color.black.ignoresSafeArea()
             Image("background")
                 .resizable()
-                .scaleEffect(isListening ? 1.2 : 1.0)
-                .animation(.easeInOut(duration: 1.2), value: isListening)
+                .scaleEffect(viewModel.isListening ? 1.2 : 1.0)
+                .animation(.easeInOut(duration: 1.2), value: viewModel.isListening)
                 .ignoresSafeArea()
         }
     }
@@ -95,8 +59,8 @@ struct OrbLiveListenView: View {
     private var topControlsView: some View {
         VStack {
             HStack {
-                if isPlaybackMode {
-                    Button(action: handleBackButton, label: {
+                if viewModel.isPlaybackMode {
+                    Button(action: viewModel.handleBackButton, label: {
                         Image(systemName: "chevron.left")
                             .font(.system(size: 22, weight: .semibold))
                             .foregroundColor(.white)
@@ -113,7 +77,6 @@ struct OrbLiveListenView: View {
         }
     }
     
-    // ⬇️ This is the button users tap to see the timeline
     private func libraryOpenButton(geometry: GeometryProxy) -> some View {
         VStack {
             HStack {
@@ -137,38 +100,37 @@ struct OrbLiveListenView: View {
         }
     }
     
-    // This is the hidden target for "Drag to Save"
     private func saveButton(geometry: GeometryProxy) -> some View {
         Image(systemName: "book.fill")
             .font(.system(size: 28))
             .foregroundColor(.white)
             .frame(width: 77, height: 77)
-            .background(Circle().fill(Color.white.opacity(0.1))) // Added background for visibility debug
+            .background(Circle().fill(Color.white.opacity(0.1)))
             .clipShape(Circle())
-            .scaleEffect(saveButtonScale)
+            .scaleEffect(viewModel.saveButtonScale)
             .position(x: geometry.size.width / 2, y: geometry.size.height - 100)
-            .opacity(isDraggingToSave ? min(dragOffset / 150.0, 1.0) : 0.0)
-            .animation(.easeOut(duration: 0.2), value: isDraggingToSave)
-            .animation(.easeOut(duration: 0.2), value: dragOffset)
+            .opacity(viewModel.isDraggingToSave ? min(viewModel.dragOffset / 150.0, 1.0) : 0.0)
+            .animation(.easeOut(duration: 0.2), value: viewModel.isDraggingToSave)
+            .animation(.easeOut(duration: 0.2), value: viewModel.dragOffset)
     }
     
     private var statusTextView: some View {
         VStack {
             Group {
-                if isListening && isLongPressing {
-                    CountdownTextView(countdown: longPressCountdown, isVisible: isLongPressing)
-                } else if isListening {
+                if viewModel.isListening && viewModel.isLongPressing {
+                    CountdownTextView(countdown: viewModel.longPressCountdown, isVisible: viewModel.isLongPressing)
+                } else if viewModel.isListening {
                     Text("Listening...")
                         .font(.title)
                         .fontWeight(.bold)
-                } else if isPlaybackMode {
+                } else if viewModel.isPlaybackMode {
                     VStack(spacing: 8) {
-                        Text(audioPostProcessingManager.isPlaying ? "Playing..." : (isDraggingToSave ? "Drag to save" : "Tap orb to play"))
+                        Text(viewModel.audioPostProcessingManager.isPlaying ? "Playing..." : (viewModel.isDraggingToSave ? "Drag to save" : "Tap orb to play"))
                             .font(.title2)
                             .fontWeight(.medium)
                         
-                        if audioPostProcessingManager.duration > 0 && !isDraggingToSave {
-                            Text("\(Int(audioPostProcessingManager.currentTime))s / \(Int(audioPostProcessingManager.duration))s")
+                        if viewModel.audioPostProcessingManager.duration > 0 && !viewModel.isDraggingToSave {
+                            Text("\(Int(viewModel.audioPostProcessingManager.currentTime))s / \(Int(viewModel.audioPostProcessingManager.duration))s")
                                 .font(.caption)
                                 .foregroundColor(.white.opacity(0.7))
                         }
@@ -189,22 +151,45 @@ struct OrbLiveListenView: View {
                 bokehEffectView
             }
             .frame(width: 200, height: 200)
-            .opacity(isPlaybackMode ? (audioPostProcessingManager.isPlaying ? 1.0 : 0.4) : 1.0)
-            .scaleEffect(orbScaleEffect * orbDragScale)
-            .animation(.easeInOut(duration: 0.5), value: audioPostProcessingManager.isPlaying)
-            .animation(.interpolatingSpring(mass: 2, stiffness: 100, damping: 20), value: animateOrb)
-            .animation(.easeInOut(duration: 0.2), value: longPressScale)
-            .animation(.easeInOut(duration: 0.2), value: orbDragScale)
-            .offset(y: orbOffset(geometry: geometry) + dragOffset)
-            .onTapGesture(count: 2, perform: handleDoubleTap)
-            .onTapGesture(count: 1, perform: handleSingleTap)
+            .opacity(viewModel.isPlaybackMode ? (viewModel.audioPostProcessingManager.isPlaying ? 1.0 : 0.4) : 1.0)
+            .scaleEffect(viewModel.orbScaleEffect * viewModel.orbDragScale)
+            .animation(.easeInOut(duration: 0.5), value: viewModel.audioPostProcessingManager.isPlaying)
+            .animation(.interpolatingSpring(mass: 2, stiffness: 100, damping: 20), value: viewModel.animateOrb)
+            .animation(.easeInOut(duration: 0.2), value: viewModel.longPressScale)
+            .animation(.easeInOut(duration: 0.2), value: viewModel.orbDragScale)
+            .offset(y: viewModel.orbOffset(geometry: geometry) + viewModel.dragOffset)
+            .onTapGesture(count: 2) {
+                viewModel.handleDoubleTap {
+                    heartbeatSoundManager.start()
+                    heartbeatSoundManager.startRecording()
+                    tutorialViewModel.showListeningTutorialIfNeeded()
+                }
+            }
+            .onTapGesture(count: 1) {
+                viewModel.handleSingleTap(lastRecording: heartbeatSoundManager.lastRecording)
+            }
             .modifier(GestureModifier(
-                isPlaybackMode: isPlaybackMode,
+                isPlaybackMode: viewModel.isPlaybackMode,
                 geometry: geometry,
-                handleDragChange: handleDragChange,
-                handleDragEnd: handleDragEnd,
-                handleLongPressChange: handleLongPressChange,
-                handleLongPressComplete: handleLongPressComplete
+                handleDragChange: { value in
+                    viewModel.handleDragChange(value: value, geometry: geometry)
+                },
+                handleDragEnd: { value in
+                    viewModel.handleDragEnd(value: value, geometry: geometry) {
+                        heartbeatSoundManager.saveRecording()
+                        withAnimation(.spring(response: 0.6, dampingFraction: 0.8)) {
+                            showTimeline = true
+                        }
+                    }
+                },
+                handleLongPressChange: viewModel.handleLongPressChange,
+                handleLongPressComplete: {
+                    viewModel.handleLongPressComplete {
+                        heartbeatSoundManager.stopRecording()
+                        heartbeatSoundManager.stop()
+                        tutorialViewModel.showListeningTutorialIfNeeded()
+                    }
+                }
             ))
         }
         .frame(width: geometry.size.width, height: geometry.size.height)
@@ -212,24 +197,24 @@ struct OrbLiveListenView: View {
     
     private var bokehEffectView: some View {
         Group {
-            if isListening {
+            if viewModel.isListening {
                 BokehEffectView(amplitude: $heartbeatSoundManager.blinkAmplitude)
-            } else if isPlaybackMode {
-                BokehEffectView(amplitude: .constant(audioPostProcessingManager.isPlaying ? 0.8 : 0.2))
-                    .opacity(audioPostProcessingManager.isPlaying ? 1.0 : 0.5)
-                    .animation(.easeInOut(duration: 0.5), value: audioPostProcessingManager.isPlaying)
+            } else if viewModel.isPlaybackMode {
+                BokehEffectView(amplitude: .constant(viewModel.audioPostProcessingManager.isPlaying ? 0.8 : 0.2))
+                    .opacity(viewModel.audioPostProcessingManager.isPlaying ? 1.0 : 0.5)
+                    .animation(.easeInOut(duration: 0.5), value: viewModel.audioPostProcessingManager.isPlaying)
             }
         }
-        .scaleEffect(x: physicsController.scaleX, y: physicsController.scaleY)
-        .offset(x: physicsController.offsetX, y: physicsController.offsetY)
-        .rotationEffect(.degrees(physicsController.rotation))
-        .onAppear { physicsController.startPhysics() }
+        .scaleEffect(x: viewModel.physicsController.scaleX, y: viewModel.physicsController.scaleY)
+        .offset(x: viewModel.physicsController.offsetX, y: viewModel.physicsController.offsetY)
+        .rotationEffect(.degrees(viewModel.physicsController.rotation))
+        .onAppear { viewModel.physicsController.startPhysics() }
         .frame(width: 18, height: 18)
     }
     
     private var coachMarkView: some View {
         Group {
-            if !isListening && !isPlaybackMode {
+            if !viewModel.isListening && !viewModel.isPlaybackMode {
                 GeometryReader { proxy in
                     CoachMarkView()
                         .position(x: proxy.size.width / 2, y: proxy.size.height / 2 + 250)
@@ -238,211 +223,31 @@ struct OrbLiveListenView: View {
             }
         }
     }
-}
 
-// MARK: - Logic Extensions
-extension OrbLiveListenView {
-    private var orbScaleEffect: CGFloat {
-        if isListening {
-            return isLongPressing ? (animateOrb ? 1.6 : 1.1) * longPressScale : (animateOrb ? 1.5 : 1.0)
-        } else if isPlaybackMode {
-            return audioPostProcessingManager.isPlaying ? 1.3 : 0.8
-        }
-        return 1.0
-    }
-    
-    private func orbOffset(geometry: GeometryProxy) -> CGFloat {
-        isListening ? geometry.size.height / 2 - 150 : 0
-    }
-    
-    // MARK: - Drag & Save Logic
-    private func handleDragChange(value: SequenceGesture<LongPressGesture, DragGesture>.Value, geometry: GeometryProxy) {
-        guard canSaveCurrentRecording else { return }
-        switch value {
-        case .second(true, let drag):
-            isDraggingToSave = true
-            let translation = max(0, drag?.translation.height ?? 0)
-            dragOffset = translation
-            let maxDragDistance = geometry.size.height / 2
-            let dragProgress = min(translation / maxDragDistance, 1.0)
-            withAnimation(.interactiveSpring(response: 0.3, dampingFraction: 0.7)) {
-                orbDragScale = 1.0 - (dragProgress * 0.4)
-                saveButtonScale = 1.0 + (dragProgress * 0.4)
-            }
-        default: break
-        }
-    }
-    
-    private func handleDragEnd(value: SequenceGesture<LongPressGesture, DragGesture>.Value, geometry: GeometryProxy) {
-        guard canSaveCurrentRecording else { return }
-        switch value {
-        case .second(true, let drag):
-            let translation = drag?.translation.height ?? 0
-            if translation > geometry.size.height / 4 {
-                handleSaveRecording()
-            } else {
-                resetDragState()
-            }
-        default: resetDragState()
-        }
-    }
-    
-    private func resetDragState() {
-        withAnimation(.spring(response: 0.4, dampingFraction: 0.7)) {
-            dragOffset = 0
-            orbDragScale = 1.0
-            saveButtonScale = 1.0
-            isDraggingToSave = false
-        }
-    }
-    
-    private func handleSaveRecording() {
-        guard canSaveCurrentRecording else { return }
-        withAnimation(.interpolatingSpring(mass: 1, stiffness: 200, damping: 15)) {
-            saveButtonScale = 1.6
-            orbDragScale = 0.05
-        }
-        heartbeatSoundManager.saveRecording()
-        canSaveCurrentRecording = false
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-            resetDragState()
-            withAnimation(.spring(response: 0.6, dampingFraction: 0.8)) {
-                showTimeline = true // Navigate to timeline after save
-            }
-        }
-    }
-    
-    private func handleBackButton() {
-        audioPostProcessingManager.stop()
-        withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) {
-            isPlaybackMode = false
-            animateOrb = false
-            isDraggingToSave = false
-            dragOffset = 0
-        }
-    }
-    
-    private func handleDoubleTap() {
-        guard !isLongPressing, !isListening, !isPlaybackMode else { return }
-        withAnimation(.interpolatingSpring(mass: 2, stiffness: 100, damping: 20)) {
-            animateOrb = true
-            isListening = true
-        }
-        heartbeatSoundManager.start()
-        heartbeatSoundManager.startRecording()
-        showListeningTutorialIfNeeded()
-    }
-    
-    private func handleSingleTap() {
-        guard isPlaybackMode, !isListening, !isLongPressing, !isDraggingToSave else { return }
-        guard let lastRecording = heartbeatSoundManager.lastRecording else { return }
-        if audioPostProcessingManager.isPlaying {
-            audioPostProcessingManager.pause()
-        } else if audioPostProcessingManager.currentTime > 0 {
-            audioPostProcessingManager.resume()
-        } else {
-            audioPostProcessingManager.loadAndPlay(fileURL: lastRecording.fileURL)
-        }
-    }
-    
-    private func handleLongPressChange(pressing: Bool) {
-        guard isListening else { return }
-        if pressing {
-            startLongPressCountdown()
-        } else {
-            cancelLongPressCountdown()
-        }
-    }
-    
-    private func startLongPressCountdown() {
-        isLongPressing = true
-        longPressCountdown = 3
-        longPressScale = 1.0
-        
-        var tickCount = 0
-        let totalTicks = 30
-        let scaleIncrement = 0.15 / 30
-        
-        longPressTimer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { timer in
-            tickCount += 1
-            
-            if tickCount % 10 == 0 {
-                withAnimation(.easeInOut(duration: 0.2)) { longPressCountdown -= 1 }
-            }
-            
-            withAnimation(.linear(duration: 0.1)) { longPressScale += scaleIncrement }
-            
-            if tickCount >= totalTicks { timer.invalidate() }
-        }
-    }
-    
-    private func cancelLongPressCountdown() {
-        isLongPressing = false
-        longPressCountdown = 3
-        longPressScale = 1.0
-        longPressTimer?.invalidate()
-        longPressTimer = nil
-    }
-    
-    private func handleLongPressComplete() {
-        cancelLongPressCountdown()
-        
-        withAnimation(.interpolatingSpring(mass: 2, stiffness: 100, damping: 20)) {
-            isListening = false
-            animateOrb = false
-            isPlaybackMode = true
-            canSaveCurrentRecording = true
-        }
-        
-        heartbeatSoundManager.stopRecording()
-        heartbeatSoundManager.stop()
-        
-        showListeningTutorialIfNeeded()
-    }
-    
-    // MARK: - Tutorial Logic
-    private func showInitialTutorialIfNeeded() {
-        if !UserDefaults.standard.bool(forKey: "hasShownInitialTutorial") {
-            activeTutorial = .initial
-        }
-    }
-    
-    private func showListeningTutorialIfNeeded() {
-        if !UserDefaults.standard.bool(forKey: "hasShownListeningTutorial") {
-            // Use a delay to allow the listening UI to appear first
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.75) {
-                activeTutorial = .listening
-            }
-        }
-    }
-    
-    private func handleSelectRecordingFromTimeline(_ recording: Recording) {
-        // Update lastRecording so the playback logic can reuse it
-        heartbeatSoundManager.lastRecording = recording
-        
-        // Make sure we're not listening
-        isListening = false
-        
-        // Close the timeline with a fade and go into playback mode
-        withAnimation(.easeInOut(duration: 0.4)) {
-            showTimeline = false
-            isPlaybackMode = true
-            canSaveCurrentRecording = false
-            animateOrb = true
-        }
-        
-        // Start playback using your existing post-processing manager
-        audioPostProcessingManager.stop()
-        audioPostProcessingManager.loadAndPlay(fileURL: recording.fileURL)
-    }
-    
-    // MARK: - Gesture Modifier (NO CHANGES)
     struct GestureModifier: ViewModifier {
-        let isPlaybackMode: Bool; let geometry: GeometryProxy
-        let handleDragChange: (SequenceGesture<LongPressGesture, DragGesture>.Value, GeometryProxy) -> Void
-        let handleDragEnd: (SequenceGesture<LongPressGesture, DragGesture>.Value, GeometryProxy) -> Void
-        let handleLongPressChange: (Bool) -> Void; let handleLongPressComplete: () -> Void
-        func body(content: Content) -> some View { if isPlaybackMode { content.gesture(LongPressGesture(minimumDuration: 0.2).sequenced(before: DragGesture()).onChanged { handleDragChange($0, geometry) }.onEnded { handleDragEnd($0, geometry) }) } else { content.gesture(LongPressGesture(minimumDuration: 3.0).onChanged { handleLongPressChange($0) }.onEnded { _ in handleLongPressComplete() }) } }
+        let isPlaybackMode: Bool
+        let geometry: GeometryProxy
+        let handleDragChange: (SequenceGesture<LongPressGesture, DragGesture>.Value) -> Void
+        let handleDragEnd: (SequenceGesture<LongPressGesture, DragGesture>.Value) -> Void
+        let handleLongPressChange: (Bool) -> Void
+        let handleLongPressComplete: () -> Void
+        
+        func body(content: Content) -> some View {
+            if isPlaybackMode {
+                content.gesture(
+                    LongPressGesture(minimumDuration: 0.2)
+                        .sequenced(before: DragGesture())
+                        .onChanged { handleDragChange($0) }
+                        .onEnded { handleDragEnd($0) }
+                )
+            } else {
+                content.gesture(
+                    LongPressGesture(minimumDuration: 3.0)
+                        .onChanged { handleLongPressChange($0) }
+                        .onEnded { _ in handleLongPressComplete() }
+                )
+            }
+        }
     }
 }
 
