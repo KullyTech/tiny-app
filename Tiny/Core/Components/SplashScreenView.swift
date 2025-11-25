@@ -7,7 +7,7 @@
 
 import SwiftUI
 
-struct SplashScreen: View {
+struct SplashScreenView: View {
     @Binding var isShowingSplashScreen: Bool
     @State private var animate: Bool = false
 
@@ -38,6 +38,6 @@ struct SplashScreen: View {
 }
 
 #Preview {
-    SplashScreen(isShowingSplashScreen: .constant(true))
+    SplashScreenView(isShowingSplashScreen: .constant(true))
         .preferredColorScheme(.dark)
 }

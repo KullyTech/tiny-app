@@ -30,7 +30,7 @@ struct TinyApp: App {
     var body: some Scene {
         WindowGroup {
             if isShowingSplashScreen {
-                SplashScreen(isShowingSplashScreen: $isShowingSplashScreen)
+                SplashScreenView(isShowingSplashScreen: $isShowingSplashScreen)
             } else {
                 ContentView()
                     .environmentObject(heartbeatSoundManager)
