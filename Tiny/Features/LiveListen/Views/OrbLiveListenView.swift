@@ -125,7 +125,8 @@ struct OrbLiveListenView: View {
                         .fontWeight(.bold)
                 } else if viewModel.isPlaybackMode {
                     VStack(spacing: 8) {
-                        Text(viewModel.audioPostProcessingManager.isPlaying ? "Playing..." : (viewModel.isDraggingToSave ? "Drag to save" : "Tap orb to play"))
+                        Text(viewModel.audioPostProcessingManager.isPlaying ? "Playing..." :
+                                (viewModel.isDraggingToSave ? "Drag to save" : "Tap orb to play"))
                             .font(.title2)
                             .fontWeight(.medium)
                         
