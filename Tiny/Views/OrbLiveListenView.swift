@@ -84,7 +84,7 @@ struct OrbLiveListenView: View {
     private var backgroundView: some View {
         ZStack {
             Color.black.ignoresSafeArea()
-            Image("background")
+            Image("bgSplashScreen")
                 .resizable()
                 .scaleEffect(isListening ? 1.2 : 1.0)
                 .animation(.easeInOut(duration: 1.2), value: isListening)

@@ -1,5 +1,5 @@
 //
-//  onBoardingView.swift
+//  OnBoardingView.swift
 //  tiny
 //
 //  Created by Destu Cikal Ramdani on 27/10/25.
@@ -8,46 +8,116 @@
 import SwiftUI
 import UIKit
 
-import SwiftUI
-import UIKit
-
 struct OnBoardingView: View {
     @Binding var hasShownOnboarding: Bool
 
     enum OnboardingPageType: CaseIterable, Identifiable {
+        case page0
         case page1
         case page2
+        case page3
+        case page4
 
         var id: Self { self }
     }
 
+    private let pages = OnboardingPageType.allCases
+
     var body: some View {
         GeometryReader { geometry in
-            ZStack {
-                Image("background")
-                    .resizable()
-                    .ignoresSafeArea()
+            ScrollView(.vertical) {
+                ZStack(alignment: .top) {
 
-                ScrollView(.vertical) {
+                    // Purple blur background image
+                    Image("bgPurpleOnboarding")
+                        .resizable()
+                        .scaledToFill()
+                        .frame(
+                            width: geometry.size.width,
+                            height: geometry.size.height * CGFloat(pages.count),
+                            alignment: .top           // ← makes sure it pins to the top
+                        )
+                        .clipped()
+                        .ignoresSafeArea()
+
+                    // Line background image
+                    Image("lineOnboarding")
+                        .resizable()
+                        .scaledToFit()
+                        .frame(
+                            width: geometry.size.width,
+                            height: geometry.size.height * CGFloat(pages.count)
+                        )
+                        .clipped()
+                        .offset(y: 120)
+
+                    // Yellow heart scrolling down following lineOnboarding image
+                    Image("yellowHeart")
+                        .resizable()
+                        .aspectRatio(contentMode: .fit)
+                        .frame(width: 20)
+
                     VStack(spacing: 0) {
-                        ForEach(OnboardingPageType.allCases) { pageType in
-                            Group {
-                                switch pageType {
-                                case .page1:
-                                    OnboardingPage1()
-                                case .page2:
-                                    OnboardingPage2(hasShownOnboarding: $hasShownOnboarding)
-                                }
-                            }
-                            .frame(width: geometry.size.width, height: geometry.size.height)
+                        ForEach(pages) { page in
+                            pageView(for: page)
+                                .frame(
+                                    width: geometry.size.width,
+                                    height: geometry.size.height
+                                )
                         }
                     }
-                    .scrollTargetLayout()
                 }
-                .scrollTargetBehavior(.paging)
-                .scrollIndicators(.hidden)
-                .ignoresSafeArea()
             }
+            .scrollTargetBehavior(.paging)
+            .scrollIndicators(.hidden)
+        }
+        .ignoresSafeArea()
+    }
+
+    @ViewBuilder
+    func pageView(for page: OnboardingPageType) -> some View {
+        switch page {
+        case .page0:
+            OnboardingPage0()
+        case .page1:
+            OnboardingPage1()
+        case .page2:
+            OnboardingPage2()
+        case .page3:
+            OnboardingPage3()
+        case .page4:
+            OnboardingPage4(hasShownOnboarding: $hasShownOnboarding)
+        }
+    }
+}
+
+private struct OnboardingPage0: View {
+    var titleText: AttributedString {
+        var string = AttributedString("Hello lovely parents!")
+        if let range = string.range(of: "lovely") {
+            string[range].foregroundColor = Color("mainYellow")
+        }
+        return string
+    }
+
+    var body: some View {
+        GeometryReader { geo in
+            ZStack(alignment: .top) {
+                VStack {
+                    Text(titleText)
+                        .font(.title)
+                        .fontWeight(.bold)
+                        .padding()
+
+                    Text("You can listen to your baby's heartbeat live and record it to listen again later.")
+                        .font(.body)
+                        .fontWeight(.regular)
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal, 30)
+                }
+                .position(x: geo.size.width / 2, y: geo.size.height / 2 - 180)  // 🔥 Shift up
+            }
+            .frame(width: geo.size.width, height: geo.size.height)
         }
     }
 }
@@ -66,12 +136,8 @@ private struct OnboardingPage1: View {
 
     var body: some View {
         ZStack {
-            Image("bgOnboarding1")
-                .scaledToFill()
-                .offset(y: 130)
 
             VStack(spacing: 16) {
-
                 ZStack {
                     VStack {
                         Image("handHoldingPhone")
@@ -92,13 +158,13 @@ private struct OnboardingPage1: View {
                 }
 
                 Text(titleText)
-                    .font(.title)
+                    .font(.title2)
                     .fontWeight(.bold)
                     .padding(.top, 20)
 
-                Text("You can listen to your baby's heartbeat live and record it to listen again later")
+                Text("Connect your AirPods and let Tiny access your microphone to hear every little beat.")
                     .font(.body)
-                    .fontWeight(.medium)
+                    .fontWeight(.regular)
                     .multilineTextAlignment(.center)
                     .padding(.horizontal, 30)
             }
@@ -107,10 +173,6 @@ private struct OnboardingPage1: View {
 }
 
 private struct OnboardingPage2: View {
-    @Binding var hasShownOnboarding: Bool  // Add this line
-    @StateObject private var manager = HeartbeatSoundManager()
-    @State private var showDeniedAlert = false
-
     var titleText: AttributedString {
         var string = AttributedString("Feel the best experience")
         if let range = string.range(of: "best") {
@@ -121,10 +183,6 @@ private struct OnboardingPage2: View {
 
     var body: some View {
         ZStack {
-            Image("bgOnboarding2")
-                .scaledToFill()
-                .offset(y: -340)
-
             VStack {
                 HStack {
                     Image(systemName: "airpod.gen3.right")
@@ -148,46 +206,93 @@ private struct OnboardingPage2: View {
                 )
 
                 Text(titleText)
-                    .font(.title)
+                    .font(.title2)
                     .fontWeight(.bold)
                     .padding()
 
-                Text("Tiny will need access to your microphone so you can hear every tiny beat clearly")
+                Text("Tiny will need access to your microphone so you can hear every tiny beat clearly.")
                     .font(.body)
-                    .fontWeight(.medium)
+                    .fontWeight(.regular)
                     .multilineTextAlignment(.center)
-
-                Button(action: {
-                    manager.requestMicrophonePermission { granted in
-                        if granted {
-                            print("Permission granted")
-                            hasShownOnboarding = true  // Dismiss onboarding when permission is granted
-                        } else {
-                            showDeniedAlert = true
-                        }
-                    }
-                }, label: {
-                    Text("Let's go")
-                        .font(.headline)
-                        .fontWeight(.semibold)
-                        .padding(.vertical, 14)
-                        .padding(.horizontal, 40)
-                        .foregroundColor(.white)
-                        .glassEffect()
-                })
-                .padding(.top, 20)
-                .alert("Microphone Access Denied", isPresented: $showDeniedAlert) {
-                    Button("OK", role: .cancel) { }
-                    Button("Open Settings") {
-                        if let url = URL(string: UIApplication.openSettingsURLString) {
-                            UIApplication.shared.open(url)
-                        }
-                    }
-                } message: {
-                    Text("Please enable microphone access in Settings to use this feature.")
-                }
             }
         }
+    }
+}
+
+private struct OnboardingPage3: View {
+    var titleText: AttributedString {
+        var string = AttributedString("Grow through every moment")
+        if let range = string.range(of: "moment") {
+            string[range].foregroundColor = Color("mainYellow")
+        }
+        return string
+    }
+
+    var body: some View {
+        ZStack(alignment: .top){
+            VStack {
+                Text(titleText)
+                    .font(.title2)
+                    .fontWeight(.bold)
+                    .padding(5)
+
+                Text("Share how you feel today and let love keep you both close.")
+                    .font(.body)
+                    .fontWeight(.regular)
+                    .multilineTextAlignment(.center)
+            }
+        }
+    }
+}
+
+private struct OnboardingPage4: View {
+    @StateObject private var manager = HeartbeatSoundManager()
+    @Binding var hasShownOnboarding: Bool  // Add this line
+    @State private var showDeniedAlert = false
+
+    var titleText: AttributedString {
+        var string = AttributedString("Hello lovely parents!")
+        if let range = string.range(of: "lovely") {
+            string[range].foregroundColor = Color("mainYellow")
+        }
+        return string
+    }
+
+    var body: some View {
+        VStack {
+            Spacer()
+
+            Button(action: {
+                manager.requestMicrophonePermission { granted in
+                    if granted {
+                        print("Permission granted")
+                        hasShownOnboarding = true  // Dismiss onboarding when permission is granted
+                    } else {
+                        showDeniedAlert = true
+                    }
+                }
+            }, label: {
+                Text("Let's go")
+                    .font(.headline)
+                    .fontWeight(.semibold)
+                    .padding(.vertical, 14)
+                    .padding(.horizontal, 40)
+                    .foregroundColor(.white)
+                    .glassEffect()
+            })
+            .padding(.top, 20)
+            .alert("Microphone Access Denied", isPresented: $showDeniedAlert) {
+                Button("OK", role: .cancel) { }
+                Button("Open Settings") {
+                    if let url = URL(string: UIApplication.openSettingsURLString) {
+                        UIApplication.shared.open(url)
+                    }
+                }
+            } message: {
+                Text("Please enable microphone access in Settings to use this feature.")
+            }
+        }
+        .padding(50)
     }
 }
 
@@ -196,7 +301,27 @@ private struct OnboardingPage2: View {
         .preferredColorScheme(.dark)
 }
 
-#Preview {
-    OnBoardingView(hasShownOnboarding: .constant(false))
+#Preview("Page 0 Preview") {
+    OnboardingPage0()
+        .preferredColorScheme(.dark)
+}
+
+#Preview("Page 1 Preview") {
+    OnboardingPage1()
+        .preferredColorScheme(.dark)
+}
+
+#Preview("Page 2 Preview") {
+    OnboardingPage2()
+        .preferredColorScheme(.dark)
+}
+
+#Preview("Page 3 Preview") {
+    OnboardingPage3()
+        .preferredColorScheme(.dark)
+}
+
+#Preview("Page 4 Preview") {
+    OnboardingPage4(hasShownOnboarding: .constant(false))
         .preferredColorScheme(.dark)
 }
