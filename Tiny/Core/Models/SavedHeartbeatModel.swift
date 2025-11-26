@@ -12,23 +12,24 @@ import FirebaseFirestore
 @Model
 class SavedHeartbeat {
     @Attribute(.unique) var id: UUID
-    var filePath: String
+    var filePath: String // Local file path
     var timestamp: Date
-
-    var firebaseId: String?
+    
+    // Firebase fields
+    var firebaseId: String? // Document ID in Firestore (for metadata)
     var motherUserId: String?
     var roomCode: String?
-    var isShared: Bool
-    var audioFileURL: String?
+    var isShared: Bool // Whether mom has shared it with dad
+    var firebaseStorageURL: String? // Firebase Storage download URL
+    var isSyncedToCloud: Bool // Whether it's been uploaded to Firebase Storage
     var pregnancyWeeks: Int?
-    var isSyncedToCloud: Bool
     
     init(filePath: String,
          timestamp: Date = Date(),
          motherUserId: String? = nil,
          roomCode: String? = nil,
-         isShared: Bool = false,
-         audioFileURL: String? = nil,
+         isShared: Bool = true,  // Changed default from false to true
+         firebaseStorageURL: String? = nil,
          pregnancyWeeks: Int? = nil,
          isSyncedToCloud: Bool = false,
          firebaseId: String? = nil) {
@@ -38,13 +39,14 @@ class SavedHeartbeat {
         self.motherUserId = motherUserId
         self.roomCode = roomCode
         self.isShared = isShared
-        self.audioFileURL = audioFileURL
+        self.firebaseStorageURL = firebaseStorageURL
         self.pregnancyWeeks = pregnancyWeeks
         self.isSyncedToCloud = isSyncedToCloud
         self.firebaseId = firebaseId
     }
 }
 
+// Extension for Firestore conversion (metadata only)
 extension SavedHeartbeat {
     func toDictionary() -> [String: Any] {
         var dict: [String: Any] = [
@@ -59,8 +61,8 @@ extension SavedHeartbeat {
         if let roomCode = roomCode {
             dict["roomCode"] = roomCode
         }
-        if let audioFileURL = audioFileURL {
-            dict["audioFileURL"] = audioFileURL
+        if let firebaseStorageURL = firebaseStorageURL {
+            dict["firebaseStorageURL"] = firebaseStorageURL
         }
         if let pregnancyWeeks = pregnancyWeeks {
             dict["pregnancyWeeks"] = pregnancyWeeks
@@ -69,18 +71,18 @@ extension SavedHeartbeat {
         return dict
     }
     
-    static func fromFirestore(id: String, data: [String: Any], localFilePath: String) -> SavedHeartbeat? {
+    static func fromFirestore(id: String, data: [String: Any]) -> SavedHeartbeat? {
         guard let timestamp = (data["timestamp"] as? Timestamp)?.dateValue() else {
             return nil
         }
         
         return SavedHeartbeat(
-            filePath: localFilePath,
+            filePath: "", // Will be set after downloading
             timestamp: timestamp,
             motherUserId: data["motherUserId"] as? String,
             roomCode: data["roomCode"] as? String,
             isShared: data["isShared"] as? Bool ?? false,
-            audioFileURL: data["audioFileURL"] as? String,
+            firebaseStorageURL: data["firebaseStorageURL"] as? String,
             pregnancyWeeks: data["pregnancyWeeks"] as? Int,
             isSyncedToCloud: data["isSyncedToCloud"] as? Bool ?? false,
             firebaseId: id

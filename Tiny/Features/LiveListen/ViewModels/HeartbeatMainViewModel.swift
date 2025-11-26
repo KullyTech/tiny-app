@@ -13,8 +13,18 @@ class HeartbeatMainViewModel: ObservableObject {
     @Published var showTimeline = false
     let heartbeatSoundManager = HeartbeatSoundManager()
     
-    func setupManager(modelContext: ModelContext) {
+    func setupManager(
+        modelContext: ModelContext,
+        syncManager: HeartbeatSyncManager,
+        userId: String?,
+        roomCode: String?,
+        userRole: UserRole?  // Add this
+    ) {
         heartbeatSoundManager.modelContext = modelContext
+        heartbeatSoundManager.syncManager = syncManager
+        heartbeatSoundManager.currentUserId = userId
+        heartbeatSoundManager.currentRoomCode = roomCode
+        heartbeatSoundManager.currentUserRole = userRole  // Add this
         heartbeatSoundManager.loadFromSwiftData()
     }
     

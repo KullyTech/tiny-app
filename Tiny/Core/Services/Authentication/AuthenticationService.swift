@@ -199,6 +199,38 @@ class AuthenticationService: ObservableObject {
         return String((0..<6).map { _ in characters.randomElement()! })
     }
     
-    
+    func joinRoom(roomCode: String) async throws {
+        guard let userId = auth.currentUser?.uid else {
+            throw NSError(domain: "AuthError", code: -1, userInfo: [NSLocalizedDescriptionKey: "User not authenticated"])
+        }
+        
+        print("🚪 User attempting to join room: \(roomCode)")
+        
+        // Find the room with this code
+        let snapshot = try await db.collection("rooms")
+            .whereField("code", isEqualTo: roomCode)
+            .limit(to: 1)
+            .getDocuments()
+        
+        guard let roomDoc = snapshot.documents.first else {
+            throw NSError(domain: "AuthError", code: -1, userInfo: [NSLocalizedDescriptionKey: "Room not found with code: \(roomCode)"])
+        }
+        
+        print("✅ Found room: \(roomDoc.documentID)")
+        
+        // Update the room to add father's user ID
+        try await db.collection("rooms").document(roomDoc.documentID).updateData([
+            "fatherUserId": userId
+        ])
+        
+        print("✅ Updated room with father's user ID")
+        
+        // Update user's roomCode
+        try await db.collection("users").document(userId).updateData([
+            "roomCode": roomCode
+        ])
+        
+        print("✅ Updated user's room code")
+    }
     
 }

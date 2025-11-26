@@ -9,9 +9,9 @@ import SwiftUI
 
 struct PregnancyTimelineView: View {
     @ObservedObject var heartbeatSoundManager: HeartbeatSoundManager
-    // ⬇️ NEW: Binding to control close
     @Binding var showTimeline: Bool
     let onSelectRecording: (Recording) -> Void
+    let isMother: Bool  // Add this parameter
     
     @Namespace private var animation
     @State private var selectedWeek: WeekSection?
@@ -24,8 +24,13 @@ struct PregnancyTimelineView: View {
             
             ZStack {
                 if let week = selectedWeek {
-                    TimelineDetailView(week: week, animation: animation, onSelectRecording: onSelectRecording)
-                        .transition(.opacity)
+                    TimelineDetailView(
+                        week: week,
+                        animation: animation,
+                        onSelectRecording: onSelectRecording,
+                        isMother: isMother  // Pass it here
+                    )
+                    .transition(.opacity)
                 } else {
                     MainTimelineListView(groupedData: groupedData, selectedWeek: $selectedWeek, animation: animation)
                         .transition(.opacity)
@@ -34,7 +39,14 @@ struct PregnancyTimelineView: View {
             
             navigationButtons
         }
-        .onAppear(perform: groupRecordings)
+        .onAppear {
+            print("📱 Timeline appeared - grouping recordings")
+            groupRecordings()
+        }
+        .onChange(of: heartbeatSoundManager.savedRecordings) { oldValue, newValue in
+            print("🔄 Recordings changed: \(oldValue.count) -> \(newValue.count)")
+            groupRecordings()
+        }
     }
     
     private var navigationButtons: some View {
@@ -59,8 +71,27 @@ struct PregnancyTimelineView: View {
                 }
                 Spacer()
             } else {
-                // ⬇️ Book Button (List -> Close to Orb)
+                // Sync Button (Top Right)
+                HStack {
+                    Spacer()
+                    Button {
+                        print("🔄 Manual sync triggered")
+                        heartbeatSoundManager.loadFromSwiftData()
+                    } label: {
+                        Image(systemName: "arrow.clockwise")
+                            .font(.system(size: 20, weight: .bold))
+                            .foregroundColor(.white)
+                            .frame(width: 50, height: 50)
+                            .clipShape(Circle())
+                    }
+                    .glassEffect(.clear)
+                    .padding(.trailing, 20)
+                    .padding(.top, 50)
+                }
+                
                 Spacer()
+                
+                // Book Button (List -> Close to Orb)
                 Button {
                     withAnimation(.spring(response: 0.6, dampingFraction: 0.8)) {
                         showTimeline = false
@@ -78,6 +109,8 @@ struct PregnancyTimelineView: View {
     
     private func groupRecordings() {
         let raw = heartbeatSoundManager.savedRecordings
+        print("📊 Grouping \(raw.count) recordings")
+        
         let calendar = Calendar.current
         
         let grouped = Dictionary(grouping: raw) { recording -> Int in
@@ -87,36 +120,10 @@ struct PregnancyTimelineView: View {
         self.groupedData = grouped.map {
             WeekSection(weekNumber: $0.key, recordings: $0.value.sorted(by: { $0.createdAt > $1.createdAt }))
         }.sorted(by: { $0.weekNumber < $1.weekNumber })
-    }
-}
-
-#Preview {
-    let mockManager = HeartbeatSoundManager()
-    
-    let now = Date()
-    let week1Date = now
-    let week2Date = Calendar.current.date(byAdding: .day, value: -7, to: now)! // 1 week ago
-    let week3Date = Calendar.current.date(byAdding: .day, value: -21, to: now)! // 3 weeks ago
-    
-    mockManager.savedRecordings = [
-        // Week A (Current Week)
-        Recording(fileURL: URL(fileURLWithPath: "my-baby-heartbeat.caf"), createdAt: week1Date),
-        Recording(fileURL: URL(fileURLWithPath: "morning-check.caf"), createdAt: week1Date.addingTimeInterval(-100)),
         
-        // Week B (Last Week)
-        Recording(fileURL: URL(fileURLWithPath: "late-night-kick.caf"), createdAt: week2Date),
-        
-        // Week C (3 Weeks Ago)
-        Recording(fileURL: URL(fileURLWithPath: "first-time.caf"), createdAt: week3Date),
-        Recording(fileURL: URL(fileURLWithPath: "doctor-visit.caf"), createdAt: week3Date.addingTimeInterval(-50))
-    ]
-    
-    return PregnancyTimelineView(
-        heartbeatSoundManager: mockManager,
-        showTimeline: .constant(true),
-        onSelectRecording: { recording in
-            print("Selected: \(recording.fileURL.lastPathComponent)")
+        print("📊 Created \(groupedData.count) week sections")
+        for section in groupedData {
+            print("   Week \(section.weekNumber): \(section.recordings.count) recordings")
         }
-    )
-    .preferredColorScheme(.dark)
+    }
 }

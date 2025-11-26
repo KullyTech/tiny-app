@@ -12,26 +12,48 @@ struct HeartbeatMainView: View {
     @StateObject private var viewModel = HeartbeatMainViewModel()
     @Environment(\.modelContext) private var modelContext
     @EnvironmentObject var authService: AuthenticationService
+    @EnvironmentObject var syncManager: HeartbeatSyncManager
     
     @State private var showRoomCode = false
+    @State private var isInitialized = false
+    
+    // Check if user is a mother
+    private var isMother: Bool {
+        authService.currentUser?.role == .mother
+    }
     
     var body: some View {
         ZStack {
+            // Timeline view - accessible by both mom and dad
             if viewModel.showTimeline {
                 PregnancyTimelineView(
                     heartbeatSoundManager: viewModel.heartbeatSoundManager,
                     showTimeline: $viewModel.showTimeline,
-                    onSelectRecording: viewModel.handleRecordingSelection
+                    onSelectRecording: viewModel.handleRecordingSelection,
+                    isMother: isMother  // Add this
                 )
                 .transition(.opacity)
             } else {
-                OrbLiveListenView(
-                    heartbeatSoundManager: viewModel.heartbeatSoundManager,
-                    showTimeline: $viewModel.showTimeline
-                )
-                .transition(.opacity)
+                // Orb view - ONLY accessible by mothers
+                if isMother {
+                    OrbLiveListenView(
+                        heartbeatSoundManager: viewModel.heartbeatSoundManager,
+                        showTimeline: $viewModel.showTimeline
+                    )
+                    .transition(.opacity)
+                } else {
+                    // For fathers, always show timeline (they can't record)
+                    PregnancyTimelineView(
+                        heartbeatSoundManager: viewModel.heartbeatSoundManager,
+                        showTimeline: $viewModel.showTimeline,
+                        onSelectRecording: viewModel.handleRecordingSelection,
+                        isMother: isMother  // Add this
+                    )
+                    .transition(.opacity)
+                }
             }
             
+            // Room Code Button (Top Right)
             VStack {
                 HStack {
                     Spacer()
@@ -55,17 +77,21 @@ struct HeartbeatMainView: View {
         }
         .preferredColorScheme(.dark)
         .onAppear {
-            viewModel.setupManager(modelContext: modelContext)
+            // For fathers, always show timeline
+            if !isMother {
+                viewModel.showTimeline = true
+            }
             
-            // Auto-create room for mothers if they don't have one
-            if authService.currentUser?.role == .mother && authService.currentUser?.roomCode == nil {
-                Task {
-                    do {
-                        _ = try await authService.createRoom()
-                    } catch {
-                        print("Error creating room: \(error)")
-                    }
-                }
+            // Initialize only once
+            if !isInitialized {
+                initializeManager()
+            }
+        }
+        .onChange(of: authService.currentUser?.roomCode) { oldValue, newValue in
+            // Re-initialize when room code changes
+            if newValue != nil && newValue != oldValue {
+                print("🔄 Room code updated: \(newValue ?? "nil")")
+                initializeManager()
             }
         }
         .sheet(isPresented: $showRoomCode) {
@@ -75,9 +101,47 @@ struct HeartbeatMainView: View {
                 .presentationDragIndicator(.visible)
         }
     }
+    
+    private func initializeManager() {
+        Task {
+            // Auto-create room for mothers if they don't have one
+            if isMother && authService.currentUser?.roomCode == nil {
+                do {
+                    let roomCode = try await authService.createRoom()
+                    print("✅ Room created: \(roomCode)")
+                } catch {
+                    print("❌ Error creating room: \(error)")
+                }
+            }
+            
+            // Wait a bit for room code to be set
+            try? await Task.sleep(nanoseconds: 500_000_000) // 0.5 seconds
+            
+            // Now setup the manager with current user data
+            let userId = authService.currentUser?.id
+            let roomCode = authService.currentUser?.roomCode
+            
+            print("🔍 Initializing manager with:")
+            print("   User ID: \(userId ?? "nil")")
+            print("   Room Code: \(roomCode ?? "nil")")
+            
+            await MainActor.run {
+                viewModel.setupManager(
+                    modelContext: modelContext,
+                    syncManager: syncManager,
+                    userId: userId,
+                    roomCode: roomCode,
+                    userRole: authService.currentUser?.role  // Add this
+                )
+                isInitialized = true
+            }
+        }
+    }
 }
 
 #Preview {
     HeartbeatMainView()
         .modelContainer(for: SavedHeartbeat.self, inMemory: true)
+        .environmentObject(AuthenticationService())
+        .environmentObject(HeartbeatSyncManager())
 }

@@ -98,18 +98,27 @@ struct RoomCodeInputView: View {
         Task {
             do {
                 let code = roomCode.trimmingCharacters(in: .whitespaces).uppercased()
+                
+                // First make sure the role is set to father
                 try await authService.updateUserRole(role: .father, roomCode: code)
+                
+                // Then join the room (this updates the room document)
+                try await authService.joinRoom(roomCode: code)
+                
+                print("✅ Successfully joined room: \(code)")
             } catch {
                 errorMessage = error.localizedDescription
+                isLoading = false
             }
-            isLoading = false
+            // Don't set isLoading to false - let the navigation happen
         }
     }
     
-    func handleSkip() {
+    private func handleSkip() {
         Task {
             do {
-                try await authService.updateUserRole(role: .father)
+                // Just update the role without a room code
+                try await authService.updateUserRole(role: .father, roomCode: nil)
             } catch {
                 errorMessage = error.localizedDescription
             }

@@ -12,6 +12,8 @@ struct TimelineDetailView: View {
     var animation: Namespace.ID // Passed from parent
     let onSelectRecording: (Recording) -> Void
     
+    let isMother: Bool
+    
     var body: some View {
         GeometryReader { geometry in
             VStack(spacing: 0) {
@@ -128,50 +130,4 @@ struct TimelineDetailView: View {
         }
         return raw
     }
-}
-
-#Preview {
-    struct PreviewWrapper: View {
-        @Namespace var animation
-        
-        let mockWeek = WeekSection(
-            weekNumber: 24,
-            recordings: [
-                Recording(
-                    fileURL: URL(fileURLWithPath: "morning-kick.caf"),
-                    createdAt: Date()
-                ),
-                Recording(
-                    fileURL: URL(fileURLWithPath: "hiccups.caf"),
-                    createdAt: Date().addingTimeInterval(-3600) // 1 hour ago
-                ),
-                Recording(
-                    fileURL: URL(fileURLWithPath: "bedtime.caf"),
-                    createdAt: Date().addingTimeInterval(-7200) // 2 hours ago
-                )
-            ]
-        )
-        
-        var body: some View {
-            ZStack {
-                LinearGradient(
-                    colors: [Color(red: 0.05, green: 0.05, blue: 0.15), Color.black],
-                    startPoint: .top,
-                    endPoint: .bottom
-                )
-                .ignoresSafeArea()
-                
-                TimelineDetailView(
-                    week: mockWeek,
-                    animation: animation,
-                    onSelectRecording: { recording in
-                        print("Selected: \(recording.fileURL.lastPathComponent)")
-                    }
-                )
-            }
-        }
-    }
-    
-    return PreviewWrapper()
-        .preferredColorScheme(.dark)
 }
