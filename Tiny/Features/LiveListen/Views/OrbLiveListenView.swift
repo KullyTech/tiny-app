@@ -247,14 +247,14 @@ struct OrbLiveListenView: View {
             } else {
                 content.gesture(
                     LongPressGesture(minimumDuration: 3.0)
-                        .updating($isDetectingLongPress) { currentState, gestureState, transaction in
+                        .updating($isDetectingLongPress) { currentState, gestureState, _ in
                             gestureState = currentState
                         }
                         .onEnded { _ in
                             handleLongPressComplete()
                         }
                 )
-                .onChange(of: isDetectingLongPress) { oldValue, newValue in
+                .onChange(of: isDetectingLongPress) { _, newValue in
                     handleLongPressChange(newValue)
                 }
             }
