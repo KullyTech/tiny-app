@@ -17,31 +17,36 @@ struct PregnancyTimelineView: View {
     @State private var selectedWeek: WeekSection?
     @State private var groupedData: [WeekSection] = []
     
+    @ObservedObject private var userProfile = UserProfileManager.shared
+    
     var body: some View {
-        ZStack {
-            LinearGradient(colors: [Color(red: 0.05, green: 0.05, blue: 0.15), Color.black], startPoint: .top, endPoint: .bottom)
-                .ignoresSafeArea()
-            
+        NavigationStack {
             ZStack {
-                if let week = selectedWeek {
-                    TimelineDetailView(week: week, animation: animation, onSelectRecording: onSelectRecording)
-                        .transition(.opacity)
-                } else {
-                    MainTimelineListView(groupedData: groupedData, selectedWeek: $selectedWeek, animation: animation)
-                        .transition(.opacity)
+                LinearGradient(colors: [Color(red: 0.05, green: 0.05, blue: 0.15), Color.black], startPoint: .top, endPoint: .bottom)
+                    .ignoresSafeArea()
+                
+                ZStack {
+                    if let week = selectedWeek {
+                        TimelineDetailView(week: week, animation: animation, onSelectRecording: onSelectRecording)
+                            .transition(.opacity)
+                    } else {
+                        MainTimelineListView(groupedData: groupedData, selectedWeek: $selectedWeek, animation: animation)
+                            .transition(.opacity)
+                    }
                 }
+                
+                navigationButtons
             }
-            
-            navigationButtons
+            .onAppear(perform: groupRecordings)
         }
-        .onAppear(perform: groupRecordings)
     }
     
     private var navigationButtons: some View {
         VStack {
-            if selectedWeek != nil {
-                // Back Button (Detail -> List)
-                HStack {
+            // Top Bar
+            HStack {
+                if selectedWeek != nil {
+                    // Back Button (Detail -> List)
                     Button {
                         withAnimation(.spring(response: 0.6, dampingFraction: 0.75)) { selectedWeek = nil }
                     } label: {
@@ -53,14 +58,43 @@ struct PregnancyTimelineView: View {
                     }
                     .glassEffect(.clear)
                     .matchedGeometryEffect(id: "navButton", in: animation)
-                    .padding(.leading, 20)
-                    .padding(.top, 0)
+                } else {
                     Spacer()
                 }
+                
                 Spacer()
-            } else {
-                // ⬇️ Book Button (List -> Close to Orb)
-                Spacer()
+                
+                // Profile Button (Top Right)
+                if selectedWeek == nil {
+                    NavigationLink {
+                        ProfileView()
+                    } label: {
+                        Group {
+                            if let image = userProfile.profileImage {
+                                Image(uiImage: image)
+                                    .resizable()
+                                    .scaledToFill()
+                            } else {
+                                Image(systemName: "person.crop.circle.fill")
+                                    .resizable()
+                                    .scaledToFit()
+                                    .foregroundColor(.white.opacity(0.8))
+                            }
+                        }
+                        .frame(width: 44, height: 44)
+                        .clipShape(Circle())
+                        .overlay(Circle().stroke(Color.white.opacity(0.2), lineWidth: 1))
+                        .shadow(color: .black.opacity(0.2), radius: 4, x: 0, y: 2)
+                    }
+                }
+            }
+            .padding(.horizontal, 20)
+            .padding(.top, 60)
+            
+            Spacer()
+            
+            if selectedWeek == nil {
+                // Book Button (List -> Close to Orb)
                 Button {
                     withAnimation(.spring(response: 0.6, dampingFraction: 0.8)) {
                         showTimeline = false

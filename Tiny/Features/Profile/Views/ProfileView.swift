@@ -12,26 +12,24 @@ struct ProfileView: View {
     @State private var showingSignOutConfirmation = false
 
     var body: some View {
-        NavigationStack {
-            ZStack {
-                Image("backgroundPurple")
-                    .resizable()
-                    .scaledToFill()
-                    .ignoresSafeArea()
+        ZStack {
+            Image("backgroundPurple")
+                .resizable()
+                .scaledToFill()
+                .ignoresSafeArea()
 
-                VStack(spacing: 0) {
-                    // HEADER
-                    profileHeader
-                        .padding(.bottom, 30)
+            VStack(spacing: 0) {
+                // HEADER
+                profileHeader
+                    .padding(.bottom, 30)
 
-                    // FEATURE CARDS
-                    featureCards
-                        .padding(.horizontal, 16)
-                        .frame(height: 160)
+                // FEATURE CARDS
+                featureCards
+                    .padding(.horizontal, 16)
+                    .frame(height: 160)
 
-                    // SETTINGS LIST
-                    settingsList
-                }
+                // SETTINGS LIST
+                settingsList
             }
         }
     }
@@ -301,10 +299,16 @@ struct ProfilePhotoDetailView: View {
             )
         }
         .sheet(isPresented: $showingImagePicker) {
-            ImagePicker(image: $viewModel.profileImage, sourceType: .photoLibrary)
+            ImagePicker(image: Binding(
+                get: { viewModel.profileImage },
+                set: { viewModel.profileImage = $0 }
+            ), sourceType: .photoLibrary)
         }
         .fullScreenCover(isPresented: $showingCamera) {
-            ImagePicker(image: $viewModel.profileImage, sourceType: .camera)
+            ImagePicker(image: Binding(
+                get: { viewModel.profileImage },
+                set: { viewModel.profileImage = $0 }
+            ), sourceType: .camera)
         }
     }
 
