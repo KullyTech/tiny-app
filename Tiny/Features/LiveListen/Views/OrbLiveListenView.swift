@@ -83,6 +83,22 @@ struct OrbLiveListenView: View {
         VStack {
             HStack {
                 Spacer()
+
+                if viewModel.isPlaybackMode {
+                    Button {
+                        viewModel.showShareSheet = true
+                    } label: {
+                        Image(systemName: "square.and.arrow.up")
+                            .font(.body)
+                            .foregroundColor(.white)
+                            .frame(width: 50, height: 50)
+                            .clipShape(Circle())
+                    }
+                    .glassEffect(.clear)
+                    .padding(.bottom, 50)
+                    .transition(.opacity.animation(.easeInOut))
+                }
+                
                 Button {
                     withAnimation(.spring(response: 0.6, dampingFraction: 0.8)) {
                         showTimeline = true
