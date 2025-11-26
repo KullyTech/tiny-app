@@ -10,29 +10,58 @@ import SwiftUI
 struct ProfileView: View {
     @StateObject private var viewModel = ProfileViewModel()
     @State private var showingSignOutConfirmation = false
+    @Environment(\.modelContext) private var modelContext
+    @EnvironmentObject var authService: AuthenticationService
+    @EnvironmentObject var syncManager: HeartbeatSyncManager
+    @StateObject private var heartbeatMainViewModel = HeartbeatMainViewModel()
+
+    @State private var showRoomCode = false
+    @State private var isInitialized = false
+
+    // Check if user is a mother
+    private var isMother: Bool {
+        authService.currentUser?.role == .mother
+    }
 
     var body: some View {
-        NavigationStack {
-            ZStack {
-                Image("backgroundPurple")
-                    .resizable()
-                    .scaledToFill()
-                    .ignoresSafeArea()
+        ZStack {
+            Image("backgroundPurple")
+                .resizable()
+                .scaledToFill()
+                .ignoresSafeArea()
 
-                VStack(spacing: 0) {
-                    // HEADER
-                    profileHeader
-                        .padding(.bottom, 30)
+            VStack(spacing: 0) {
+                // HEADER
+                profileHeader
+                    .padding(.bottom, 30)
 
-                    // FEATURE CARDS
-                    featureCards
-                        .padding(.horizontal, 16)
-                        .frame(height: 160)
+                // FEATURE CARDS
+                featureCards
+                    .padding(.horizontal, 16)
+                    .frame(height: 160)
 
-                    // SETTINGS LIST
-                    settingsList
-                }
+                // SETTINGS LIST
+                settingsList
             }
+        }
+        .onAppear {
+            // Initialize only once
+            if !isInitialized {
+                initializeManager()
+            }
+        }
+        .onChange(of: authService.currentUser?.roomCode) { oldValue, newValue in
+            // Re-initialize when room code changes
+            if newValue != nil && newValue != oldValue {
+                print("🔄 Room code updated: \(newValue ?? "nil")")
+                initializeManager()
+            }
+        }
+        .sheet(isPresented: $showRoomCode) {
+            RoomCodeDisplayView()
+                .environmentObject(authService)
+                .presentationDetents([.medium])
+                .presentationDragIndicator(.visible)
         }
     }
 
@@ -53,7 +82,7 @@ struct ProfileView: View {
                     }
                     .buttonStyle(.plain)
 
-                    Text(viewModel.isSignedIn ? viewModel.userName : "Guest")
+                    Text(authService.currentUser?.name ?? "Guest")
                         .font(.title2)
                         .fontWeight(.semibold)
                         .foregroundStyle(.white)
@@ -131,13 +160,6 @@ struct ProfileView: View {
             } else {
                 signInView
             }
-        } header: {
-            Text("Account")
-        } footer: {
-            if !viewModel.isSignedIn {
-                Text("Your privacy is protected. We only use your Apple ID to securely save your data.")
-                    .font(.caption2)
-            }
         }
         .listRowBackground(Color("rowProfileGrey"))
     }
@@ -184,11 +206,6 @@ struct ProfileView: View {
                 .cornerRadius(8)
             }
             .buttonStyle(.plain)
-
-            Text("Sign in to sync your pregnancy journey across devices")
-                .font(.caption)
-                .foregroundStyle(.secondary)
-                .multilineTextAlignment(.center)
         }
         .padding(.vertical, 8)
     }
@@ -208,10 +225,14 @@ struct ProfileView: View {
 
             Spacer()
 
-            Text("Connect with Your Partner")
-                .font(.subheadline)
-                .foregroundColor(.blue)
-                .fontWeight(.medium)
+            Button(action: {
+                showRoomCode.toggle()
+            }, label: {
+                Text("Connect with Your Partner")
+                    .font(.subheadline)
+                    .foregroundColor(.blue)
+                    .fontWeight(.medium)
+            })
 
             Spacer()
         }
@@ -252,9 +273,54 @@ struct ProfileView: View {
         .background(Color("rowProfileGrey"))
         .cornerRadius(14)
     }
+
+    private func initializeManager() {
+        Task {
+            // Auto-create room for mothers if they don't have one
+            if isMother && authService.currentUser?.roomCode == nil {
+                do {
+                    let roomCode = try await authService.createRoom()
+                    print("✅ Room created: \(roomCode)")
+                } catch {
+                    print("❌ Error creating room: \(error)")
+                }
+            }
+
+            // Wait a bit for room code to be set
+            try? await Task.sleep(nanoseconds: 500_000_000) // 0.5 seconds
+
+            // Now setup the manager with current user data
+            let userId = authService.currentUser?.id
+            let roomCode = authService.currentUser?.roomCode
+
+            print("🔍 Initializing manager with:")
+            print("   User ID: \(userId ?? "nil")")
+            print("   Room Code: \(roomCode ?? "nil")")
+
+            await MainActor.run {
+                heartbeatMainViewModel.setupManager(
+                    modelContext: modelContext,
+                    syncManager: syncManager,
+                    userId: userId,
+                    roomCode: roomCode,
+                    userRole: authService.currentUser?.role
+                )
+                isInitialized = true
+            }
+
+            // For fathers, start in timeline view
+            if !isMother {
+                await MainActor.run {
+                    heartbeatMainViewModel.showTimeline = true
+                }
+            }
+        }
+    }
+
 }
 
 struct ProfilePhotoDetailView: View {
+    @EnvironmentObject var authService: AuthenticationService
     @ObservedObject var viewModel: ProfileViewModel
     @State private var showingImagePicker = false
     @State private var showingCamera = false
@@ -284,15 +350,16 @@ struct ProfilePhotoDetailView: View {
         .toolbar {
             ToolbarItem(placement: .navigationBarTrailing) {
                 Button("Save") {
-                    viewModel.userName = tempUserName
-                    viewModel.saveName()
-                    dismiss()
+                    Task {
+                        try? await authService.updateUserName(name: tempUserName)
+                        dismiss()
+                    }
                 }
                 .disabled(tempUserName.trimmingCharacters(in: .whitespaces).isEmpty)
             }
         }
         .onAppear {
-            tempUserName = viewModel.userName
+            tempUserName = authService.currentUser?.name ?? ""
         }
         .sheet(isPresented: $showingPhotoOptions) {
             BottomPhotoPickerSheet(
@@ -301,10 +368,16 @@ struct ProfilePhotoDetailView: View {
             )
         }
         .sheet(isPresented: $showingImagePicker) {
-            ImagePicker(image: $viewModel.profileImage, sourceType: .photoLibrary)
+            ImagePicker(image: Binding(
+                get: { viewModel.profileImage },
+                set: { viewModel.profileImage = $0 }
+            ), sourceType: .photoLibrary)
         }
         .fullScreenCover(isPresented: $showingCamera) {
-            ImagePicker(image: $viewModel.profileImage, sourceType: .camera)
+            ImagePicker(image: Binding(
+                get: { viewModel.profileImage },
+                set: { viewModel.profileImage = $0 }
+            ), sourceType: .camera)
         }
     }
 
@@ -473,5 +546,7 @@ struct TutorialDummy: View {
 
 #Preview {
     ProfileView()
+        .environmentObject(AuthenticationService())   // <-- mock
+        .environmentObject(HeartbeatSyncManager())
         .preferredColorScheme(.dark)
 }

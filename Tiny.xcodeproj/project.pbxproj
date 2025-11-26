@@ -484,7 +484,9 @@
 				INFOPLIST_KEY_CFBundleDisplayName = Tiny;
 				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.lifestyle";
+				INFOPLIST_KEY_NSCameraUsageDescription = "Allow Tiny to use camera for taking profile picture";
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Tiny needs to use the microphone to capture heartbeat sounds.";
+				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "Allow Tiny to access photos library";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -531,7 +533,9 @@
 				INFOPLIST_KEY_CFBundleDisplayName = Tiny;
 				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.lifestyle";
+				INFOPLIST_KEY_NSCameraUsageDescription = "Allow Tiny to use camera for taking profile picture";
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Tiny needs to use the microphone to capture heartbeat sounds.";
+				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "Allow Tiny to access photos library";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
