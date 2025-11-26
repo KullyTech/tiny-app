@@ -31,6 +31,7 @@ struct TinyApp: App {
         WindowGroup {
             if isShowingSplashScreen {
                 SplashScreenView(isShowingSplashScreen: $isShowingSplashScreen)
+                    .preferredColorScheme(.dark)
             } else {
                 ContentView()
                     .environmentObject(heartbeatSoundManager)

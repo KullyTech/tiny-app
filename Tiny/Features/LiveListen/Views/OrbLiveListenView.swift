@@ -10,6 +10,8 @@ struct OrbLiveListenView: View {
     @StateObject private var viewModel = OrbLiveListenViewModel()
     @StateObject private var tutorialViewModel = TutorialViewModel()
     
+    @GestureState private var isPressing = false
+    
     var body: some View {
         GeometryReader { geometry in
             ZStack {
@@ -131,7 +133,7 @@ struct OrbLiveListenView: View {
                             .fontWeight(.medium)
                         
                         if viewModel.audioPostProcessingManager.duration > 0 && !viewModel.isDraggingToSave {
-                            Text("\(Int(viewModel.audioPostProcessingManager.currentTime))s / \(Int(viewModel.audioPostProcessingManager.duration))s")
+                            Text("\(Int(viewModel.currentTime))s / \(Int(viewModel.audioPostProcessingManager.duration))s")
                                 .font(.caption)
                                 .foregroundColor(.white.opacity(0.7))
                         }
@@ -231,7 +233,9 @@ struct OrbLiveListenView: View {
         let handleDragEnd: (SequenceGesture<LongPressGesture, DragGesture>.Value) -> Void
         let handleLongPressChange: (Bool) -> Void
         let handleLongPressComplete: () -> Void
-        
+
+        @GestureState private var isDetectingLongPress = false
+
         func body(content: Content) -> some View {
             if isPlaybackMode {
                 content.gesture(
@@ -243,9 +247,16 @@ struct OrbLiveListenView: View {
             } else {
                 content.gesture(
                     LongPressGesture(minimumDuration: 3.0)
-                        .onChanged { handleLongPressChange($0) }
-                        .onEnded { _ in handleLongPressComplete() }
+                        .updating($isDetectingLongPress) { currentState, gestureState, transaction in
+                            gestureState = currentState
+                        }
+                        .onEnded { _ in
+                            handleLongPressComplete()
+                        }
                 )
+                .onChange(of: isDetectingLongPress) { oldValue, newValue in
+                    handleLongPressChange(newValue)
+                }
             }
         }
     }
