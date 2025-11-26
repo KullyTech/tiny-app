@@ -149,13 +149,23 @@ class AuthenticationService: ObservableObject {
     
     private func fetchUserData(userId: String) {
         db.collection("users").document(userId).addSnapshotListener { [weak self] snapshot, error in
-            guard let data = snapshot?.data() else { return }
-            
-            do {
-                self?.currentUser = try Firestore.Decoder().decode(User.self, from: data)
-            } catch {
-                print("Error decoding user: \(error)")
+            guard let snapshot = snapshot, snapshot.exists, let data = snapshot.data() else {
+                print("Error fetching user data: \(error?.localizedDescription ?? "Unknown error")")
+                return
             }
+            
+            // Manually decode the user data
+            let user = User(
+                id: snapshot.documentID,
+                email: data["email"] as? String ?? "",
+                name: data["name"] as? String,
+                role: (data["role"] as? String).flatMap { UserRole(rawValue: $0) },
+                pregnancyMonths: data["pregnancyMonths"] as? Int,
+                roomCode: data["roomCode"] as? String,
+                createdAt: (data["createdAt"] as? Timestamp)?.dateValue() ?? Date()
+            )
+            
+            self?.currentUser = user
         }
     }
     

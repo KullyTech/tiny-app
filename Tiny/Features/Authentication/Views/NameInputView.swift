@@ -102,8 +102,12 @@ struct NameInputView: View {
                 }
             } catch {
                 errorMessage = error.localizedDescription
+                isLoading = false
             }
-            isLoading = false
+            
+            if selectedRole == .father {
+                isLoading = false
+            }
         }
     }
 }

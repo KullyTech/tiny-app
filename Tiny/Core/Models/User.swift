@@ -14,7 +14,7 @@ enum UserRole: String, Codable {
 }
 
 struct User: Codable, Identifiable {
-    @DocumentID var id: String?
+    var id: String?
     var email: String
     var name: String?
     var role: UserRole?
@@ -22,7 +22,19 @@ struct User: Codable, Identifiable {
     var roomCode: String?
     var createdAt: Date
     
-    enum CodingKeys: String, CodingKey {
-        case id, email, name, role, pregnancyMonths, roomCode, createdAt
+    init(id: String? = nil,
+         email: String,
+         name: String? = nil,
+         role: UserRole? = nil,
+         pregnancyMonths: Int? = nil,
+         roomCode: String? = nil,
+         createdAt: Date) {
+        self.id = id
+        self.email = email
+        self.name = name
+        self.role = role
+        self.pregnancyMonths = pregnancyMonths
+        self.roomCode = roomCode
+        self.createdAt = createdAt
     }
 }
