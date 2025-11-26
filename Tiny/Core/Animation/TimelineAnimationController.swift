@@ -26,8 +26,8 @@ class TimelineAnimationController: ObservableObject {
     
     // Timing constants (in seconds) - Slowed down for better visibility
     private let pathDuration: Double = 2.5  // Was 1.5
-    private let dotDelay: Double = 0.5      // Was 0.33
-    private let dotDuration: Double = 0.5   // Was 0.3
+    private let dotDelay: Double = 0.9      // Was 0.33
+    private let dotDuration: Double = 0.9   // Was 0.3
     private let transformDuration: Double = 1.0  // Was 0.7
     private let profileDuration: Double = 0.8    // Was 0.6
     
