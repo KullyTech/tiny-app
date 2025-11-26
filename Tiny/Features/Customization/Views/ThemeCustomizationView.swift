@@ -9,15 +9,14 @@ import SwiftUI
 
 struct ThemeCustomizationView: View {
     @EnvironmentObject var themeManager: ThemeManager
-    @Environment(\.dismiss) private var dismiss
-    
+
     @State private var selectedTab: CustomizationTab = .sphere
-    
+
     enum CustomizationTab: String, CaseIterable {
         case sphere = "Sphere"
         case background = "Background"
     }
-    
+
     var body: some View {
         ZStack {
             // Background
@@ -26,48 +25,22 @@ struct ThemeCustomizationView: View {
                 .resizable()
                 .ignoresSafeArea()
                 .opacity(1)
-            
+
             VStack(spacing: 0) {
-                // Header
-                HStack {
-                    Button(action: { dismiss() }) {
-                        Image(systemName: "chevron.left")
-                            .font(.system(size: 22, weight: .semibold))
-                            .foregroundColor(.white)
-                            .frame(width: 50, height: 50)
-                            .clipShape(Circle())
-                    }
-                    .glassEffect(.clear)
-                    
-                    Spacer()
-                    
-                    Text("Theme")
-                        .font(.title2)
-                        .fontWeight(.bold)
-                        .foregroundColor(.white)
-                    
-                    Spacer()
-                    
-                    // Placeholder for symmetry
-                    Color.clear.frame(width: 50, height: 50)
-                }
-                .padding(.horizontal, 24)
-                .padding(.top, 60)
-                
                 // Preview Orb - Centered in remaining space
                 Spacer()
-                
+
                 ZStack {
                     AnimatedOrbView(size: 240)
                         .environmentObject(themeManager)
-                    
+
                     BokehEffectView(amplitude: .constant(0.6))
                         .environmentObject(themeManager)
                 }
                 .frame(width: 240, height: 240)
-                
+
                 Spacer()
-                
+
                 // Bottom Sheet
                 VStack(spacing: 0) {
                     // Segmented Control
@@ -77,7 +50,7 @@ struct ThemeCustomizationView: View {
                                 withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
                                     selectedTab = tab
                                 }
-                            }) {
+                            }, label: {
                                 Text(tab.rawValue)
                                     .font(.system(size: 16, weight: .semibold))
                                     .foregroundColor(selectedTab == tab ? .white : .tinyViolet)
@@ -87,7 +60,7 @@ struct ThemeCustomizationView: View {
                                         RoundedRectangle(cornerRadius: 20)
                                             .fill(selectedTab == tab ? Color.tinyViolet : Color.clear)
                                     )
-                            }
+                            })
                             .buttonStyle(.plain)
                         }
                     }
@@ -98,7 +71,7 @@ struct ThemeCustomizationView: View {
                     )
                     .padding(.horizontal, 24)
                     .padding(.top, 24)
-                    
+
                     // Options - Horizontal scroll with selected item prominent
                     ScrollViewReader { proxy in
                         ScrollView(.horizontal, showsIndicators: false) {
@@ -159,6 +132,8 @@ struct ThemeCustomizationView: View {
                 .padding(.bottom, 0)
             }
         }
+        .navigationTitle("Theme")
+        .navigationBarTitleDisplayMode(.inline)
         .preferredColorScheme(.dark)
     }
 }
@@ -168,13 +143,13 @@ struct OrbOptionButton: View {
     let style: OrbStyles
     let isSelected: Bool
     let action: () -> Void
-    
+
     var body: some View {
         Button(action: action) {
             ZStack {
                 // The orb itself
                 AnimatedOrbView(size: isSelected ? 120 : 90, style: style)
-                
+
                 // Subtle glow for selected
                 if isSelected {
                     Circle()
@@ -196,7 +171,7 @@ struct BackgroundOptionButton: View {
     let background: BackgroundTheme
     let isSelected: Bool
     let action: () -> Void
-    
+
     var body: some View {
         Button(action: action) {
             ZStack {
@@ -209,14 +184,14 @@ struct BackgroundOptionButton: View {
                         )
                     )
                     .frame(width: isSelected ? 120 : 90, height: isSelected ? 120 : 90)
-                
+
                 // Border for selected
                 if isSelected {
                     Circle()
                         .stroke(Color.white.opacity(0.6), lineWidth: 3)
                         .frame(width: isSelected ? 120 : 95, height: isSelected ? 120 : 95)
                 }
-                
+
                 // Subtle outer glow
                 if isSelected {
                     Circle()

@@ -10,110 +10,49 @@ internal import Combine
 
 @MainActor
 class ProfileViewModel: ObservableObject {
-    @Published var isSignedIn: Bool = false
-    @Published var profileImage: UIImage?
-    @Published var userName: String = "Guest"
-    @Published var userEmail: String?
-
-    // Settings
-    @AppStorage("appTheme") var appTheme: String = "System"
-    @AppStorage("isUserSignedIn") private var storedSignInStatus: Bool = false
-    @AppStorage("savedUserName") private var savedUserName: String?
-    @AppStorage("savedUserEmail") private var savedUserEmail: String?
-
+    // Observe the singleton manager so this ViewModel publishes changes when manager changes
+    var manager = UserProfileManager.shared
     private var cancellables = Set<AnyCancellable>()
 
+    @AppStorage("appTheme") var appTheme: String = "System"
+
     init() {
-        loadUserData()
+        // Propagate manager changes to this ViewModel
+        manager.objectWillChange
+            .sink { [weak self] _ in
+                self?.objectWillChange.send()
+            }
+            .store(in: &cancellables)
     }
 
-    // MARK: - Data Persistence
+    // MARK: - Computed Properties for View Bindings
 
-    private func loadUserData() {
-        isSignedIn = storedSignInStatus
-
-        if let savedName = savedUserName {
-            userName = savedName
-        }
-
-        if let savedEmail = savedUserEmail {
-            userEmail = savedEmail
-        }
-
-        loadProfileImageFromDisk()
+    var isSignedIn: Bool {
+        manager.isSignedIn
     }
 
-    func saveName() {
-        savedUserName = userName
-        print("Name saved: \(userName)")
+    var userName: String {
+        get { manager.userName }
+        set { manager.userName = newValue }
     }
 
-    private func saveProfileImageToDisk() {
-        guard let image = profileImage,
-              let data = image.jpegData(compressionQuality: 0.8) else { return }
-
-        let fileURL = getProfileImageURL()
-        try? data.write(to: fileURL)
+    var userEmail: String? {
+        manager.userEmail
     }
 
-    private func loadProfileImageFromDisk() {
-        let fileURL = getProfileImageURL()
-        guard let data = try? Data(contentsOf: fileURL),
-              let image = UIImage(data: data) else { return }
-
-        profileImage = image
+    // For ImagePicker binding
+    var profileImage: UIImage? {
+        get { manager.profileImage }
+        set { manager.saveProfileImage(newValue) }
     }
 
-    private func deleteProfileImageFromDisk() {
-        let fileURL = getProfileImageURL()
-        try? FileManager.default.removeItem(at: fileURL)
-    }
-
-    private func getProfileImageURL() -> URL {
-        let documentsPath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
-        return documentsPath.appendingPathComponent("profileImage.jpg")
-    }
-
-    // MARK: - Authentication (Dummy Implementation)
-
-    /// Dummy sign in - Replace this with real Apple Sign In implementation
     func signIn() {
-        // TODO: Implement real Apple Sign In here
-        // This is a placeholder for demonstration
-        isSignedIn = true
-        userName = "John Doe"
-        userEmail = "john.doe@example.com"
-
-        // Persist sign in status
-        storedSignInStatus = true
-        savedUserName = userName
-        savedUserEmail = userEmail
-
+        manager.signInDummy()
         print("User signed in (dummy)")
     }
 
-    /// Sign out user and clear all data
     func signOut() {
-        isSignedIn = false
-        profileImage = nil
-        userName = "Guest"
-        userEmail = nil
-
-        // Clear persisted data
-        storedSignInStatus = false
-        savedUserName = nil
-        savedUserEmail = nil
-        deleteProfileImageFromDisk()
-
+        manager.signOut()
         print("User signed out")
-    }
-
-    // MARK: - Profile Image Management
-
-    func updateProfileImage(_ image: UIImage?) {
-        profileImage = image
-        if image != nil {
-            saveProfileImageToDisk()
-        }
     }
 }

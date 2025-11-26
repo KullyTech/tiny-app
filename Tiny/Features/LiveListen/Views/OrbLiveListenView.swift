@@ -30,9 +30,6 @@ struct OrbLiveListenView: View {
                     libraryOpenButton(geometry: geometry)
                 }
                 
-                // Theme button (on top of everything)
-                themeButton
-                
                 coachMarkView
                 
                 if let context = tutorialViewModel.activeTutorial {
@@ -263,14 +260,14 @@ struct OrbLiveListenView: View {
                 if !viewModel.isListening && !viewModel.isPlaybackMode {
                     Button(action: {
                         showThemeCustomization = true
-                    }) {
+                    }, label:  {
                         Image(systemName: "paintbrush.fill")
                             .font(.system(size: 20, weight: .semibold))
                             .foregroundColor(.white)
                             .frame(width: 50, height: 50)
                             .background(Circle().fill(Color.white.opacity(0.1)))
                             .clipShape(Circle())
-                    }
+                    })
                     .padding(.leading, 16)
                     .padding(.top, 50)
                     .transition(.opacity.animation(.easeInOut))
@@ -282,7 +279,6 @@ struct OrbLiveListenView: View {
         .allowsHitTesting(true)  // Ensure button is tappable
     }
 
-    
     struct GestureModifier: ViewModifier {
         let isPlaybackMode: Bool
         let geometry: GeometryProxy
