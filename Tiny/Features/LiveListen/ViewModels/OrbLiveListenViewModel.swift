@@ -22,11 +22,22 @@ class OrbLiveListenViewModel: ObservableObject {
     @Published var saveButtonScale: CGFloat = 1.0
     @Published var orbDragScale: CGFloat = 1.0
     @Published var canSaveCurrentRecording = false
-    
+    @Published var currentTime: TimeInterval = 0
+
     private var longPressTimer: Timer?
-    
+    private var playbackTimer: Timer?
+    private var cancellables = Set<AnyCancellable>()
     let audioPostProcessingManager = AudioPostProcessingManager()
     let physicsController = OrbPhysicsController()
+
+    init() {
+        // Subscribe to audioPostProcessingManager changes to trigger UI updates
+        audioPostProcessingManager.objectWillChange
+            .sink { [weak self] _ in
+                self?.objectWillChange.send()
+            }
+            .store(in: &cancellables)
+    }
 
     var orbScaleEffect: CGFloat {
         if isListening {
@@ -53,6 +64,7 @@ class OrbLiveListenViewModel: ObservableObject {
         animateOrb = true
         audioPostProcessingManager.stop()
         audioPostProcessingManager.loadAndPlay(fileURL: recording.fileURL)
+        startPlaybackTimer()
     }
 
     func handleDragChange(value: SequenceGesture<LongPressGesture, DragGesture>.Value, geometry: GeometryProxy) {
@@ -110,6 +122,7 @@ class OrbLiveListenViewModel: ObservableObject {
 
     func handleBackButton() {
         audioPostProcessingManager.stop()
+        stopPlaybackTimer()
         withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) {
             isPlaybackMode = false
             animateOrb = false
@@ -128,14 +141,25 @@ class OrbLiveListenViewModel: ObservableObject {
     }
     
     func handleSingleTap(lastRecording: Recording?) {
-        guard isPlaybackMode, !isListening, !isLongPressing, !isDraggingToSave else { return }
-        guard let lastRecording = lastRecording else { return }
+        guard isPlaybackMode, !isListening, !isLongPressing, !isDraggingToSave else {
+            print("❌ Tap blocked - Mode check failed")
+            return
+        }
+
+        print("👆 Single tap detected - isPlaying: \(audioPostProcessingManager.isPlaying)")
+
         if audioPostProcessingManager.isPlaying {
+            print("⏸️ Pausing playback")
             audioPostProcessingManager.pause()
-        } else if audioPostProcessingManager.currentTime > 0 {
-            audioPostProcessingManager.resume()
+            stopPlaybackTimer()
         } else {
-            audioPostProcessingManager.loadAndPlay(fileURL: lastRecording.fileURL)
+            print("▶️ Starting/resuming playback")
+            if let lastRecording = lastRecording, audioPostProcessingManager.currentTime == 0 {
+                audioPostProcessingManager.loadAndPlay(fileURL: lastRecording.fileURL)
+            } else {
+                audioPostProcessingManager.resume()
+            }
+            startPlaybackTimer()
         }
     }
 
@@ -147,40 +171,59 @@ class OrbLiveListenViewModel: ObservableObject {
             cancelLongPressCountdown()
         }
     }
-    
+
+    private func startPlaybackTimer() {
+        stopPlaybackTimer()
+        playbackTimer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { [weak self] _ in
+            guard let self = self else { return }
+            self.currentTime = self.audioPostProcessingManager.currentTime
+            if !self.audioPostProcessingManager.isPlaying && self.currentTime >= self.audioPostProcessingManager.duration {
+                self.stopPlaybackTimer()
+            }
+        }
+    }
+
+    private func stopPlaybackTimer() {
+        playbackTimer?.invalidate()
+        playbackTimer = nil
+    }
+
     func startLongPressCountdown() {
         isLongPressing = true
         longPressCountdown = 3
         longPressScale = 1.0
-        
+
         var tickCount = 0
         let totalTicks = 30
         let scaleIncrement = 0.15 / 30
-        
+
         longPressTimer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { timer in
             tickCount += 1
-            
+
             if tickCount % 10 == 0 {
                 withAnimation(.easeInOut(duration: 0.2)) { self.longPressCountdown -= 1 }
             }
-            
+
             withAnimation(.linear(duration: 0.1)) { self.longPressScale += scaleIncrement }
-            
+
             if tickCount >= totalTicks { timer.invalidate() }
         }
     }
-    
+
     func cancelLongPressCountdown() {
-        isLongPressing = false
-        longPressCountdown = 3
-        longPressScale = 1.0
         longPressTimer?.invalidate()
         longPressTimer = nil
+        longPressCountdown = 3
+
+        withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
+            isLongPressing = false
+            longPressScale = 1.0
+        }
     }
-    
+
     func handleLongPressComplete(onStop: @escaping () -> Void) {
         cancelLongPressCountdown()
-        
+
         withAnimation(.interpolatingSpring(mass: 2, stiffness: 100, damping: 20)) {
             isListening = false
             animateOrb = false
@@ -202,7 +245,8 @@ class OrbLiveListenViewModel: ObservableObject {
 
         audioPostProcessingManager.stop()
         audioPostProcessingManager.loadAndPlay(fileURL: recording.fileURL)
-        
+        startPlaybackTimer()
+
         onSelect(recording)
     }
 }
