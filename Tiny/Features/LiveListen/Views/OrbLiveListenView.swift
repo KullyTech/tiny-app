@@ -147,9 +147,15 @@ struct OrbLiveListenView: View {
                 if viewModel.isListening && viewModel.isLongPressing {
                     CountdownTextView(countdown: viewModel.longPressCountdown, isVisible: viewModel.isLongPressing)
                 } else if viewModel.isListening {
-                    Text("Listening...")
-                        .font(.title)
-                        .fontWeight(.bold)
+                    VStack(spacing: 8) {
+                        Text("Listening...")
+                            .font(.title)
+                            .fontWeight(.bold)
+
+                        Text("Hold sphere to stop session")
+                            .font(.subheadline)
+                            .foregroundStyle(.placeholder)
+                    }
                 } else if viewModel.isPlaybackMode {
                     VStack(spacing: 8) {
                         Text(viewModel.audioPostProcessingManager.isPlaying ? "Playing..." :
