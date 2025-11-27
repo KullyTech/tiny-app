@@ -11,6 +11,7 @@ internal import Combine
 
 class HeartbeatMainViewModel: ObservableObject {
     @Published var showTimeline = false
+    @AppStorage("hasSeenSwipeHint") var hasSeenSwipeHint = false
     let heartbeatSoundManager = HeartbeatSoundManager()
     
     func setupManager(modelContext: ModelContext) {

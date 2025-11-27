@@ -15,6 +15,14 @@
 		278912A22ED5947D00CA640F /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 278912832ED586A200CA640F /* WidgetKit.framework */; };
 		278912A32ED5947D00CA640F /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 278912852ED586A200CA640F /* SwiftUI.framework */; };
 		278912B42ED5947E00CA640F /* MoodWidgetExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 278912A12ED5947D00CA640F /* MoodWidgetExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		278912752ED4633900CA640F /* FirebaseAI in Frameworks */ = {isa = PBXBuildFile; productRef = 278912742ED4633900CA640F /* FirebaseAI */; };
+		278912772ED4633900CA640F /* FirebaseAILogic in Frameworks */ = {isa = PBXBuildFile; productRef = 278912762ED4633900CA640F /* FirebaseAILogic */; };
+		278912792ED4633900CA640F /* FirebaseAnalytics in Frameworks */ = {isa = PBXBuildFile; productRef = 278912782ED4633900CA640F /* FirebaseAnalytics */; };
+		2789127B2ED4633900CA640F /* FirebaseAnalyticsCore in Frameworks */ = {isa = PBXBuildFile; productRef = 2789127A2ED4633900CA640F /* FirebaseAnalyticsCore */; };
+		2789127D2ED4633900CA640F /* FirebaseAnalyticsIdentitySupport in Frameworks */ = {isa = PBXBuildFile; productRef = 2789127C2ED4633900CA640F /* FirebaseAnalyticsIdentitySupport */; };
+		278912A22ED5947D00CA640F /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 278912832ED586A200CA640F /* WidgetKit.framework */; };
+		278912A32ED5947D00CA640F /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 278912852ED586A200CA640F /* SwiftUI.framework */; };
+		278912B42ED5947E00CA640F /* MoodWidgetExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 278912A12ED5947D00CA640F /* MoodWidgetExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		430725D62EC5C791006234D7 /* Orb in Frameworks */ = {isa = PBXBuildFile; productRef = 430725D52EC5C791006234D7 /* Orb */; };
 		DE5E9C862EB354B200485B15 /* AudioKit in Frameworks */ = {isa = PBXBuildFile; productRef = DE5E9C852EB354B200485B15 /* AudioKit */; };
 		DE5E9C882EB354B700485B15 /* AudioKitEX in Frameworks */ = {isa = PBXBuildFile; productRef = DE5E9C872EB354B700485B15 /* AudioKitEX */; };
@@ -43,6 +51,20 @@
 			remoteInfo = tiny;
 		};
 /* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		2789129C2ED586A400CA640F /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				278912B42ED5947E00CA640F /* MoodWidgetExtension.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXCopyFilesBuildPhase section */
 		2789129C2ED586A400CA640F /* Embed Foundation Extensions */ = {
@@ -190,6 +212,8 @@
 		DE5E9C842EB354B200485B15 /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				278912832ED586A200CA640F /* WidgetKit.framework */,
+				278912852ED586A200CA640F /* SwiftUI.framework */,
 				278912832ED586A200CA640F /* WidgetKit.framework */,
 				278912852ED586A200CA640F /* SwiftUI.framework */,
 			);

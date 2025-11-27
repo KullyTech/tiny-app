@@ -9,14 +9,11 @@ import Foundation
 
 import SwiftUI
 
-// Data Model
 struct WeekSection: Identifiable, Equatable {
     let id = UUID()
     let weekNumber: Int
     let recordings: [Recording]
 }
-
-// Shared Helper
 struct TimelineLayout {
     static func calculateX(yCoor: CGFloat, width: CGFloat, period: CGFloat, amplitude: CGFloat, phase: CGFloat = 0) -> CGFloat {
         let centerX = width / 2
@@ -25,7 +22,6 @@ struct TimelineLayout {
     }
 }
 
-// Shared Shape
 struct ContinuousWave: Shape {
     var totalHeight: CGFloat
     var period: CGFloat

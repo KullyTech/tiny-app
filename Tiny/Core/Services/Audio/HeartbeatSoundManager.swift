@@ -545,15 +545,12 @@ class HeartbeatSoundManager: NSObject, ObservableObject {
     }
     
     func deleteSavedRecording(_ recording: Recording) {
-        // 1. Delete from File System
         try? FileManager.default.removeItem(at: recording.fileURL)
         
-        // 2. Update In-Memory List
         if let index = savedRecordings.firstIndex(where: { $0.createdAt == recording.createdAt }) {
             savedRecordings.remove(at: index)
         }
         
-        // 3. Delete from SwiftData
         guard let modelContext = modelContext else { return }
         do {
             let items = try modelContext.fetch(FetchDescriptor<SavedHeartbeat>())

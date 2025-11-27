@@ -19,8 +19,12 @@ struct PregnancyTimelineView: View {
     
     var body: some View {
         ZStack {
-            LinearGradient(colors: [Color(red: 0.05, green: 0.05, blue: 0.15), Color.black], startPoint: .top, endPoint: .bottom)
-                .ignoresSafeArea()
+            ZStack {
+                Color.black.ignoresSafeArea()
+                Image("backgroundPurple")
+                    .resizable()
+                    .ignoresSafeArea()
+            }
             
             ZStack {
                 if let week = selectedWeek {
@@ -33,7 +37,8 @@ struct PregnancyTimelineView: View {
                                 heartbeatSoundManager.deleteSavedRecording(recording)
                                 // If week becomes empty, go back? Optional.
                                 // Force refresh of local selectedWeek state:
-                                if let index = selectedWeek?.recordings.firstIndex(of: recording) {
+
+                                if let _ = selectedWeek?.recordings.firstIndex(of: recording) {
                                     // We need to refresh 'groupedData' first, then re-select this week
                                     // groupRecordings() will happen automatically via onChange below
                                 }
@@ -84,19 +89,6 @@ struct PregnancyTimelineView: View {
                     Spacer()
                 }
                 Spacer()
-            } else {
-                // ⬇️ Book Button (List -> Close to Orb)
-                Spacer()
-                Button {
-                    withAnimation(.spring(response: 0.6, dampingFraction: 0.8)) {
-                        showTimeline = false
-                    }
-                } label: {
-                    Image(systemName: "book.fill").font(.system(size: 28)).foregroundColor(.white).frame(width: 77, height: 77).clipShape(Circle())
-                }
-                .glassEffect(.clear)
-                .matchedGeometryEffect(id: "navButton", in: animation)
-                .padding(.bottom, 50)
             }
         }
         .ignoresSafeArea(.all, edges: .bottom)
