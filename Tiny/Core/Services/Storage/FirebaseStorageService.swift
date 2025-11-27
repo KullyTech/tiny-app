@@ -60,21 +60,26 @@ class FirebaseStorageService: ObservableObject {
     ///   - downloadURL: Firebase Storage download URL
     ///   - heartbeatId: Unique ID for this heartbeat
     /// - Returns: Local file URL where the audio was saved
+    /// Downloads an audio file from Firebase Storage
+    /// - Parameters:
+    ///   - downloadURL: Firebase Storage download URL
+    ///   - heartbeatId: Unique ID for this heartbeat
+    ///   - timestamp: Timestamp for the recording (for filename)
+    /// - Returns: Local file URL where the audio was saved
     func downloadHeartbeat(
         downloadURL: String,
-        heartbeatId: String
+        heartbeatId: String,
+        timestamp: Date
     ) async throws -> URL {
         guard let url = URL(string: downloadURL) else {
             throw StorageError.invalidURL
         }
         
-        // Create local file path with .caf extension
+        // Create local file path with timestamp-based name (matching original format)
         let documentsPath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
-        let localURL = documentsPath.appendingPathComponent("heartbeats/\(heartbeatId).caf")
-        
-        // Create directory if needed
-        let directoryURL = localURL.deletingLastPathComponent()
-        try FileManager.default.createDirectory(at: directoryURL, withIntermediateDirectories: true)
+        let timeInterval = timestamp.timeIntervalSince1970
+        let fileName = "recording-\(timeInterval).caf"
+        let localURL = documentsPath.appendingPathComponent(fileName)
         
         // If file already exists, return it
         if FileManager.default.fileExists(atPath: localURL.path) {
@@ -84,6 +89,9 @@ class FirebaseStorageService: ObservableObject {
         
         // Download file
         print("📥 Downloading from Firebase Storage...")
+        print("   Download URL: \(downloadURL)")
+        print("   Local path: \(localURL.path)")
+        
         let storageRef = storage.reference(forURL: downloadURL)
         _ = try await storageRef.writeAsync(toFile: localURL)
         print("✅ Downloaded to: \(localURL.path)")

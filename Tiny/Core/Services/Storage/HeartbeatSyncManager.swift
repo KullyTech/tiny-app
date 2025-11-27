@@ -200,12 +200,13 @@ class HeartbeatSyncManager: ObservableObject {
     }
     
     // MARK: - Download Heartbeat (for fathers)
-    
+
     /// Downloads a heartbeat audio file from Firebase Storage
     func downloadHeartbeat(metadata: HeartbeatMetadata) async throws -> URL {
         return try await storageService.downloadHeartbeat(
             downloadURL: metadata.firebaseStorageURL,
-            heartbeatId: metadata.heartbeatId
+            heartbeatId: metadata.heartbeatId,
+            timestamp: metadata.timestamp  // Pass the timestamp
         )
     }
     
@@ -245,6 +246,7 @@ class HeartbeatSyncManager: ObservableObject {
         
         for metadata in metadataList {
             print("   Processing heartbeat: \(metadata.id)")
+            print("      Timestamp: \(metadata.timestamp)")
             print("      isShared: \(metadata.isShared)")
             print("      motherUserId: \(metadata.motherUserId)")
             
@@ -254,12 +256,30 @@ class HeartbeatSyncManager: ObservableObject {
             
             if let existing = existingHeartbeat {
                 print("   ✅ Already have heartbeat: \(metadata.id)")
+                print("      Local path: \(existing.filePath)")
+                
+                // Verify the file exists
+                if FileManager.default.fileExists(atPath: existing.filePath) {
+                    print("      ✅ File exists on disk")
+                } else {
+                    print("      ⚠️ File missing on disk, re-downloading...")
+                    // Re-download if file is missing
+                    do {
+                        let localURL = try await downloadHeartbeat(metadata: metadata)
+                        existing.filePath = localURL.path
+                        print("      ✅ Re-downloaded to: \(localURL.path)")
+                    } catch {
+                        print("      ❌ Re-download failed: \(error)")
+                    }
+                }
+                
                 syncedHeartbeats.append(existing)
             } else {
                 print("   📥 Downloading new heartbeat: \(metadata.id)")
                 
                 do {
                     let localURL = try await downloadHeartbeat(metadata: metadata)
+                    print("      Downloaded to: \(localURL.path)")
                     
                     let heartbeat = SavedHeartbeat(
                         filePath: localURL.path,

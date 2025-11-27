@@ -30,27 +30,16 @@ struct HeartbeatMainView: View {
                     heartbeatSoundManager: viewModel.heartbeatSoundManager,
                     showTimeline: $viewModel.showTimeline,
                     onSelectRecording: viewModel.handleRecordingSelection,
-                    isMother: isMother  // Add this
+                    isMother: isMother
                 )
                 .transition(.opacity)
             } else {
-                // Orb view - ONLY accessible by mothers
-                if isMother {
-                    OrbLiveListenView(
-                        heartbeatSoundManager: viewModel.heartbeatSoundManager,
-                        showTimeline: $viewModel.showTimeline
-                    )
-                    .transition(.opacity)
-                } else {
-                    // For fathers, always show timeline (they can't record)
-                    PregnancyTimelineView(
-                        heartbeatSoundManager: viewModel.heartbeatSoundManager,
-                        showTimeline: $viewModel.showTimeline,
-                        onSelectRecording: viewModel.handleRecordingSelection,
-                        isMother: isMother  // Add this
-                    )
-                    .transition(.opacity)
-                }
+                // Orb view - for playback (both) and recording (mother only)
+                OrbLiveListenView(
+                    heartbeatSoundManager: viewModel.heartbeatSoundManager,
+                    showTimeline: $viewModel.showTimeline
+                )
+                .transition(.opacity)
             }
             
             // Room Code Button (Top Right)
@@ -77,11 +66,6 @@ struct HeartbeatMainView: View {
         }
         .preferredColorScheme(.dark)
         .onAppear {
-            // For fathers, always show timeline
-            if !isMother {
-                viewModel.showTimeline = true
-            }
-            
             // Initialize only once
             if !isInitialized {
                 initializeManager()
@@ -131,9 +115,16 @@ struct HeartbeatMainView: View {
                     syncManager: syncManager,
                     userId: userId,
                     roomCode: roomCode,
-                    userRole: authService.currentUser?.role  // Add this
+                    userRole: authService.currentUser?.role
                 )
                 isInitialized = true
+            }
+            
+            // For fathers, start in timeline view
+            if !isMother {
+                await MainActor.run {
+                    viewModel.showTimeline = true
+                }
             }
         }
     }

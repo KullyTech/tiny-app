@@ -113,12 +113,20 @@ class HeartbeatSoundManager: NSObject, ObservableObject {
             
             DispatchQueue.main.async {
                 // Map the REAL timestamp from SwiftData
-                self.savedRecordings = results.map { savedItem in
-                    let fileName = URL(fileURLWithPath: savedItem.filePath).lastPathComponent
-                    let currentURL = documentsURL.appendingPathComponent(fileName)
+                self.savedRecordings = results.compactMap { savedItem in
+                    let filePath = savedItem.filePath
+                    let fileURL = URL(fileURLWithPath: filePath)
+                    
+                    // Verify file exists
+                    if !FileManager.default.fileExists(atPath: filePath) {
+                        print("⚠️ File missing: \(filePath)")
+                        return nil
+                    }
+                    
+                    print("✅ Found recording: \(fileURL.lastPathComponent)")
                     
                     return Recording(
-                        fileURL: currentURL,
+                        fileURL: fileURL,
                         createdAt: savedItem.timestamp
                     )
                 }
@@ -143,12 +151,18 @@ class HeartbeatSoundManager: NSObject, ObservableObject {
                         let updatedResults = try modelContext.fetch(FetchDescriptor<SavedHeartbeat>())
                         
                         // Show all heartbeats for both mothers and fathers (all are shared by default)
-                        self.savedRecordings = updatedResults.map { savedItem in
-                            let fileName = URL(fileURLWithPath: savedItem.filePath).lastPathComponent
-                            let currentURL = documentsURL.appendingPathComponent(fileName)
+                        self.savedRecordings = updatedResults.compactMap { savedItem in
+                            let filePath = savedItem.filePath
+                            let fileURL = URL(fileURLWithPath: filePath)
+                            
+                            // Verify file exists
+                            if !FileManager.default.fileExists(atPath: filePath) {
+                                print("⚠️ File missing after sync: \(filePath)")
+                                return nil
+                            }
                             
                             return Recording(
-                                fileURL: currentURL,
+                                fileURL: fileURL,
                                 createdAt: savedItem.timestamp
                             )
                         }
@@ -545,12 +559,43 @@ class HeartbeatSoundManager: NSObject, ObservableObject {
             }
         } else {
             do {
+                // Verify file exists before trying to play
+                let filePath = recording.fileURL.path
+                print("🎵 Attempting to play recording:")
+                print("   File URL: \(recording.fileURL)")
+                print("   File path: \(filePath)")
+                print("   File exists: \(FileManager.default.fileExists(atPath: filePath))")
+                
+                if !FileManager.default.fileExists(atPath: filePath) {
+                    print("❌ File does not exist at path: \(filePath)")
+                    
+                    // Try to find the file in Documents directory
+                    let documentsURL = getDocumentsDirectory()
+                    let fileName = recording.fileURL.lastPathComponent
+                    let alternativePath = documentsURL.appendingPathComponent(fileName)
+                    
+                    print("   Trying alternative path: \(alternativePath.path)")
+                    print("   Alternative exists: \(FileManager.default.fileExists(atPath: alternativePath.path))")
+                    
+                    if FileManager.default.fileExists(atPath: alternativePath.path) {
+                        print("✅ Found file at alternative path, using that")
+                        // Use the alternative path
+                        let alternativeRecording = Recording(fileURL: alternativePath, createdAt: recording.createdAt)
+                        togglePlayback(recording: alternativeRecording)
+                        return
+                    } else {
+                        print("❌ File not found anywhere")
+                        return
+                    }
+                }
+                
                 if isRunning {
                     stop()
                 }
                 
                 resetEngine()
                 
+                print("🎵 Creating AudioPlayer with URL: \(recording.fileURL)")
                 player = AudioPlayer(url: recording.fileURL)
                 player?.completionHandler = { [weak self] in
                     DispatchQueue.main.async {
@@ -568,8 +613,10 @@ class HeartbeatSoundManager: NSObject, ObservableObject {
                 if lastRecording?.id == recording.id {
                     lastRecording?.isPlaying = true
                 }
+                print("✅ Playback started successfully")
             } catch {
-                print("Error playing back recording: \(error.localizedDescription)")
+                print("❌ Error playing back recording: \(error.localizedDescription)")
+                print("   Error details: \(error)")
             }
         }
     }
