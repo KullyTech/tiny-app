@@ -11,6 +11,7 @@ struct TimelineDetailView: View {
     let week: WeekSection
     var animation: Namespace.ID // Passed from parent
     let onSelectRecording: (Recording) -> Void
+    var onDeleteRecording: ((Recording) -> Void)?
     
     var body: some View {
         GeometryReader { geometry in
@@ -31,7 +32,7 @@ struct TimelineDetailView: View {
                 Text("Week \(week.weekNumber)")
                     .font(.system(size: 28, weight: .bold))
                     .foregroundColor(.white)
-                    .matchedGeometryEffect(id: "label_\(week.weekNumber)", in: animation)
+                    .transition(.opacity.animation(.easeInOut(duration: 0.4)))
                     .padding(.top, 10)
             }
             .frame(maxWidth: .infinity)
@@ -78,14 +79,11 @@ struct TimelineDetailView: View {
                     )
                     
                     HStack(spacing: 15) {
-                        // Label Left or Right based on X position
                         if xPos > geometry.size.width / 2 {
                             recordingLabel(for: recording)
-                            glowingDot
-                                .onTapGesture { onSelectRecording(recording) }
+                            glowingDot(for: recording) // Updated to include logic
                         } else {
-                            glowingDot
-                                .onTapGesture { onSelectRecording(recording) }
+                            glowingDot(for: recording)
                             recordingLabel(for: recording)
                         }
                     }
@@ -98,11 +96,23 @@ struct TimelineDetailView: View {
     }
     
     // MARK: - Components
-    var glowingDot: some View {
+    func glowingDot(for recording: Recording) -> some View {
         ZStack {
             Circle().fill(Color.white).frame(width: 8, height: 8)
             Circle().stroke(Color.white.opacity(0.5), lineWidth: 1).frame(width: 16, height: 16)
             Circle().fill(Color.white.opacity(0.2)).frame(width: 24, height: 24).blur(radius: 4)
+        }
+        .contentShape(Circle()) // Make tap area bigger
+        .onTapGesture {
+            onSelectRecording(recording)
+        }
+        // ✅ ADDED Context Menu for Delete
+        .contextMenu {
+            Button(role: .destructive) {
+                onDeleteRecording?(recording)
+            } label: {
+                Label("Delete Recording", systemImage: "trash")
+            }
         }
     }
     

@@ -531,6 +531,41 @@ class HeartbeatSoundManager: NSObject, ObservableObject {
             }
         }
     }
+    
+    func discardRecording() {
+        guard let recording = lastRecording else { return }
+        do {
+            try FileManager.default.removeItem(at: recording.fileURL)
+            print("🗑️ Discarded recording: \(recording.fileURL.lastPathComponent)")
+        } catch {
+            print("⚠️ Error deleting file: \(error)")
+        }
+        self.lastRecording = nil
+        self.isPlayingPlayback = false
+    }
+    
+    func deleteSavedRecording(_ recording: Recording) {
+        // 1. Delete from File System
+        try? FileManager.default.removeItem(at: recording.fileURL)
+        
+        // 2. Update In-Memory List
+        if let index = savedRecordings.firstIndex(where: { $0.createdAt == recording.createdAt }) {
+            savedRecordings.remove(at: index)
+        }
+        
+        // 3. Delete from SwiftData
+        guard let modelContext = modelContext else { return }
+        do {
+            let items = try modelContext.fetch(FetchDescriptor<SavedHeartbeat>())
+            if let itemToDelete = items.first(where: { $0.timestamp == recording.createdAt }) {
+                modelContext.delete(itemToDelete)
+                try modelContext.save()
+                print("✅ Deleted from SwiftData")
+            }
+        } catch {
+            print("SwiftData delete failed: \(error)")
+        }
+    }
 
     func start() {
         if isPlayingPlayback {
