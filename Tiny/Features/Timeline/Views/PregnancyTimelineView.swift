@@ -81,7 +81,7 @@ struct PregnancyTimelineView: View {
                                     .foregroundColor(.white.opacity(0.8))
                             }
                         }
-                        .frame(width: 44, height: 44)
+                        .frame(width: 45, height: 45    )
                         .clipShape(Circle())
                         .overlay(Circle().stroke(Color.white.opacity(0.2), lineWidth: 1))
                         .shadow(color: .black.opacity(0.2), radius: 4, x: 0, y: 2)
@@ -89,8 +89,8 @@ struct PregnancyTimelineView: View {
                 }
             }
             .padding(.horizontal, 20)
-            .padding(.top, 60)
-            
+            .padding(.top,20)
+
             Spacer()
             
             if selectedWeek == nil {
