@@ -129,13 +129,6 @@ struct ProfileView: View {
             } else {
                 signInView
             }
-        } header: {
-            Text("Account")
-        } footer: {
-            if !viewModel.isSignedIn {
-                Text("Your privacy is protected. We only use your Apple ID to securely save your data.")
-                    .font(.caption2)
-            }
         }
         .listRowBackground(Color("rowProfileGrey"))
     }
@@ -182,11 +175,6 @@ struct ProfileView: View {
                 .cornerRadius(8)
             }
             .buttonStyle(.plain)
-
-            Text("Sign in to sync your pregnancy journey across devices")
-                .font(.caption)
-                .foregroundStyle(.secondary)
-                .multilineTextAlignment(.center)
         }
         .padding(.vertical, 8)
     }

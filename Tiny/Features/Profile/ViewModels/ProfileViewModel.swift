@@ -8,16 +8,6 @@
 import SwiftUI
 internal import Combine
 
-//
-//  ProfileViewModel.swift
-//  Tiny
-//
-//  Created by Destu Cikal Ramdani on 26/11/25.
-//
-
-import SwiftUI
-internal import Combine
-
 @MainActor
 class ProfileViewModel: ObservableObject {
     // Observe the singleton manager so this ViewModel publishes changes when manager changes
@@ -73,4 +63,3 @@ class ProfileViewModel: ObservableObject {
         print("User signed out")
     }
 }
-
