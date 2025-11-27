@@ -1,0 +1,469 @@
+//
+//  ProfileView.swift
+//  Tiny
+//
+//  Created by Destu Cikal Ramdani on 26/11/25.
+//
+
+import SwiftUI
+
+struct ProfileView: View {
+    @StateObject private var viewModel = ProfileViewModel()
+    @State private var showingSignOutConfirmation = false
+
+    var body: some View {
+        ZStack {
+            Image("backgroundPurple")
+                .resizable()
+                .scaledToFill()
+                .ignoresSafeArea()
+
+            VStack(spacing: 0) {
+                // HEADER
+                profileHeader
+                    .padding(.bottom, 30)
+
+                // FEATURE CARDS
+                featureCards
+                    .padding(.horizontal, 16)
+                    .frame(height: 160)
+
+                // SETTINGS LIST
+                settingsList
+            }
+        }
+    }
+
+    // MARK: - View Components
+
+    private var profileHeader: some View {
+        VStack(spacing: 16) {
+            GeometryReader { geo in
+                let size = geo.size.width * 0.28
+
+                VStack(spacing: 16) {
+                    Spacer()
+
+                    NavigationLink {
+                        ProfilePhotoDetailView(viewModel: viewModel)
+                    } label: {
+                        profileImageView(size: size)
+                    }
+                    .buttonStyle(.plain)
+
+                    Text(viewModel.isSignedIn ? viewModel.userName : "Guest")
+                        .font(.title2)
+                        .fontWeight(.semibold)
+                        .foregroundStyle(.white)
+                }
+                .frame(width: geo.size.width)
+            }
+            .frame(height: 260)
+        }
+    }
+
+    private func profileImageView(size: CGFloat) -> some View {
+        Group {
+            if let img = viewModel.profileImage {
+                Image(uiImage: img)
+                    .resizable()
+                    .scaledToFill()
+            } else {
+                Image(systemName: "person.crop.circle.fill")
+                    .resizable()
+                    .scaledToFit()
+                    .foregroundColor(.gray)
+            }
+        }
+        .frame(width: size, height: size)
+        .clipShape(Circle())
+    }
+
+    private var featureCards: some View {
+        HStack(spacing: 12) {
+            let padding: CGFloat = 5
+            let spacing: CGFloat = 12
+            let cardWidth = (UIScreen.main.bounds.width - (padding * 5 + spacing)) / 2
+
+            featureCardLeft(width: cardWidth)
+            featureCardRight(width: cardWidth)
+        }
+    }
+
+    private var settingsList: some View {
+        List {
+            settingsSection
+            accountSection
+        }
+        .listStyle(.insetGrouped)
+        .scrollContentBackground(.hidden)
+        .background(Color.clear)
+    }
+
+    private var settingsSection: some View {
+        Section {
+            NavigationLink(destination: ThemeDummy()) {
+                Label("Theme", systemImage: "paintpalette.fill")
+                    .foregroundStyle(.white)
+            }
+            NavigationLink(destination: TutorialDummy()) {
+                Label("Tutorial", systemImage: "book.fill")
+                    .foregroundStyle(.white)
+            }
+            Link(destination: URL(string: "https://example.com/privacy")!) {
+                Label("Privacy Policy", systemImage: "shield.righthalf.filled")
+                    .foregroundStyle(.white)
+            }
+            Link(destination: URL(string: "https://example.com/terms")!) {
+                Label("Terms and Conditions", systemImage: "doc.text")
+                    .foregroundStyle(.white)
+            }
+        }
+        .listRowBackground(Color("rowProfileGrey"))
+    }
+
+    private var accountSection: some View {
+        Section {
+            if viewModel.isSignedIn {
+                signedInView
+            } else {
+                signInView
+            }
+        }
+        .listRowBackground(Color("rowProfileGrey"))
+    }
+
+    private var signedInView: some View {
+        Group {
+            Button(role: .destructive) {
+                showingSignOutConfirmation = true
+            } label: {
+                Label("Sign Out", systemImage: "rectangle.portrait.and.arrow.right")
+                    .foregroundStyle(.red)
+            }
+            .confirmationDialog(
+                "Sign Out",
+                isPresented: $showingSignOutConfirmation,
+                titleVisibility: .visible
+            ) {
+                Button("Sign Out", role: .destructive) {
+                    viewModel.signOut()
+                }
+                Button("Cancel", role: .cancel) {}
+            } message: {
+                Text("You'll need to sign in again to sync your data and access personalized features.")
+            }
+        }
+    }
+
+    private var signInView: some View {
+        VStack(spacing: 12) {
+            // Dummy Sign In Button styled like Apple's
+            Button {
+                viewModel.signIn()
+            } label: {
+                HStack {
+                    Image(systemName: "applelogo")
+                        .font(.system(size: 20, weight: .medium))
+                    Text("Sign in with Apple")
+                        .font(.system(size: 17, weight: .semibold))
+                }
+                .frame(maxWidth: .infinity)
+                .frame(height: 44)
+                .foregroundStyle(.black)
+                .background(Color.white)
+                .cornerRadius(8)
+            }
+            .buttonStyle(.plain)
+        }
+        .padding(.vertical, 8)
+    }
+
+    // MARK: - Feature Cards
+
+    private func featureCardLeft(width: CGFloat) -> some View {
+        VStack(alignment: .leading) {
+            HStack {
+                Image(systemName: "heart.fill")
+                    .font(.caption)
+                    .foregroundColor(.white)
+                Text("Connected Journey")
+                    .font(.caption)
+                    .foregroundColor(.gray)
+            }
+
+            Spacer()
+
+            Text("Connect with Your Partner")
+                .font(.subheadline)
+                .foregroundColor(.blue)
+                .fontWeight(.medium)
+
+            Spacer()
+        }
+        .frame(width: width, height: width * 0.63, alignment: .topLeading)
+        .padding()
+        .background(Color("rowProfileGrey"))
+        .cornerRadius(14)
+    }
+
+    private func featureCardRight(width: CGFloat) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack {
+                Image(systemName: "calendar")
+                    .font(.caption)
+                    .foregroundColor(.white)
+                Text("Pregnancy Age")
+                    .font(.caption)
+                    .foregroundColor(.gray)
+            }
+
+            Spacer()
+
+            VStack(alignment: .center, spacing: 4) {
+                Text("20")
+                    .font(.title)
+                    .fontWeight(.bold)
+                    .foregroundColor(Color("mainViolet"))
+                Text("Weeks")
+                    .font(.subheadline)
+                    .foregroundColor(Color("mainViolet"))
+            }
+            .frame(maxWidth: .infinity, alignment: .center)
+
+            Spacer()
+        }
+        .frame(width: width * 0.65, height: width * 0.63)
+        .padding()
+        .background(Color("rowProfileGrey"))
+        .cornerRadius(14)
+    }
+}
+
+struct ProfilePhotoDetailView: View {
+    @ObservedObject var viewModel: ProfileViewModel
+    @State private var showingImagePicker = false
+    @State private var showingCamera = false
+    @State private var showingPhotoOptions = false
+    @State private var tempUserName: String = ""
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        ZStack {
+            Image("backgroundPurple")
+                .resizable()
+                .scaledToFill()
+                .ignoresSafeArea()
+
+            VStack(spacing: 30) {
+                profilePhotoButton
+                    .padding(.top, 80)
+
+                nameEditSection
+                    .padding(.horizontal, 30)
+
+                Spacer()
+            }
+        }
+        .navigationTitle("Edit Profile")
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .navigationBarTrailing) {
+                Button("Save") {
+                    viewModel.userName = tempUserName
+                    viewModel.saveName()
+                    dismiss()
+                }
+                .disabled(tempUserName.trimmingCharacters(in: .whitespaces).isEmpty)
+            }
+        }
+        .onAppear {
+            tempUserName = viewModel.userName
+        }
+        .sheet(isPresented: $showingPhotoOptions) {
+            BottomPhotoPickerSheet(
+                showingCamera: $showingCamera,
+                showingImagePicker: $showingImagePicker
+            )
+        }
+        .sheet(isPresented: $showingImagePicker) {
+            ImagePicker(image: Binding(
+                get: { viewModel.profileImage },
+                set: { viewModel.profileImage = $0 }
+            ), sourceType: .photoLibrary)
+        }
+        .fullScreenCover(isPresented: $showingCamera) {
+            ImagePicker(image: Binding(
+                get: { viewModel.profileImage },
+                set: { viewModel.profileImage = $0 }
+            ), sourceType: .camera)
+        }
+    }
+
+    private var profilePhotoButton: some View {
+        Button {
+            showingPhotoOptions = true
+        } label: {
+            ZStack(alignment: .bottomTrailing) {
+                Group {
+                    if let profileImage = viewModel.profileImage {
+                        Image(uiImage: profileImage)
+                            .resizable()
+                            .scaledToFill()
+                    } else {
+                        Image(systemName: "person.crop.circle.fill")
+                            .resizable()
+                            .scaledToFit()
+                            .foregroundColor(.gray)
+                    }
+                }
+                .frame(width: 200, height: 200)
+                .clipShape(Circle())
+                .overlay(
+                    Circle()
+                        .stroke(Color.white, lineWidth: 3)
+                )
+
+                // Camera badge
+                Image(systemName: "camera.circle.fill")
+                    .font(.system(size: 44))
+                    .foregroundStyle(.white, Color("rowProfileGrey"))
+                    .offset(x: -10, y: -10)
+            }
+        }
+        .buttonStyle(.plain)
+    }
+
+    private var nameEditSection: some View {
+        VStack(spacing: 16) {
+            HStack {
+                Text("Name")
+                    .foregroundColor(.gray)
+                    .font(.subheadline)
+                Spacer()
+            }
+
+            TextField("Enter your name", text: $tempUserName)
+                .textFieldStyle(.roundedBorder)
+                .textInputAutocapitalization(.words)
+                .submitLabel(.done)
+        }
+    }
+}
+
+struct BottomPhotoPickerSheet: View {
+    @Binding var showingCamera: Bool
+    @Binding var showingImagePicker: Bool
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        VStack(spacing: 20) {
+            Text("Change Profile Photo")
+                .font(.headline)
+                .foregroundColor(.primary)
+                .padding(.bottom, 8)
+
+            PhotoPickerButton(
+                title: "Take Photo",
+                icon: "camera",
+                action: {
+                    dismiss()
+                    showingCamera = true
+                }
+            )
+
+            PhotoPickerButton(
+                title: "Choose From Library",
+                icon: "photo.on.rectangle",
+                action: {
+                    dismiss()
+                    showingImagePicker = true
+                }
+            )
+        }
+        .padding()
+        .presentationDetents([.height(220)])
+        .presentationDragIndicator(.visible)
+    }
+}
+
+private struct PhotoPickerButton: View {
+    let title: String
+    let icon: String
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            HStack {
+                Image(systemName: icon)
+                    .font(.system(size: 18))
+                Text(title)
+                    .font(.system(size: 16, weight: .medium))
+            }
+            .foregroundColor(.white)
+            .frame(maxWidth: .infinity)
+            .padding()
+            .background(Color("rowProfileGrey"))
+            .cornerRadius(12)
+        }
+        .buttonStyle(.plain)
+    }
+}
+
+struct ImagePicker: UIViewControllerRepresentable {
+    @Binding var image: UIImage?
+    let sourceType: UIImagePickerController.SourceType
+    @Environment(\.dismiss) var dismiss
+
+    func makeUIViewController(context: Context) -> UIImagePickerController {
+        let picker = UIImagePickerController()
+        picker.sourceType = sourceType
+        picker.delegate = context.coordinator
+        picker.allowsEditing = false
+        return picker
+    }
+
+    func updateUIViewController(_ uiViewController: UIImagePickerController, context: Context) {}
+
+    func makeCoordinator() -> Coordinator {
+        Coordinator(self)
+    }
+
+    class Coordinator: NSObject, UIImagePickerControllerDelegate, UINavigationControllerDelegate {
+        let parent: ImagePicker
+
+        init(_ parent: ImagePicker) {
+            self.parent = parent
+        }
+
+        func imagePickerController(_ picker: UIImagePickerController, didFinishPickingMediaWithInfo info: [UIImagePickerController.InfoKey: Any]) {
+            if let image = info[.originalImage] as? UIImage {
+                parent.image = image
+            }
+            parent.dismiss()
+        }
+
+        func imagePickerControllerDidCancel(_ picker: UIImagePickerController) {
+            parent.dismiss()
+        }
+    }
+}
+
+struct ThemeDummy: View {
+    var body: some View {
+        Text("Dummy Theme View")
+            .navigationTitle("Theme")
+    }
+}
+
+struct TutorialDummy: View {
+    var body: some View {
+        Text("Dummy Tutorial View")
+            .navigationTitle("Tutorial")
+    }
+}
+
+#Preview {
+    ProfileView()
+        .preferredColorScheme(.dark)
+}
