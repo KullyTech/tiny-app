@@ -7,11 +7,19 @@
 
 import SwiftUI
 import SwiftData
+import FirebaseCore
 
 @main
 struct TinyApp: App {
     @StateObject var heartbeatSoundManager = HeartbeatSoundManager()
+    @StateObject var authService = AuthenticationService()
+    @StateObject var syncManager = HeartbeatSyncManager()
+
     @State private var isShowingSplashScreen: Bool = true // Add state to control splash screen
+
+    init() {
+        FirebaseApp.configure()
+    }
 
     // Define the container configuration
     var sharedModelContainer: ModelContainer = {
@@ -35,6 +43,9 @@ struct TinyApp: App {
             } else {
                 ContentView()
                     .environmentObject(heartbeatSoundManager)
+                    .environmentObject(authService)
+                    .environmentObject(syncManager)
+                    .preferredColorScheme(.dark)
             }
         }
         .modelContainer(sharedModelContainer)

@@ -8,6 +8,10 @@
 
 /* Begin PBXBuildFile section */
 		430725D62EC5C791006234D7 /* Orb in Frameworks */ = {isa = PBXBuildFile; productRef = 430725D52EC5C791006234D7 /* Orb */; };
+		DE00E4A12ED5AFA0005EC8F5 /* FirebaseAnalytics in Frameworks */ = {isa = PBXBuildFile; productRef = DE00E4A02ED5AFA0005EC8F5 /* FirebaseAnalytics */; };
+		DE00E6792ED6D630005EC8F5 /* FirebaseAuth in Frameworks */ = {isa = PBXBuildFile; productRef = DE00E6782ED6D630005EC8F5 /* FirebaseAuth */; };
+		DE00E67B2ED6D630005EC8F5 /* FirebaseFirestore in Frameworks */ = {isa = PBXBuildFile; productRef = DE00E67A2ED6D630005EC8F5 /* FirebaseFirestore */; };
+		DE00E67D2ED6D630005EC8F5 /* FirebaseStorage in Frameworks */ = {isa = PBXBuildFile; productRef = DE00E67C2ED6D630005EC8F5 /* FirebaseStorage */; };
 		DE5E9C862EB354B200485B15 /* AudioKit in Frameworks */ = {isa = PBXBuildFile; productRef = DE5E9C852EB354B200485B15 /* AudioKit */; };
 		DE5E9C882EB354B700485B15 /* AudioKitEX in Frameworks */ = {isa = PBXBuildFile; productRef = DE5E9C872EB354B700485B15 /* AudioKitEX */; };
 /* End PBXBuildFile section */
@@ -33,9 +37,6 @@
 		433435C42EACD4E4004C6B8C /* Tiny.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Tiny.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		433435D12EACD4E5004C6B8C /* TinyTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = TinyTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		433435DB2EACD4E5004C6B8C /* TinyUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = TinyUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
-		DEFE64C82ECB6123004B115A /* AudioKit */ = {isa = PBXFileReference; lastKnownFileType = wrapper; name = AudioKit; path = "/Users/benedictusyoga/Library/Developer/Xcode/DerivedData/Tiny-avirkidcxafmvjhegizwaahcarxv/SourcePackages/checkouts/AudioKit"; sourceTree = "<absolute>"; };
-		DEFE64C92ECB6126004B115A /* AudioKitEX */ = {isa = PBXFileReference; lastKnownFileType = wrapper; name = AudioKitEX; path = "/Users/benedictusyoga/Library/Developer/Xcode/DerivedData/Tiny-avirkidcxafmvjhegizwaahcarxv/SourcePackages/checkouts/AudioKitEX"; sourceTree = "<absolute>"; };
-		DEFE64CA2ECB6128004B115A /* Orb */ = {isa = PBXFileReference; lastKnownFileType = wrapper; name = Orb; path = "/Users/benedictusyoga/Library/Developer/Xcode/DerivedData/Tiny-avirkidcxafmvjhegizwaahcarxv/SourcePackages/checkouts/Orb"; sourceTree = "<absolute>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -75,8 +76,12 @@
 			buildActionMask = 2147483647;
 			files = (
 				430725D62EC5C791006234D7 /* Orb in Frameworks */,
+				DE00E6792ED6D630005EC8F5 /* FirebaseAuth in Frameworks */,
 				DE5E9C862EB354B200485B15 /* AudioKit in Frameworks */,
+				DE00E4A12ED5AFA0005EC8F5 /* FirebaseAnalytics in Frameworks */,
+				DE00E67D2ED6D630005EC8F5 /* FirebaseStorage in Frameworks */,
 				DE5E9C882EB354B700485B15 /* AudioKitEX in Frameworks */,
+				DE00E67B2ED6D630005EC8F5 /* FirebaseFirestore in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -121,9 +126,6 @@
 		DE5E9C842EB354B200485B15 /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
-				DEFE64C82ECB6123004B115A /* AudioKit */,
-				DEFE64C92ECB6126004B115A /* AudioKitEX */,
-				DEFE64CA2ECB6128004B115A /* Orb */,
 			);
 			name = Frameworks;
 			sourceTree = "<group>";
@@ -152,6 +154,10 @@
 				DE5E9C852EB354B200485B15 /* AudioKit */,
 				DE5E9C872EB354B700485B15 /* AudioKitEX */,
 				430725D52EC5C791006234D7 /* Orb */,
+				DE00E4A02ED5AFA0005EC8F5 /* FirebaseAnalytics */,
+				DE00E6782ED6D630005EC8F5 /* FirebaseAuth */,
+				DE00E67A2ED6D630005EC8F5 /* FirebaseFirestore */,
+				DE00E67C2ED6D630005EC8F5 /* FirebaseStorage */,
 			);
 			productName = tiny;
 			productReference = 433435C42EACD4E4004C6B8C /* Tiny.app */;
@@ -240,6 +246,7 @@
 				DEF686412EB33FA9004CC0C3 /* XCRemoteSwiftPackageReference "AudioKit" */,
 				DEF686422EB33FB2004CC0C3 /* XCRemoteSwiftPackageReference "AudioKitEX" */,
 				430725D42EC5C69D006234D7 /* XCRemoteSwiftPackageReference "Orb" */,
+				DE00E49F2ED5AFA0005EC8F5 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 433435C52EACD4E4004C6B8C /* Products */;
@@ -465,9 +472,12 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
-				CODE_SIGN_STYLE = Automatic;
+				CODE_SIGN_ENTITLEMENTS = Tiny/Tiny.entitlements;
+				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
+				CODE_SIGN_STYLE = Manual;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = 6PN64DQKLX;
+				DEVELOPMENT_TEAM = "";
+				"DEVELOPMENT_TEAM[sdk=iphoneos*]" = YPC2WUCUT5;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = Tiny/Info.plist;
@@ -490,6 +500,8 @@
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.miracle.tiny;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				PROVISIONING_PROFILE_SPECIFIER = "";
+				"PROVISIONING_PROFILE_SPECIFIER[sdk=iphoneos*]" = TinyProvisionProfile;
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
 				SUPPORTS_MACCATALYST = NO;
@@ -509,9 +521,12 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
-				CODE_SIGN_STYLE = Automatic;
+				CODE_SIGN_ENTITLEMENTS = Tiny/Tiny.entitlements;
+				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
+				CODE_SIGN_STYLE = Manual;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = 6PN64DQKLX;
+				DEVELOPMENT_TEAM = "";
+				"DEVELOPMENT_TEAM[sdk=iphoneos*]" = YPC2WUCUT5;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = Tiny/Info.plist;
@@ -534,6 +549,8 @@
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.miracle.tiny;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				PROVISIONING_PROFILE_SPECIFIER = "";
+				"PROVISIONING_PROFILE_SPECIFIER[sdk=iphoneos*]" = TinyProvisionProfile;
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
 				SUPPORTS_MACCATALYST = NO;
@@ -682,6 +699,14 @@
 				minimumVersion = 0.2.0;
 			};
 		};
+		DE00E49F2ED5AFA0005EC8F5 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/firebase/firebase-ios-sdk";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 12.6.0;
+			};
+		};
 		DEF686412EB33FA9004CC0C3 /* XCRemoteSwiftPackageReference "AudioKit" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/AudioKit/AudioKit.git";
@@ -705,6 +730,26 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 430725D42EC5C69D006234D7 /* XCRemoteSwiftPackageReference "Orb" */;
 			productName = Orb;
+		};
+		DE00E4A02ED5AFA0005EC8F5 /* FirebaseAnalytics */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = DE00E49F2ED5AFA0005EC8F5 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseAnalytics;
+		};
+		DE00E6782ED6D630005EC8F5 /* FirebaseAuth */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = DE00E49F2ED5AFA0005EC8F5 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseAuth;
+		};
+		DE00E67A2ED6D630005EC8F5 /* FirebaseFirestore */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = DE00E49F2ED5AFA0005EC8F5 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseFirestore;
+		};
+		DE00E67C2ED6D630005EC8F5 /* FirebaseStorage */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = DE00E49F2ED5AFA0005EC8F5 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseStorage;
 		};
 		DE5E9C852EB354B200485B15 /* AudioKit */ = {
 			isa = XCSwiftPackageProductDependency;
