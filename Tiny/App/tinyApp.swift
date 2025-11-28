@@ -22,6 +22,7 @@ struct TinyApp: App {
     @UIApplicationDelegateAdaptor(AppDelegate.self) var delegate
     
     @StateObject var heartbeatSoundManager = HeartbeatSoundManager()
+    @StateObject private var themeManager = ThemeManager()
     @StateObject var authService = AuthenticationService()
     @StateObject var syncManager = HeartbeatSyncManager()
     @State private var isShowingSplashScreen: Bool = true // Add state to control splash screen
@@ -52,6 +53,7 @@ struct TinyApp: App {
                     .environmentObject(heartbeatSoundManager)
                     .environmentObject(authService)
                     .environmentObject(syncManager)
+                    .environmentObject(themeManager)
             }
         }
         .modelContainer(sharedModelContainer)
