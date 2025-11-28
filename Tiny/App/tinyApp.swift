@@ -15,7 +15,7 @@ struct TinyApp: App {
     @StateObject private var themeManager = ThemeManager()
     @StateObject var authService = AuthenticationService()
     @StateObject var syncManager = HeartbeatSyncManager()
-    
+
     @State private var isShowingSplashScreen: Bool = true // Add state to control splash screen
 
     init() {
@@ -48,6 +48,7 @@ struct TinyApp: App {
                     .environmentObject(authService)
                     .environmentObject(syncManager)
                     .environmentObject(themeManager)
+                    .preferredColorScheme(.dark)
             }
         }
         .modelContainer(sharedModelContainer)
