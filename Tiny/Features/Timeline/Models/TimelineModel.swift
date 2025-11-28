@@ -10,10 +10,22 @@ import Foundation
 import SwiftUI
 
 // MARK: - Data Model
+enum WeekType {
+    case recorded  // Week with actual recordings
+    case placeholder  // Future week placeholder
+}
+
 struct WeekSection: Identifiable, Equatable {
     let id = UUID()
     let weekNumber: Int
     let recordings: [Recording]
+    let type: WeekType
+    
+    init(weekNumber: Int, recordings: [Recording], type: WeekType = .recorded) {
+        self.weekNumber = weekNumber
+        self.recordings = recordings
+        self.type = type
+    }
 }
 
 // MARK: - Shared Helper
@@ -42,6 +54,45 @@ struct ContinuousWave: Shape {
             let angle = (yCoord / period) * .pi * 2
             let xCoord = centerX + sin(angle) * amplitude
             path.addLine(to: CGPoint(x: xCoord, y: yCoord))
+        }
+        return path
+    }
+}
+
+// MARK: - Wave with Gaps for Orbs
+struct SegmentedWave: Shape {
+    var totalHeight: CGFloat
+    var period: CGFloat
+    var amplitude: CGFloat
+    var gapPositions: [CGFloat] // Y positions where gaps should be
+    var gapSize: CGFloat = 30 // Size of gap around each position
+    
+    func path(in rect: CGRect) -> Path {
+        var path = Path()
+        let centerX = rect.width / 2
+        var isDrawing = false
+        
+        // Draw sine wave with gaps at orb positions
+        for yCoord in stride(from: 0, through: totalHeight, by: 5) {
+            // Check if we're in a gap
+            let inGap = gapPositions.contains { abs(yCoord - $0) < gapSize }
+            
+            let angle = (yCoord / period) * .pi * 2
+            let xCoord = centerX + sin(angle) * amplitude
+            let point = CGPoint(x: xCoord, y: yCoord)
+            
+            if inGap {
+                // We're in a gap, stop drawing
+                isDrawing = false
+            } else {
+                // We're not in a gap, continue or start drawing
+                if !isDrawing {
+                    path.move(to: point)
+                    isDrawing = true
+                } else {
+                    path.addLine(to: point)
+                }
+            }
         }
         return path
     }

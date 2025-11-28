@@ -10,7 +10,8 @@ import SwiftUI
 enum OnboardingStep {
     case roleSelection
     case nameInput(role: UserRole)
-    case roomCodeInput
+    case weekInput  // For mothers only
+    case roomCodeInput  // For fathers only
 }
 
 struct OnboardingCoordinator: View {
@@ -34,11 +35,18 @@ struct OnboardingCoordinator: View {
                 NameInputView(
                     selectedRole: role,
                     onContinue: {
-                        if role == .father {
+                        if role == .mother {
+                            currentStep = .weekInput
+                        } else {
                             currentStep = .roomCodeInput
                         }
                     }
                 )
+            case .weekInput:
+                WeekInputView(onComplete: { week in
+                    // Week is automatically saved in WeekInputView
+                    // Onboarding is complete, RootView will navigate to timeline
+                })
             case .roomCodeInput:
                 RoomCodeInputView()
             }

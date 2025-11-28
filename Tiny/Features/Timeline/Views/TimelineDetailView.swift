@@ -33,20 +33,10 @@ struct TimelineDetailView: View {
                 Text("Week \(week.weekNumber)")
                     .font(.system(size: 28, weight: .bold))
                     .foregroundColor(.white)
-                    .matchedGeometryEffect(id: "label_\(week.weekNumber)", in: animation)
                     .padding(.top, 10)
             }
             .frame(maxWidth: .infinity)
-//            .frame(height: 60)
             
-            // The "Hero" Orb (Animated from previous screen)
-            ZStack {
-                AnimatedOrbView(size: 120)
-                    .shadow(color: .orange.opacity(0.6), radius: 30)
-            }
-            .matchedGeometryEffect(id: "orb_\(week.weekNumber)", in: animation)
-            .frame(height: 140)
-            .padding(.bottom, 20)
         }
     }
     
@@ -56,7 +46,17 @@ struct TimelineDetailView: View {
         let recHeight = max(geometry.size.height - 300, CGFloat(recordings.count) * recSpacing + 200)
         
         return ScrollView(showsIndicators: false) {
+            // The "Hero" Orb (Animated from previous screen)
+            ZStack {
+                AnimatedOrbView(size: 115)
+                    .shadow(color: .orange.opacity(0.6), radius: 30)
+            }
+            .matchedGeometryEffect(id: "orb_\(week.weekNumber)", in: animation)
+            .frame(height: 115)
+            .padding(.vertical, 20)
+            
             ZStack(alignment: .top) {
+                
                 // Tighter Wavy Path for details
                 ContinuousWave(
                     totalHeight: recHeight,
@@ -99,7 +99,6 @@ struct TimelineDetailView: View {
         }
     }
     
-    // MARK: - Components
     var glowingDot: some View {
         ZStack {
             Circle().fill(Color.white).frame(width: 8, height: 8)

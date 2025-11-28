@@ -24,23 +24,29 @@ struct HeartbeatMainView: View {
     
     var body: some View {
         ZStack {
-            // Timeline view - accessible by both mom and dad
-            if viewModel.showTimeline {
+            // TabView with swipe navigation
+            TabView(selection: $viewModel.currentPage) {
+                // Left page: Timeline (default)
                 PregnancyTimelineView(
                     heartbeatSoundManager: viewModel.heartbeatSoundManager,
-                    showTimeline: $viewModel.showTimeline,
+                    showTimeline: .constant(true),
                     onSelectRecording: viewModel.handleRecordingSelection,
                     isMother: isMother
                 )
-                .transition(.opacity)
-            } else {
-                // Orb view - for playback (both) and recording (mother only)
+                .tag(0)
+                
+                // Right page: Orb Live Listen
                 OrbLiveListenView(
                     heartbeatSoundManager: viewModel.heartbeatSoundManager,
-                    showTimeline: $viewModel.showTimeline
+                    showTimeline: Binding(
+                        get: { viewModel.currentPage == 0 },
+                        set: { if $0 { viewModel.currentPage = 0 } else { viewModel.currentPage = 1 } }
+                    )
                 )
-                .transition(.opacity)
+                .tag(1)
             }
+            .tabViewStyle(.page(indexDisplayMode: .never))
+            .ignoresSafeArea()
             
             // Room Code Button (Top Right)
             VStack {
@@ -118,13 +124,6 @@ struct HeartbeatMainView: View {
                     userRole: authService.currentUser?.role
                 )
                 isInitialized = true
-            }
-            
-            // For fathers, start in timeline view
-            if !isMother {
-                await MainActor.run {
-                    viewModel.showTimeline = true
-                }
             }
         }
     }

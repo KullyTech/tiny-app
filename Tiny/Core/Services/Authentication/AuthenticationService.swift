@@ -71,7 +71,7 @@ class AuthenticationService: ObservableObject {
                 email: result.user.email ?? "",
                 name: displayName,
                 role: nil,
-                pregnancyMonths: nil,
+                pregnancyWeeks: nil,
                 roomCode: nil,
                 createdAt: Date()
             )
@@ -90,15 +90,15 @@ class AuthenticationService: ObservableObject {
         return sha256(nonce)
     }
     
-    func updateUserRole(role: UserRole, pregnancyMonths: Int? = nil, roomCode: String? = nil) async throws {
+    func updateUserRole(role: UserRole, pregnancyWeeks: Int? = nil, roomCode: String? = nil) async throws {
         guard let userId = auth.currentUser?.uid else {
             return
         }
         
         var updateData: [String: Any] = ["role": role.rawValue]
         
-        if role == .mother, let months = pregnancyMonths {
-            updateData["pregnancyMonths"] = months
+        if role == .mother, let weeks = pregnancyWeeks {
+            updateData["pregnancyWeeks"] = weeks
         }
         
         if role == .father, let code = roomCode, !code.isEmpty {
@@ -160,7 +160,7 @@ class AuthenticationService: ObservableObject {
                 email: data["email"] as? String ?? "",
                 name: data["name"] as? String,
                 role: (data["role"] as? String).flatMap { UserRole(rawValue: $0) },
-                pregnancyMonths: data["pregnancyMonths"] as? Int,
+                pregnancyWeeks: data["pregnancyWeeks"] as? Int,
                 roomCode: data["roomCode"] as? String,
                 createdAt: (data["createdAt"] as? Timestamp)?.dateValue() ?? Date()
             )

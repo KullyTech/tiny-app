@@ -61,16 +61,31 @@ struct TinyApp: App {
 struct RootView: View {
     @EnvironmentObject var authService: AuthenticationService
     
+    // Check if onboarding is complete
+    private var isOnboardingComplete: Bool {
+        guard let user = authService.currentUser, let role = user.role else {
+            return false
+        }
+        
+        // For mothers: need role + pregnancyWeek
+        if role == .mother {
+            return user.pregnancyWeeks != nil || UserDefaults.standard.integer(forKey: "pregnancyWeek") > 0
+        }
+        
+        // For fathers: need role + roomCode
+        return user.roomCode != nil
+    }
+    
     var body: some View {
         Group {
             if !authService.isAuthenticated {
                 // Step 1: Landing screen with Sign in with Apple
                 SignInView()
-            } else if authService.currentUser?.role == nil {
-                // Step 2-4: Onboarding flow (role selection, name input, room code)
+            } else if !isOnboardingComplete {
+                // Step 2-4: Onboarding flow (role, name, week/roomCode)
                 OnboardingCoordinator()
             } else {
-                // Step 5: Main app - go to HeartbeatMainView
+                // Step 5: Main app - Timeline is now the main page
                 HeartbeatMainView()
             }
         }

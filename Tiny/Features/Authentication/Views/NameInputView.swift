@@ -96,7 +96,7 @@ struct NameInputView: View {
             do {
                 try await authService.updateUserName(name: name.trimmingCharacters(in: .whitespaces))
                 if selectedRole == .mother {
-                    try await authService.updateUserRole(role: selectedRole, pregnancyMonths: 5)
+                    try await authService.updateUserRole(role: selectedRole, pregnancyWeeks: 5)
                 } else {
                     onContinue()
                 }
