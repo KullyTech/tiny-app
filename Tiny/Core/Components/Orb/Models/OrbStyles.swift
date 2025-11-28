@@ -14,7 +14,6 @@ enum OrbStyles: String, CaseIterable, Identifiable {
     case blue = "Blue"
     case green = "Green"
     
-    
     var id: String { rawValue }
     var displayName: String { rawValue }
     

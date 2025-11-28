@@ -260,7 +260,7 @@ struct OrbLiveListenView: View {
                 if !viewModel.isListening && !viewModel.isPlaybackMode {
                     Button(action: {
                         showThemeCustomization = true
-                    }, label:  {
+                    }, label: {
                         Image(systemName: "paintbrush.fill")
                             .font(.system(size: 20, weight: .semibold))
                             .foregroundColor(.white)
