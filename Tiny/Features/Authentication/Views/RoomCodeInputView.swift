@@ -8,6 +8,7 @@
 import SwiftUI
 
 struct RoomCodeInputView: View {
+    @EnvironmentObject var themeManager: ThemeManager
     @EnvironmentObject var authService: AuthenticationService
     
     @State private var roomCode: String = ""
@@ -26,7 +27,8 @@ struct RoomCodeInputView: View {
     
     var body: some View {
         ZStack {
-            Image("backgroundPurple")
+            Color.black.ignoresSafeArea()
+            Image(themeManager.selectedBackground.imageName)
                 .resizable()
                 .scaledToFill()
                 .clipped()

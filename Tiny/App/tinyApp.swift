@@ -45,6 +45,7 @@ struct TinyApp: App {
         WindowGroup {
             if isShowingSplashScreen {
                 SplashScreenView(isShowingSplashScreen: $isShowingSplashScreen)
+                    .environmentObject(themeManager)
                     .preferredColorScheme(.dark)
             } else {
                 //                ContentView()
