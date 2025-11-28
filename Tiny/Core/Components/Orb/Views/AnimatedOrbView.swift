@@ -13,12 +13,14 @@ import SwiftUI
 import SpriteKit
 
 struct AnimatedOrbView: View {
+    @EnvironmentObject var themeManager: ThemeManager
     @StateObject private var physicsController = OrbPhysicsController()
     var size: CGFloat = 200
-    var style: OrbStyles = .defaultStyle
+    var style: OrbStyles?
+    private var effectiveStyle: OrbStyles { style ?? themeManager.selectedOrbStyle }
     
     private var configuration: OrbConfiguration {
-        OrbConfiguration(style: style)
+        OrbConfiguration(style: effectiveStyle)
     }
 
     var body: some View {
@@ -29,9 +31,9 @@ struct AnimatedOrbView: View {
                 .stroke(
                     AngularGradient(
                         colors: [
-                            style.glowColor.opacity(0.8),
-                            style.glowColor.opacity(2),
-                            style.glowColor.opacity(0.6)
+                            effectiveStyle.glowColor.opacity(0.8),
+                            effectiveStyle.glowColor.opacity(2),
+                            effectiveStyle.glowColor.opacity(0.6)
                         ],
                         center: .center,
                         startAngle: .degrees(0),

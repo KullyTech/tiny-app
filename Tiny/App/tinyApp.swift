@@ -12,6 +12,7 @@ import FirebaseCore
 @main
 struct TinyApp: App {
     @StateObject var heartbeatSoundManager = HeartbeatSoundManager()
+    @StateObject private var themeManager = ThemeManager()
     @StateObject var authService = AuthenticationService()
     @StateObject var syncManager = HeartbeatSyncManager()
 
@@ -39,12 +40,14 @@ struct TinyApp: App {
         WindowGroup {
             if isShowingSplashScreen {
                 SplashScreenView(isShowingSplashScreen: $isShowingSplashScreen)
+                    .environmentObject(themeManager)
                     .preferredColorScheme(.dark)
             } else {
                 ContentView()
                     .environmentObject(heartbeatSoundManager)
                     .environmentObject(authService)
                     .environmentObject(syncManager)
+                    .environmentObject(themeManager)
                     .preferredColorScheme(.dark)
             }
         }

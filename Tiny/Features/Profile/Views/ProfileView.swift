@@ -14,6 +14,7 @@ struct ProfileView: View {
     @EnvironmentObject var authService: AuthenticationService
     @EnvironmentObject var syncManager: HeartbeatSyncManager
     @StateObject private var heartbeatMainViewModel = HeartbeatMainViewModel()
+    @EnvironmentObject var themeManager: ThemeManager
 
     @State private var showRoomCode = false
     @State private var isInitialized = false
@@ -25,7 +26,7 @@ struct ProfileView: View {
 
     var body: some View {
         ZStack {
-            Image("backgroundPurple")
+            Image(themeManager.selectedBackground.imageName)
                 .resizable()
                 .scaledToFill()
                 .ignoresSafeArea()
@@ -133,7 +134,7 @@ struct ProfileView: View {
 
     private var settingsSection: some View {
         Section {
-            NavigationLink(destination: ThemeDummy()) {
+            NavigationLink(destination: ThemeCustomizationView()) {
                 Label("Theme", systemImage: "paintpalette.fill")
                     .foregroundStyle(.white)
             }
