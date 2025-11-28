@@ -41,48 +41,6 @@ struct HeartbeatMainView: View {
                 )
                 .transition(.opacity)
             }
-            
-            // Room Code Button (Top Right)
-            VStack {
-                HStack {
-                    Spacer()
-                    
-                    Button(action: {
-                        showRoomCode.toggle()
-                    }) {
-                        Image(systemName: "person.2.fill")
-                            .font(.system(size: 20))
-                            .foregroundColor(.white)
-                            .padding(12)
-                            .background(Color.white.opacity(0.2))
-                            .clipShape(Circle())
-                    }
-                    .padding(.trailing, 20)
-                    .padding(.top, 50)
-                }
-                
-                Spacer()
-            }
-        }
-        .preferredColorScheme(.dark)
-        .onAppear {
-            // Initialize only once
-            if !isInitialized {
-                initializeManager()
-            }
-        }
-        .onChange(of: authService.currentUser?.roomCode) { oldValue, newValue in
-            // Re-initialize when room code changes
-            if newValue != nil && newValue != oldValue {
-                print("🔄 Room code updated: \(newValue ?? "nil")")
-                initializeManager()
-            }
-        }
-        .sheet(isPresented: $showRoomCode) {
-            RoomCodeDisplayView()
-                .environmentObject(authService)
-                .presentationDetents([.medium])
-                .presentationDragIndicator(.visible)
         }
     }
     
