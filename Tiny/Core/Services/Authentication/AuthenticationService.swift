@@ -18,7 +18,7 @@ class AuthenticationService: ObservableObject {
     @Published var isAuthenticated = false
     
     private let auth = Auth.auth()
-    private let db = Firestore.firestore()
+    private let database = Firestore.firestore()
     
     private var currentNonce: String?
     
@@ -53,7 +53,7 @@ class AuthenticationService: ObservableObject {
         
         let result = try await auth.signIn(with: credential)
         
-        let userDoc = try await db.collection("users").document(result.user.uid).getDocument()
+        let userDoc = try await database.collection("users").document(result.user.uid).getDocument()
         
         if !userDoc.exists {
             var displayName: String?
@@ -76,7 +76,7 @@ class AuthenticationService: ObservableObject {
                 createdAt: Date()
             )
             
-            try db.collection("users").document(result.user.uid).setData(from: newUser)
+            try database.collection("users").document(result.user.uid).setData(from: newUser)
             self.currentUser = newUser
         } else {
             fetchUserData(userId: result.user.uid)
@@ -105,7 +105,7 @@ class AuthenticationService: ObservableObject {
             updateData["roomCode"] = code
         }
         
-        try await db.collection("users").document(userId).updateData(updateData)
+        try await database.collection("users").document(userId).updateData(updateData)
         fetchUserData(userId: userId)
     }
     
@@ -114,7 +114,7 @@ class AuthenticationService: ObservableObject {
             return
         }
         
-        try await db.collection("users").document(userId).updateData(["name": name])
+        try await database.collection("users").document(userId).updateData(["name": name])
         fetchUserData(userId: userId)
     }
     
@@ -133,9 +133,9 @@ class AuthenticationService: ObservableObject {
             createdAt: Date()
         )
         
-        let docRef = try db.collection("rooms").addDocument(from: room)
+        let docRef = try database.collection("rooms").addDocument(from: room)
         
-        try await db.collection("users").document(userId).updateData(["roomCode": roomCode])
+        try await database.collection("users").document(userId).updateData(["roomCode": roomCode])
         fetchUserData(userId: userId)
         
         return roomCode
@@ -148,7 +148,7 @@ class AuthenticationService: ObservableObject {
     }
     
     private func fetchUserData(userId: String) {
-        db.collection("users").document(userId).addSnapshotListener { [weak self] snapshot, error in
+        database.collection("users").document(userId).addSnapshotListener { [weak self] snapshot, error in
             guard let snapshot = snapshot, snapshot.exists, let data = snapshot.data() else {
                 print("Error fetching user data: \(error?.localizedDescription ?? "Unknown error")")
                 return
@@ -207,7 +207,7 @@ class AuthenticationService: ObservableObject {
         print("🚪 User attempting to join room: \(roomCode)")
         
         // Find the room with this code
-        let snapshot = try await db.collection("rooms")
+        let snapshot = try await database.collection("rooms")
             .whereField("code", isEqualTo: roomCode)
             .limit(to: 1)
             .getDocuments()
@@ -219,14 +219,14 @@ class AuthenticationService: ObservableObject {
         print("✅ Found room: \(roomDoc.documentID)")
         
         // Update the room to add father's user ID
-        try await db.collection("rooms").document(roomDoc.documentID).updateData([
+        try await database.collection("rooms").document(roomDoc.documentID).updateData([
             "fatherUserId": userId
         ])
         
         print("✅ Updated room with father's user ID")
         
         // Update user's roomCode
-        try await db.collection("users").document(userId).updateData([
+        try await database.collection("users").document(userId).updateData([
             "roomCode": roomCode
         ])
         

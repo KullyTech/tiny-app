@@ -5,14 +5,6 @@
 //  Created by Benedictus Yogatama Favian Satyajati on 27/11/25.
 //
 
-
-//
-//  RoomCodeDisplayView.swift
-//  Tiny
-//
-//  Created by Benedictus Yogatama Favian Satyajati on 27/11/25.
-//
-
 import SwiftUI
 
 struct RoomCodeDisplayView: View {
@@ -29,11 +21,13 @@ struct RoomCodeDisplayView: View {
                 // Header
                 HStack {
                     Spacer()
-                    Button(action: { dismiss() }) {
+                    Button(action: {
+                        dismiss()
+                    }, label: {
                         Image(systemName: "xmark.circle.fill")
                             .font(.system(size: 28))
                             .foregroundColor(.secondary)
-                    }
+                    })
                 }
                 .padding(.horizontal)
                 .padding(.top, 10)
