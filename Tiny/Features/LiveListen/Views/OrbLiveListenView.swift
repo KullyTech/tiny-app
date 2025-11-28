@@ -2,11 +2,13 @@ import SwiftUI
 import SwiftData
 
 struct OrbLiveListenView: View {
+    @State private var showThemeCustomization = false
+    @EnvironmentObject var themeManager: ThemeManager
     @Environment(\.modelContext) private var modelContext
-
+    
     @ObservedObject var heartbeatSoundManager: HeartbeatSoundManager
     @Binding var showTimeline: Bool
-
+    
     @StateObject private var viewModel = OrbLiveListenViewModel()
     @StateObject private var tutorialViewModel = TutorialViewModel()
     
@@ -39,6 +41,10 @@ struct OrbLiveListenView: View {
                     ShareSheet(activityItems: [lastRecordingURL])
                 }
             }
+            .sheet(isPresented: $showThemeCustomization) {
+                            ThemeCustomizationView()
+                                .environmentObject(themeManager)
+                        }
             .preferredColorScheme(.dark)
             .onAppear {
                 tutorialViewModel.showInitialTutorialIfNeeded()
@@ -50,7 +56,7 @@ struct OrbLiveListenView: View {
     private var backgroundView: some View {
         ZStack {
             Color.black.ignoresSafeArea()
-            Image("backgroundPurple")
+            Image(themeManager.selectedBackground.imageName)
                 .resizable()
                 .scaleEffect(viewModel.isListening ? 1.2 : 1.0)
                 .animation(.easeInOut(duration: 1.2), value: viewModel.isListening)
@@ -83,7 +89,7 @@ struct OrbLiveListenView: View {
         VStack {
             HStack {
                 Spacer()
-
+                
                 if viewModel.isPlaybackMode {
                     Button {
                         viewModel.showShareSheet = true
@@ -151,8 +157,8 @@ struct OrbLiveListenView: View {
                     VStack(spacing: 8) {
                         Text(viewModel.audioPostProcessingManager.isPlaying ? "Playing..." :
                                 (viewModel.isDraggingToSave ? "Drag to save" : "Tap orb to play"))
-                            .font(.title2)
-                            .fontWeight(.medium)
+                        .font(.title2)
+                        .fontWeight(.medium)
                         
                         if viewModel.audioPostProcessingManager.duration > 0 && !viewModel.isDraggingToSave {
                             Text("\(Int(viewModel.currentTime))s / \(Int(viewModel.audioPostProcessingManager.duration))s")
@@ -247,6 +253,31 @@ struct OrbLiveListenView: View {
             }
         }
     }
+    
+    private var themeButton: some View {
+        VStack {
+            HStack {
+                if !viewModel.isListening && !viewModel.isPlaybackMode {
+                    Button(action: {
+                        showThemeCustomization = true
+                    }, label: {
+                        Image(systemName: "paintbrush.fill")
+                            .font(.system(size: 20, weight: .semibold))
+                            .foregroundColor(.white)
+                            .frame(width: 50, height: 50)
+                            .background(Circle().fill(Color.white.opacity(0.1)))
+                            .clipShape(Circle())
+                    })
+                    .padding(.leading, 16)
+                    .padding(.top, 50)
+                    .transition(.opacity.animation(.easeInOut))
+                }
+                Spacer()
+            }
+            Spacer()
+        }
+        .allowsHitTesting(true)  // Ensure button is tappable
+    }
 
     struct GestureModifier: ViewModifier {
         let isPlaybackMode: Bool
@@ -255,9 +286,9 @@ struct OrbLiveListenView: View {
         let handleDragEnd: (SequenceGesture<LongPressGesture, DragGesture>.Value) -> Void
         let handleLongPressChange: (Bool) -> Void
         let handleLongPressComplete: () -> Void
-
+        
         @GestureState private var isDetectingLongPress = false
-
+        
         func body(content: Content) -> some View {
             if isPlaybackMode {
                 content.gesture(

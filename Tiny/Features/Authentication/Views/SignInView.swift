@@ -9,6 +9,7 @@ import SwiftUI
 import AuthenticationServices
 
 struct SignInView: View {
+    @EnvironmentObject var themeManager: ThemeManager
     @EnvironmentObject var authService: AuthenticationService
     @State private var errorMessage: String?
     
@@ -24,7 +25,8 @@ struct SignInView: View {
     
     var body: some View {
         ZStack(alignment: .center) {
-            Image("backgroundPurple")
+            Color.black.ignoresSafeArea()
+            Image(themeManager.selectedBackground.imageName)
                 .resizable()
                 .scaledToFill()
                 .clipped()

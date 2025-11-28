@@ -8,6 +8,7 @@
 import SwiftUI
 
 struct NameInputView: View {
+    @EnvironmentObject var themeManager: ThemeManager
     @EnvironmentObject var authService: AuthenticationService
     let selectedRole: UserRole
     let onContinue: () -> Void
@@ -28,7 +29,8 @@ struct NameInputView: View {
     
     var body: some View {
         ZStack {
-            Image("backgroundPurple")
+            Color.black.ignoresSafeArea()
+            Image(themeManager.selectedBackground.imageName)
                 .resizable()
                 .scaledToFill()
                 .clipped()
@@ -112,8 +114,8 @@ struct NameInputView: View {
     }
 }
 
-//#Preview {
+// #Preview {
 //    NameInputView(selectedRole: .mother)
 //        .environmentObject(AuthenticationService())
 //        .preferredColorScheme(.dark)
-//}
+// }

@@ -12,7 +12,7 @@ struct PregnancyTimelineView: View {
     @Binding var showTimeline: Bool
     let onSelectRecording: (Recording) -> Void
     let isMother: Bool  // Add this parameter
-    var inputWeek: Int? = nil  // Week from onboarding input
+    var inputWeek: Int?  // Week from onboarding input
     
     @Namespace private var animation
     @State private var selectedWeek: WeekSection?
@@ -50,7 +50,6 @@ struct PregnancyTimelineView: View {
                     )
                     .transition(.opacity)
                 }
-                
                 navigationButtons
             }
             .onAppear(perform: groupRecordings)
@@ -64,16 +63,17 @@ struct PregnancyTimelineView: View {
             groupRecordings()
         }
     }
-    
+
     private var navigationButtons: some View {
         VStack {
             // Top Bar
             HStack {
                 if selectedWeek != nil {
                     // Back Button (Detail -> List)
-                    
                     Button {
-                        withAnimation(.spring(response: 0.6, dampingFraction: 0.75)) { selectedWeek = nil }
+                        withAnimation(.spring(response: 0.6, dampingFraction: 0.75)) {
+                            selectedWeek = nil
+                        }
                     } label: {
                         Image(systemName: "chevron.left")
                             .font(.system(size: 20, weight: .bold))
@@ -115,8 +115,8 @@ struct PregnancyTimelineView: View {
                 }
             }
             .padding(.horizontal, 20)
-            .padding(.top, 60)
-            
+            .padding(.top, 20)
+
             Spacer()
         }
         .ignoresSafeArea(.all, edges: .bottom)
@@ -156,9 +156,9 @@ struct PregnancyTimelineView: View {
     private func groupRecordings() {
         let raw = heartbeatSoundManager.savedRecordings
         print("📊 Grouping \(raw.count) recordings")
-        
+
         let calendar = Calendar.current
-        
+
         let grouped = Dictionary(grouping: raw) { recording -> Int in
             return calendar.component(.weekOfYear, from: recording.createdAt)
         }

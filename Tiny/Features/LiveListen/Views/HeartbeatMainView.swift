@@ -13,15 +13,15 @@ struct HeartbeatMainView: View {
     @Environment(\.modelContext) private var modelContext
     @EnvironmentObject var authService: AuthenticationService
     @EnvironmentObject var syncManager: HeartbeatSyncManager
-    
+
     @State private var showRoomCode = false
     @State private var isInitialized = false
-    
+
     // Check if user is a mother
     private var isMother: Bool {
         authService.currentUser?.role == .mother
     }
-    
+
     var body: some View {
         ZStack {
             // TabView with swipe navigation
@@ -91,7 +91,7 @@ struct HeartbeatMainView: View {
                 .presentationDragIndicator(.visible)
         }
     }
-    
+
     private func initializeManager() {
         Task {
             // Auto-create room for mothers if they don't have one
@@ -103,18 +103,18 @@ struct HeartbeatMainView: View {
                     print("❌ Error creating room: \(error)")
                 }
             }
-            
+
             // Wait a bit for room code to be set
             try? await Task.sleep(nanoseconds: 500_000_000) // 0.5 seconds
-            
+
             // Now setup the manager with current user data
             let userId = authService.currentUser?.id
             let roomCode = authService.currentUser?.roomCode
-            
+
             print("🔍 Initializing manager with:")
             print("   User ID: \(userId ?? "nil")")
             print("   Room Code: \(roomCode ?? "nil")")
-            
+
             await MainActor.run {
                 viewModel.setupManager(
                     modelContext: modelContext,

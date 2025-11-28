@@ -9,6 +9,7 @@ import SwiftUI
 internal import Combine
 
 struct BokehEffectView: View {
+    @EnvironmentObject var themeManager: ThemeManager
     @Binding var amplitude: Float
 
     private var pulseOpacity: Double {
@@ -19,13 +20,17 @@ struct BokehEffectView: View {
     private var pulseScale: CGFloat {
         return 1.0 + CGFloat(amplitude) * 0.3
     }
+    
+    private var bokehColor: Color {
+        themeManager.selectedOrbStyle.bokehColor
+    }
 
     var body: some View {
         ZStack {
             // Layer 1: The Base Glow (Shifted Left)
             // This is the bottom layer, slightly less bright.
             Circle()
-                .fill(Color.orbLightYellow)
+                .fill(bokehColor)
                 .frame(width: 30)
                 .opacity(pulseOpacity * 0.5)
                 .scaleEffect(pulseScale * 1)
@@ -34,7 +39,7 @@ struct BokehEffectView: View {
             // Layer 2: The Core/Highlight (Shifted Right)
             // *** We apply .blendMode(.screen) here to brighten the overlap ***
             Circle()
-                .fill(Color.orbLightYellow)
+                .fill(bokehColor)
                 .frame(width: 30)
                 .opacity(pulseOpacity * 0.5)
                 .scaleEffect(pulseScale * 1.1)

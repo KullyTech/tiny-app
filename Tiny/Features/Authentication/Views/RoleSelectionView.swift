@@ -8,13 +8,15 @@
 import SwiftUI
 
 struct RoleSelectionView: View {
+    @EnvironmentObject var themeManager: ThemeManager
     @EnvironmentObject var authService: AuthenticationService
     @Binding var selectedRole: UserRole?
     let onContinue: () -> Void
     
     var body: some View {
         ZStack {
-            Image("backgroundPurple")
+            Color.black.ignoresSafeArea()
+            Image(themeManager.selectedBackground.imageName)
                 .resizable()
                 .scaledToFill()
                 .clipped()
@@ -86,7 +88,7 @@ struct RoleSelectionView: View {
     }
 }
 
-//#Preview {
+// #Preview {
 //    RoleSelectionView()
 //        .preferredColorScheme(.dark)
-//}
+// }
