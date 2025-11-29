@@ -10,6 +10,7 @@ import SwiftUI
 struct ProfileView: View {
     @StateObject private var viewModel = ProfileViewModel()
     @State private var showingSignOutConfirmation = false
+
     @Environment(\.modelContext) private var modelContext
     @EnvironmentObject var authService: AuthenticationService
     @EnvironmentObject var syncManager: HeartbeatSyncManager
@@ -27,6 +28,7 @@ struct ProfileView: View {
     var body: some View {
         ZStack {
             Image(themeManager.selectedBackground.imageName)
+
                 .resizable()
                 .scaledToFill()
                 .ignoresSafeArea()
@@ -308,13 +310,6 @@ struct ProfileView: View {
                 )
                 isInitialized = true
             }
-
-            // For fathers, start in timeline view
-            if !isMother {
-                await MainActor.run {
-                    heartbeatMainViewModel.showTimeline = true
-                }
-            }
         }
     }
 
@@ -549,5 +544,6 @@ struct TutorialDummy: View {
     ProfileView()
         .environmentObject(AuthenticationService())   // <-- mock
         .environmentObject(HeartbeatSyncManager())
+
         .preferredColorScheme(.dark)
 }

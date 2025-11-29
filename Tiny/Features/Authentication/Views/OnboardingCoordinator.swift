@@ -10,7 +10,8 @@ import SwiftUI
 enum OnboardingStep {
     case roleSelection
     case nameInput(role: UserRole)
-    case roomCodeInput
+    case weekInput  // For mothers only
+    case roomCodeInput  // For fathers only
 }
 
 struct OnboardingCoordinator: View {
@@ -34,11 +35,25 @@ struct OnboardingCoordinator: View {
                 NameInputView(
                     selectedRole: role,
                     onContinue: {
-                        if role == .father {
+                        if role == .mother {
+                            currentStep = .weekInput
+                        } else {
                             currentStep = .roomCodeInput
                         }
                     }
                 )
+            case .weekInput:
+                WeekInputView(onComplete: { week in
+                    Task {
+                        do {
+                            // Update user role and pregnancy week in Firebase
+                            try await authService.updateUserRole(role: .mother, pregnancyWeeks: week)
+                            print("✅ Successfully saved pregnancy week: \(week)")
+                        } catch {
+                            print("❌ Error saving pregnancy week: \(error.localizedDescription)")
+                        }
+                    }
+                })
             case .roomCodeInput:
                 RoomCodeInputView()
             }

@@ -18,7 +18,7 @@ struct User: Codable, Identifiable {
     var email: String
     var name: String?
     var role: UserRole?
-    var pregnancyMonths: Int?
+    var pregnancyWeeks: Int?
     var roomCode: String?
     var createdAt: Date
     
@@ -26,14 +26,14 @@ struct User: Codable, Identifiable {
          email: String,
          name: String? = nil,
          role: UserRole? = nil,
-         pregnancyMonths: Int? = nil,
+         pregnancyWeeks: Int? = nil,
          roomCode: String? = nil,
          createdAt: Date) {
         self.id = id
         self.email = email
         self.name = name
         self.role = role
-        self.pregnancyMonths = pregnancyMonths
+        self.pregnancyWeeks = pregnancyWeeks
         self.roomCode = roomCode
         self.createdAt = createdAt
     }
