@@ -67,24 +67,45 @@ struct MainTimelineListView: View {
                                     if week.type == .placeholder {
                                         let lastIndex = groupedData.count - 1
                                         
-                                        if isFirstTimeVisit && index == lastIndex && animationController.orbVisible {
-                                            ZStack {
-                                                AnimatedOrbView(size: 20)
-                                                    .shadow(color: .orange.opacity(0.4), radius: 15)
-                                            }
-                                            .matchedGeometryEffect(id: "orb_\(week.weekNumber)", in: animation)
-                                            .onTapGesture {
-                                                withAnimation(.spring(response: 0.6, dampingFraction: 0.75)) {
-                                                    selectedWeek = week
+                                        if isFirstTimeVisit {
+                                            // First time visit: animate dots and orb transformation
+                                            if index == lastIndex && animationController.orbVisible {
+                                                // Show orb for the current week (last/bottom item)
+                                                ZStack {
+                                                    AnimatedOrbView(size: 20)
+                                                        .shadow(color: .orange.opacity(0.4), radius: 15)
+                                                }
+                                                .matchedGeometryEffect(id: "orb_\(week.weekNumber)", in: animation)
+                                                .onTapGesture {
+                                                    withAnimation(.spring(response: 0.6, dampingFraction: 0.75)) {
+                                                        selectedWeek = week
+                                                    }
+                                                }
+                                            } else {
+                                                // Show dots for future weeks during animation
+                                                let reversedIndex = lastIndex - index
+                                                if reversedIndex < animationController.dotsVisible.count && animationController.dotsVisible[reversedIndex] {
+                                                    PlaceholderDot()
                                                 }
                                             }
-                                        } else if isFirstTimeVisit {
-                                            let reversedIndex = lastIndex - index
-                                            if reversedIndex < animationController.dotsVisible.count && animationController.dotsVisible[reversedIndex] {
+                                        } else {
+                                            // Non-first visit: show orb for current week, dots for future weeks
+                                            if index == lastIndex {
+                                                // Current week gets an orb
+                                                ZStack {
+                                                    AnimatedOrbView(size: 20)
+                                                        .shadow(color: .orange.opacity(0.4), radius: 15)
+                                                }
+                                                .matchedGeometryEffect(id: "orb_\(week.weekNumber)", in: animation)
+                                                .onTapGesture {
+                                                    withAnimation(.spring(response: 0.6, dampingFraction: 0.75)) {
+                                                        selectedWeek = week
+                                                    }
+                                                }
+                                            } else {
+                                                // Future weeks get dots
                                                 PlaceholderDot()
                                             }
-                                        } else if !isFirstTimeVisit {
-                                            PlaceholderDot()
                                         }
                                     } else {
                                         let shouldShowOrb = !isFirstTimeVisit || (isFirstTimeVisit && animationController.orbVisible)
@@ -108,7 +129,12 @@ struct MainTimelineListView: View {
                                             return true
                                         } else if week.type == .placeholder {
                                             let lastIndex = groupedData.count - 1
-                                            return isFirstTimeVisit && index == lastIndex && animationController.orbVisible
+                                            // Show label if it's the current week (last/bottom item)
+                                            if isFirstTimeVisit {
+                                                return index == lastIndex && animationController.orbVisible
+                                            } else {
+                                                return index == lastIndex
+                                            }
                                         }
                                         return false
                                     }()

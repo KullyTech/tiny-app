@@ -31,9 +31,14 @@ struct HeartbeatMainView: View {
                     heartbeatSoundManager: viewModel.heartbeatSoundManager,
                     showTimeline: .constant(true),
                     onSelectRecording: viewModel.handleRecordingSelection,
-                    isMother: isMother
+                    isMother: isMother,
+                    inputWeek: authService.currentUser?.pregnancyWeeks
                 )
                 .tag(0)
+                .transition(.asymmetric(
+                    insertion: .scale(scale: 0.95).combined(with: .opacity),
+                    removal: .scale(scale: 1.05).combined(with: .opacity)
+                ))
                 
                 // Right page: Orb Live Listen
                 OrbLiveListenView(
@@ -44,31 +49,13 @@ struct HeartbeatMainView: View {
                     )
                 )
                 .tag(1)
+                .transition(.asymmetric(
+                    insertion: .scale(scale: 0.95).combined(with: .opacity),
+                    removal: .scale(scale: 1.05).combined(with: .opacity)
+                ))
             }
             .tabViewStyle(.page(indexDisplayMode: .never))
             .ignoresSafeArea()
-            
-            // Room Code Button (Top Right)
-            VStack {
-                HStack {
-                    Spacer()
-                    
-                    Button(action: {
-                        showRoomCode.toggle()
-                    }) {
-                        Image(systemName: "person.2.fill")
-                            .font(.system(size: 20))
-                            .foregroundColor(.white)
-                            .padding(12)
-                            .background(Color.white.opacity(0.2))
-                            .clipShape(Circle())
-                    }
-                    .padding(.trailing, 20)
-                    .padding(.top, 50)
-                }
-                
-                Spacer()
-            }
         }
         .preferredColorScheme(.dark)
         .onAppear {

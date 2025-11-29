@@ -65,23 +65,26 @@ struct OrbLiveListenView: View {
     }
     
     private var topControlsView: some View {
-        VStack {
-            HStack {
-                if viewModel.isPlaybackMode {
-                    Button(action: viewModel.handleBackButton, label: {
-                        Image(systemName: "chevron.left")
-                            .font(.system(size: 22, weight: .semibold))
-                            .foregroundColor(.white)
-                            .frame(width: 50, height: 50)
-                            .clipShape(Circle())
-                    })
-                    .glassEffect(.clear)
-                    .transition(.opacity.animation(.easeInOut))
+        GeometryReader { geometry in
+            VStack {
+                HStack {
+                    if viewModel.isPlaybackMode {
+                        Button(action: viewModel.handleBackButton, label: {
+                            Image(systemName: "chevron.left")
+                                .font(.system(size: 22, weight: .semibold))
+                                .foregroundColor(.white)
+                                .frame(width: 50, height: 50)
+                                .clipShape(Circle())
+                        })
+                        .glassEffect(.clear)
+                        .padding(.bottom, 50)
+                        .transition(.opacity.animation(.easeInOut))
+                    }
+                    Spacer()
                 }
+                .padding()
                 Spacer()
             }
-            .padding()
-            Spacer()
         }
     }
     
@@ -315,10 +318,29 @@ struct OrbLiveListenView: View {
     }
 }
 
-#Preview {
-    OrbLiveListenView(
-        heartbeatSoundManager: HeartbeatSoundManager(),
-        showTimeline: .constant(false)
+//#Preview("Normal Mode") {
+//    OrbLiveListenView(
+//        heartbeatSoundManager: HeartbeatSoundManager(),
+//        showTimeline: .constant(true)
+//    )
+//    .environmentObject(ThemeManager())
+//    .modelContainer(for: SavedHeartbeat.self, inMemory: true)
+//}
+
+#Preview("Playback Mode") {
+    let manager = HeartbeatSoundManager()
+    
+    // Create a mock recording
+    let mockURL = URL(fileURLWithPath: "/mock/heartbeat-\(Date().timeIntervalSince1970).m4a")
+    let mockRecording = Recording(fileURL: mockURL, createdAt: Date())
+    
+    // Set it as the last recording to trigger playback mode
+    manager.lastRecording = mockRecording
+    
+    return OrbLiveListenView(
+        heartbeatSoundManager: manager,
+        showTimeline: .constant(true)
     )
+    .environmentObject(ThemeManager())
     .modelContainer(for: SavedHeartbeat.self, inMemory: true)
 }

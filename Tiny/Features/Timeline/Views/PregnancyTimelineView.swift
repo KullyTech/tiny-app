@@ -17,6 +17,7 @@ struct PregnancyTimelineView: View {
     @Namespace private var animation
     @State private var selectedWeek: WeekSection?
     @State private var groupedData: [WeekSection] = []
+    @EnvironmentObject var themeManager: ThemeManager
     
     // Animation support
     @StateObject private var animationController = TimelineAnimationController()
@@ -27,9 +28,9 @@ struct PregnancyTimelineView: View {
     var body: some View {
         NavigationStack {
             ZStack {
-                Color.black.ignoresSafeArea()
-                Image("backgroundPurple")
+                Image(themeManager.selectedBackground.imageName)
                     .resizable()
+                    .scaledToFill()
                     .ignoresSafeArea()
                 
                 if let week = selectedWeek {
@@ -65,59 +66,60 @@ struct PregnancyTimelineView: View {
     }
 
     private var navigationButtons: some View {
-        VStack {
-            // Top Bar
-            HStack {
-                if selectedWeek != nil {
-                    // Back Button (Detail -> List)
-                    Button {
-                        withAnimation(.spring(response: 0.6, dampingFraction: 0.75)) {
-                            selectedWeek = nil
+        GeometryReader { geometry in
+            VStack {
+                // Top Bar
+                HStack {
+                    if selectedWeek != nil {
+                        // Back Button (Detail -> List)
+                        Button {
+                            withAnimation(.spring(response: 0.6, dampingFraction: 0.75)) {
+                                selectedWeek = nil
+                            }
+                        } label: {
+                            Image(systemName: "chevron.left")
+                                .font(.system(size: 20, weight: .bold))
+                                .foregroundColor(.white)
+                                .frame(width: 50, height: 50)
+                                .clipShape(Circle())
                         }
-                    } label: {
-                        Image(systemName: "chevron.left")
-                            .font(.system(size: 20, weight: .bold))
-                            .foregroundColor(.white)
+                        .glassEffect(.clear)
+                        .matchedGeometryEffect(id: "navButton", in: animation)
+                    } else {
+                        Spacer()
+                    }
+                    
+                    Spacer()
+                    
+                    if selectedWeek == nil {
+                        NavigationLink {
+                            ProfileView()
+                        } label: {
+                            Group {
+                                if let image = userProfile.profileImage {
+                                    Image(uiImage: image)
+                                        .resizable()
+                                        .scaledToFill()
+                                } else {
+                                    Image(systemName: "person.crop.circle.fill")
+                                        .resizable()
+                                        .scaledToFit()
+                                        .foregroundColor(.white.opacity(0.8))
+                                }
+                            }
                             .frame(width: 50, height: 50)
                             .clipShape(Circle())
-                    }
-                    .glassEffect(.clear)
-                    .matchedGeometryEffect(id: "navButton", in: animation)
-                } else {
-                    Spacer()
-                }
-                
-                Spacer()
-                
-                // Profile Button (Top Right)
-                if selectedWeek == nil {
-                    NavigationLink {
-                        ProfileView()
-                    } label: {
-                        Group {
-                            if let image = userProfile.profileImage {
-                                Image(uiImage: image)
-                                    .resizable()
-                                    .scaledToFill()
-                            } else {
-                                Image(systemName: "person.crop.circle.fill")
-                                    .resizable()
-                                    .scaledToFit()
-                                    .foregroundColor(.white.opacity(0.8))
-                            }
+                            .overlay(Circle().stroke(Color.white.opacity(0.2), lineWidth: 1))
+                            .shadow(color: .black.opacity(0.2), radius: 4, x: 0, y: 2)
                         }
-                        .frame(width: 44, height: 44)
-                        .clipShape(Circle())
-                        .overlay(Circle().stroke(Color.white.opacity(0.2), lineWidth: 1))
-                        .shadow(color: .black.opacity(0.2), radius: 4, x: 0, y: 2)
+                        .opacity(isFirstTimeVisit ? (animationController.profileVisible ? 1.0 : 0.0) : 1.0)
+                        .padding()
                     }
-                    .opacity(isFirstTimeVisit ? (animationController.profileVisible ? 1.0 : 0.0) : 1.0)
                 }
-            }
-            .padding(.horizontal, 20)
-            .padding(.top, 20)
+                .padding()
 
-            Spacer()
+                Spacer()
+            }
         }
         .ignoresSafeArea(.all, edges: .bottom)
     }
@@ -128,6 +130,12 @@ struct PregnancyTimelineView: View {
         
         // Get week from parameter or UserDefaults
         let week = inputWeek ?? UserDefaults.standard.integer(forKey: "pregnancyWeek")
+        
+        print("🎬 Timeline initialization:")
+        print("   inputWeek parameter: \(inputWeek ?? -1)")
+        print("   UserDefaults week: \(UserDefaults.standard.integer(forKey: "pregnancyWeek"))")
+        print("   Final week: \(week)")
+        print("   isFirstTimeVisit: \(isFirstTimeVisit)")
         
         if isFirstTimeVisit, week > 0 {
             // First time: Create initial data with placeholder dots
@@ -142,39 +150,73 @@ struct PregnancyTimelineView: View {
             
             // Start animation after a brief delay
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                print("🎬 Starting timeline animation!")
                 self.animationController.startAnimation()
             }
             
             // Mark as seen
             UserDefaults.standard.set(true, forKey: "hasSeenTimelineAnimation")
         } else {
-            // Normal visit: Group recordings
+            // Normal visit: Group recordings and show everything immediately
+            print("📊 Normal visit - grouping recordings")
+            
+            // Set animation controller to complete state so path and orbs are visible
+            animationController.skipAnimation()
+            
             groupRecordings()
         }
     }
+    
     
     private func groupRecordings() {
         let raw = heartbeatSoundManager.savedRecordings
         print("📊 Grouping \(raw.count) recordings")
 
+        guard let currentPregnancyWeek = inputWeek else {
+            print("⚠️ No pregnancy week available, showing empty timeline")
+            groupedData = []
+            return
+        }
+        
         let calendar = Calendar.current
+        let now = Date()
+        
+        // Calculate when the pregnancy started (in weeks ago)
+        // If current pregnancy week is 20, pregnancy started 20 weeks ago
+        guard let pregnancyStartDate = calendar.date(byAdding: .weekOfYear, value: -currentPregnancyWeek, to: now) else {
+            print("⚠️ Could not calculate pregnancy start date")
+            groupedData = []
+            return
+        }
+        
+        print("📅 Pregnancy started approximately: \(pregnancyStartDate)")
+        print("📅 Current pregnancy week: \(currentPregnancyWeek)")
 
+        // Group recordings by pregnancy week
         let grouped = Dictionary(grouping: raw) { recording -> Int in
-            return calendar.component(.weekOfYear, from: recording.createdAt)
+            // Calculate how many weeks since pregnancy started
+            let weeksSinceStart = calendar.dateComponents([.weekOfYear], from: pregnancyStartDate, to: recording.createdAt).weekOfYear ?? 0
+            let pregnancyWeek = weeksSinceStart
+            print("   Recording from \(recording.createdAt) -> Pregnancy week \(pregnancyWeek)")
+            return pregnancyWeek
         }
         
         var recordedWeeks = grouped.map {
             WeekSection(weekNumber: $0.key, recordings: $0.value.sorted(by: { $0.createdAt > $1.createdAt }), type: .recorded)
         }.sorted(by: { $0.weekNumber > $1.weekNumber })  // Reversed: newest (highest week) at bottom
         
-        // Add placeholder weeks if we have inputWeek and no recordings yet
-        if let week = inputWeek, recordedWeeks.isEmpty {
-            recordedWeeks = [
-                WeekSection(weekNumber: week + 2, recordings: [], type: .placeholder),
-                WeekSection(weekNumber: week + 1, recordings: [], type: .placeholder),
-                WeekSection(weekNumber: week, recordings: [], type: .placeholder)
-            ]
+        // Always ensure we show the current week and next 2 weeks
+        let weeksToShow = [currentPregnancyWeek, currentPregnancyWeek + 1, currentPregnancyWeek + 2]
+        
+        for week in weeksToShow {
+            // If this week doesn't have recordings, add it as placeholder
+            if !recordedWeeks.contains(where: { $0.weekNumber == week }) {
+                recordedWeeks.append(WeekSection(weekNumber: week, recordings: [], type: .placeholder))
+            }
         }
+        
+        // Sort again after adding placeholders
+        recordedWeeks.sort(by: { $0.weekNumber > $1.weekNumber })
         
         self.groupedData = recordedWeeks
         
@@ -190,6 +232,8 @@ struct PregnancyTimelineView: View {
     
     // Create mock HeartbeatSoundManager with sample recordings
     let mockManager = HeartbeatSoundManager()
+    
+    let themeManager = ThemeManager()
     
     // Create sample recordings across different weeks
     let calendar = Calendar.current
@@ -271,4 +315,5 @@ struct PregnancyTimelineView: View {
         isMother: true,
         inputWeek: 20  // Test with week 20
     )
+    .environmentObject(themeManager)
 }

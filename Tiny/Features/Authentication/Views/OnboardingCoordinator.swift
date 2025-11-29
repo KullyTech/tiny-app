@@ -44,8 +44,15 @@ struct OnboardingCoordinator: View {
                 )
             case .weekInput:
                 WeekInputView(onComplete: { week in
-                    // Week is automatically saved in WeekInputView
-                    // Onboarding is complete, RootView will navigate to timeline
+                    Task {
+                        do {
+                            // Update user role and pregnancy week in Firebase
+                            try await authService.updateUserRole(role: .mother, pregnancyWeeks: week)
+                            print("✅ Successfully saved pregnancy week: \(week)")
+                        } catch {
+                            print("❌ Error saving pregnancy week: \(error.localizedDescription)")
+                        }
+                    }
                 })
             case .roomCodeInput:
                 RoomCodeInputView()

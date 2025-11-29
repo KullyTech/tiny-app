@@ -16,45 +16,56 @@ struct TimelineDetailView: View {
     
     var body: some View {
         GeometryReader { geometry in
-            VStack(spacing: 0) {
-                // 1. Header Area (Title + Hero Orb)
-                headerView
-                
-                // 2. The List of Recordings (Glowing Dots)
-                recordingsScrollView(geometry: geometry)
-            }
-        }
-    }
-    
-    private var headerView: some View {
-        VStack(spacing: 50) {
             ZStack {
-                // Title
-                Text("Week \(week.weekNumber)")
-                    .font(.system(size: 28, weight: .bold))
-                    .foregroundColor(.white)
-                    .padding(.top, 10)
+                // Background content: recordings list
+                recordingsScrollView(geometry: geometry)
+                    .padding(.top, 180) // Make space for header + orb
+                
+                // Foreground: Header with back button and title
+                VStack(spacing: 0) {
+                    // Top navigation bar
+                    HStack {
+                        // Back button placeholder (actual button is in PregnancyTimelineView)
+                        Color.clear
+                            .frame(width: 50, height: 50)
+                        
+                        Spacer()
+                        
+                        // Week title
+                        Text("Week \(week.weekNumber)")
+                            .font(.system(size: 28, weight: .bold))
+                            .foregroundColor(.white)
+                        
+                        Spacer()
+                        
+                        // Right side spacer for balance
+                        Color.clear
+                            .frame(width: 50, height: 50)
+                    }
+                    .padding(.horizontal, 20)
+                    .padding(.top, geometry.safeAreaInsets.top + 20)
+                    
+                    // Hero Orb
+                    ZStack {
+                        AnimatedOrbView(size: 115)
+                            .shadow(color: .orange.opacity(0.6), radius: 30)
+                    }
+                    .matchedGeometryEffect(id: "orb_\(week.weekNumber)", in: animation)
+                    .frame(height: 115)
+                    .padding(.top, 20)
+                    
+                    Spacer()
+                }
             }
-            .frame(maxWidth: .infinity)
-            
         }
     }
     
     private func recordingsScrollView(geometry: GeometryProxy) -> some View {
         let recordings = week.recordings
         let recSpacing: CGFloat = 100
-        let recHeight = max(geometry.size.height - 300, CGFloat(recordings.count) * recSpacing + 200)
+        let recHeight = max(geometry.size.height - 180, CGFloat(recordings.count) * recSpacing + 200)
         
         return ScrollView(showsIndicators: false) {
-            // The "Hero" Orb (Animated from previous screen)
-            ZStack {
-                AnimatedOrbView(size: 115)
-                    .shadow(color: .orange.opacity(0.6), radius: 30)
-            }
-            .matchedGeometryEffect(id: "orb_\(week.weekNumber)", in: animation)
-            .frame(height: 115)
-            .padding(.vertical, 20)
-            
             ZStack(alignment: .top) {
                 
                 // Tighter Wavy Path for details
@@ -129,4 +140,36 @@ struct TimelineDetailView: View {
         }
         return raw
     }
+}
+
+#Preview {
+    struct PreviewWrapper: View {
+        @Namespace var animation
+        
+        var mockWeek: WeekSection {
+            let dummyURL = URL(fileURLWithPath: "Heartbeat-1715421234.m4a")
+            
+            let rec1 = Recording(fileURL: dummyURL, createdAt: Date())
+            let rec2 = Recording(fileURL: dummyURL, createdAt: Date().addingTimeInterval(-3600)) // 1 hour ago
+            
+            // Assuming WeekSection is a simple struct. Adjust if needed.
+            return WeekSection(weekNumber: 24, recordings: [rec1, rec2, rec1])
+        }
+        
+        var body: some View {
+            TimelineDetailView(
+                week: mockWeek,
+                animation: animation,
+                onSelectRecording: { recording in
+                    print("Selected: \(recording.createdAt)")
+                },
+                isMother: true
+            )
+            // Dark background to visualize the white text/glowing effects
+            .background(Color(red: 0.1, green: 0.1, blue: 0.2))
+            .environmentObject(ThemeManager())
+        }
+    }
+    
+    return PreviewWrapper()
 }
