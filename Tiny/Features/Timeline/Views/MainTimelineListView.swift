@@ -34,10 +34,10 @@ struct MainTimelineListView: View {
                 ScrollView(showsIndicators: false) {
                     ScrollViewReader { proxy in
                         ZStack(alignment: .top) {
-                            let orbPositions = groupedData.enumerated().map { index, _ in
+                            let orbPositions = groupedData.indices.map { index in
                                 topPadding + (CGFloat(index) * itemSpacing)
                             }
-                            
+
                             SegmentedWave(
                                 totalHeight: contentHeight,
                                 period: wavePeriod,
@@ -84,7 +84,8 @@ struct MainTimelineListView: View {
                                             } else {
                                                 // Show dots for future weeks during animation
                                                 let reversedIndex = lastIndex - index
-                                                if reversedIndex < animationController.dotsVisible.count && animationController.dotsVisible[reversedIndex] {
+                                                if reversedIndex < animationController.dotsVisible.count &&
+                                                    animationController.dotsVisible[reversedIndex] {
                                                     PlaceholderDot()
                                                 }
                                             }

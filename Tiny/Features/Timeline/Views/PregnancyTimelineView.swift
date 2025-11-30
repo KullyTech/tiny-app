@@ -66,7 +66,7 @@ struct PregnancyTimelineView: View {
     }
 
     private var navigationButtons: some View {
-        GeometryReader { geometry in
+        GeometryReader { _ in
             VStack {
                 // Top Bar
                 HStack {
@@ -166,8 +166,7 @@ struct PregnancyTimelineView: View {
             groupRecordings()
         }
     }
-    
-    
+
     private func groupRecordings() {
         let raw = heartbeatSoundManager.savedRecordings
         print("📊 Grouping \(raw.count) recordings")
@@ -208,13 +207,12 @@ struct PregnancyTimelineView: View {
         // Always ensure we show the current week and next 2 weeks
         let weeksToShow = [currentPregnancyWeek, currentPregnancyWeek + 1, currentPregnancyWeek + 2]
         
-        for week in weeksToShow {
-            // If this week doesn't have recordings, add it as placeholder
-            if !recordedWeeks.contains(where: { $0.weekNumber == week }) {
-                recordedWeeks.append(WeekSection(weekNumber: week, recordings: [], type: .placeholder))
-            }
+        for week in weeksToShow where !recordedWeeks.contains(where: { $0.weekNumber == week }) {
+            recordedWeeks.append(
+                WeekSection(weekNumber: week, recordings: [], type: .placeholder)
+            )
         }
-        
+
         // Sort again after adding placeholders
         recordedWeeks.sort(by: { $0.weekNumber > $1.weekNumber })
         
@@ -242,15 +240,35 @@ struct PregnancyTimelineView: View {
     // 10 weeks of data going back in time
     // Week 1 (9 weeks ago): 2 recordings
     if let weekDate = calendar.date(byAdding: .day, value: -63, to: now) {
-        mockManager.savedRecordings.append(Recording(fileURL: URL(fileURLWithPath: "/mock/week1-rec1.wav"), createdAt: weekDate))
-        mockManager.savedRecordings.append(Recording(fileURL: URL(fileURLWithPath: "/mock/week1-rec2.wav"), createdAt: weekDate.addingTimeInterval(3600)))
+        mockManager.savedRecordings.append(
+            Recording(
+                fileURL: URL(fileURLWithPath: "/mock/week1-rec1.wav"),
+                createdAt: weekDate
+            )
+        )
+        mockManager.savedRecordings.append(
+            Recording(
+                fileURL: URL(fileURLWithPath: "/mock/week1-rec2.wav"),
+                createdAt: weekDate.addingTimeInterval(3600)
+            )
+        )
     }
     
     // Week 2 (8 weeks ago): 3 recordings
     if let weekDate = calendar.date(byAdding: .day, value: -56, to: now) {
         mockManager.savedRecordings.append(Recording(fileURL: URL(fileURLWithPath: "/mock/week2-rec1.wav"), createdAt: weekDate))
-        mockManager.savedRecordings.append(Recording(fileURL: URL(fileURLWithPath: "/mock/week2-rec2.wav"), createdAt: weekDate.addingTimeInterval(7200)))
-        mockManager.savedRecordings.append(Recording(fileURL: URL(fileURLWithPath: "/mock/week2-rec3.wav"), createdAt: weekDate.addingTimeInterval(14400)))
+        mockManager.savedRecordings.append(
+            Recording(
+                fileURL: URL(fileURLWithPath: "/mock/week2-rec2.wav"),
+                createdAt: weekDate.addingTimeInterval(7200)
+            )
+        )
+        mockManager.savedRecordings.append(
+            Recording(
+                fileURL: URL(fileURLWithPath: "/mock/week2-rec3.wav"),
+                createdAt: weekDate.addingTimeInterval(14400)
+            )
+        )
     }
     
     // Week 3 (7 weeks ago): 1 recording
@@ -261,35 +279,98 @@ struct PregnancyTimelineView: View {
     // Week 4 (6 weeks ago): 4 recordings
     if let weekDate = calendar.date(byAdding: .day, value: -42, to: now) {
         mockManager.savedRecordings.append(Recording(fileURL: URL(fileURLWithPath: "/mock/week4-rec1.wav"), createdAt: weekDate))
-        mockManager.savedRecordings.append(Recording(fileURL: URL(fileURLWithPath: "/mock/week4-rec2.wav"), createdAt: weekDate.addingTimeInterval(3600)))
-        mockManager.savedRecordings.append(Recording(fileURL: URL(fileURLWithPath: "/mock/week4-rec3.wav"), createdAt: weekDate.addingTimeInterval(7200)))
-        mockManager.savedRecordings.append(Recording(fileURL: URL(fileURLWithPath: "/mock/week4-rec4.wav"), createdAt: weekDate.addingTimeInterval(10800)))
+        mockManager.savedRecordings.append(
+            Recording(
+                fileURL: URL(fileURLWithPath: "/mock/week4-rec2.wav"),
+                createdAt: weekDate.addingTimeInterval(3600)
+            )
+        )
+        mockManager.savedRecordings.append(
+            Recording(
+                fileURL: URL(fileURLWithPath: "/mock/week4-rec3.wav"),
+                createdAt: weekDate.addingTimeInterval(7200)))
+        mockManager.savedRecordings.append(
+            Recording(
+                fileURL: URL(fileURLWithPath: "/mock/week4-rec4.wav"),
+                createdAt: weekDate.addingTimeInterval(10800)
+            )
+        )
     }
     
     // Week 5 (5 weeks ago): 2 recordings
     if let weekDate = calendar.date(byAdding: .day, value: -35, to: now) {
-        mockManager.savedRecordings.append(Recording(fileURL: URL(fileURLWithPath: "/mock/week5-rec1.wav"), createdAt: weekDate))
-        mockManager.savedRecordings.append(Recording(fileURL: URL(fileURLWithPath: "/mock/week5-rec2.wav"), createdAt: weekDate.addingTimeInterval(5400)))
+        mockManager.savedRecordings.append(
+            Recording(
+                fileURL: URL(fileURLWithPath: "/mock/week5-rec1.wav"),
+                createdAt: weekDate
+            )
+        )
+        mockManager.savedRecordings.append(
+            Recording(
+                fileURL: URL(fileURLWithPath: "/mock/week5-rec2.wav"),
+                createdAt: weekDate.addingTimeInterval(5400)
+            )
+        )
     }
-    
+
     // Week 6 (4 weeks ago): 3 recordings
     if let weekDate = calendar.date(byAdding: .day, value: -28, to: now) {
-        mockManager.savedRecordings.append(Recording(fileURL: URL(fileURLWithPath: "/mock/week6-rec1.wav"), createdAt: weekDate))
-        mockManager.savedRecordings.append(Recording(fileURL: URL(fileURLWithPath: "/mock/week6-rec2.wav"), createdAt: weekDate.addingTimeInterval(3600)))
-        mockManager.savedRecordings.append(Recording(fileURL: URL(fileURLWithPath: "/mock/week6-rec3.wav"), createdAt: weekDate.addingTimeInterval(7200)))
+        mockManager.savedRecordings.append(
+            Recording(
+                fileURL: URL(fileURLWithPath: "/mock/week6-rec1.wav"),
+                createdAt: weekDate
+            )
+        )
+        mockManager.savedRecordings.append(
+            Recording(
+                fileURL: URL(fileURLWithPath: "/mock/week6-rec2.wav"),
+                createdAt: weekDate.addingTimeInterval(3600)
+            )
+        )
+        mockManager.savedRecordings.append(
+            Recording(
+                fileURL: URL(fileURLWithPath: "/mock/week6-rec3.wav"),
+                createdAt: weekDate.addingTimeInterval(7200)
+            )
+        )
     }
-    
+
     // Week 7 (3 weeks ago): 2 recordings
     if let weekDate = calendar.date(byAdding: .day, value: -21, to: now) {
-        mockManager.savedRecordings.append(Recording(fileURL: URL(fileURLWithPath: "/mock/week7-rec1.wav"), createdAt: weekDate))
-        mockManager.savedRecordings.append(Recording(fileURL: URL(fileURLWithPath: "/mock/week7-rec2.wav"), createdAt: weekDate.addingTimeInterval(4800)))
+        mockManager.savedRecordings.append(
+            Recording(
+                fileURL: URL(fileURLWithPath: "/mock/week7-rec1.wav"),
+                createdAt: weekDate
+            )
+        )
+        mockManager.savedRecordings.append(
+            Recording(
+                fileURL: URL(fileURLWithPath: "/mock/week7-rec2.wav"),
+                createdAt: weekDate.addingTimeInterval(4800)
+            )
+        )
     }
-    
+
     // Week 8 (2 weeks ago): 3 recordings
     if let weekDate = calendar.date(byAdding: .day, value: -14, to: now) {
-        mockManager.savedRecordings.append(Recording(fileURL: URL(fileURLWithPath: "/mock/week8-rec1.wav"), createdAt: weekDate))
-        mockManager.savedRecordings.append(Recording(fileURL: URL(fileURLWithPath: "/mock/week8-rec2.wav"), createdAt: weekDate.addingTimeInterval(3600)))
-        mockManager.savedRecordings.append(Recording(fileURL: URL(fileURLWithPath: "/mock/week8-rec3.wav"), createdAt: weekDate.addingTimeInterval(7200)))
+        mockManager.savedRecordings.append(
+            Recording(
+                fileURL: URL(fileURLWithPath: "/mock/week8-rec1.wav"),
+                createdAt: weekDate
+            )
+        )
+        mockManager.savedRecordings.append(
+            Recording(
+                fileURL: URL(fileURLWithPath: "/mock/week8-rec2.wav"),
+                createdAt: weekDate.addingTimeInterval(3600)
+            )
+        )
+        mockManager.savedRecordings.append(
+            Recording(
+                fileURL: URL(fileURLWithPath: "/mock/week8-rec3.wav"),
+                createdAt: weekDate.addingTimeInterval(7200)
+            )
+        )
     }
     
     // Week 9 (1 week ago): 1 recording
