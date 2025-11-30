@@ -11,12 +11,14 @@ struct PregnancyTimelineView: View {
     @ObservedObject var heartbeatSoundManager: HeartbeatSoundManager
     @Binding var showTimeline: Bool
     let onSelectRecording: (Recording) -> Void
+    let onDisableSwipe: (Bool) -> Void  // Callback to disable TabView swipe
     let isMother: Bool  // Add this parameter
     var inputWeek: Int?  // Week from onboarding input
     
     @Namespace private var animation
     @State private var selectedWeek: WeekSection?
     @State private var groupedData: [WeekSection] = []
+    @State private var isProfilePresented = false
     @EnvironmentObject var themeManager: ThemeManager
     
     // Animation support
@@ -31,6 +33,7 @@ struct PregnancyTimelineView: View {
                 Image(themeManager.selectedBackground.imageName)
                     .resizable()
                     .scaledToFill()
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
                     .ignoresSafeArea()
                 
                 if let week = selectedWeek {
@@ -38,6 +41,7 @@ struct PregnancyTimelineView: View {
                         week: week,
                         animation: animation,
                         onSelectRecording: onSelectRecording,
+                        heartbeatSoundManager: heartbeatSoundManager,
                         isMother: isMother
                     )
                     .transition(.opacity)
@@ -47,11 +51,68 @@ struct PregnancyTimelineView: View {
                         selectedWeek: $selectedWeek,
                         animation: animation,
                         animationController: animationController,
-                        isFirstTimeVisit: isFirstTimeVisit
+                        isFirstTimeVisit: isFirstTimeVisit,
+//                        isMother: isMother
                     )
                     .transition(.opacity)
                 }
-                navigationButtons
+                
+                // Top navigation bar
+                GeometryReader { geometry in
+                    VStack {
+                        HStack {
+                            if selectedWeek != nil {
+                                Button {
+                                    withAnimation(.spring(response: 0.6, dampingFraction: 0.8)) {
+                                        selectedWeek = nil
+                                    }
+                                } label: {
+                                    Image(systemName: "chevron.left")
+                                        .font(.system(size: 20, weight: .bold))
+                                        .foregroundColor(.white)
+                                        .frame(width: 50, height: 50)
+                                }
+                                .glassEffect(.clear)
+                                .matchedGeometryEffect(id: "navButton", in: animation)
+                            } else {
+                                Spacer()
+                            }
+                            
+                            Spacer()
+                            
+                            if selectedWeek == nil {
+                                Button {
+                                    isProfilePresented = true
+                                } label: {
+                                    Group {
+                                        if let image = userProfile.profileImage {
+                                            Image(uiImage: image)
+                                                .resizable()
+                                                .scaledToFill()
+                                        } else {
+                                            Image(systemName: "person.crop.circle.fill")
+                                                .resizable()
+                                                .scaledToFit()
+                                                .foregroundColor(.white.opacity(0.8))
+                                        }
+                                    }
+                                    .frame(width: 50, height: 50)
+                                    .clipShape(Circle())
+                                    .overlay(Circle().stroke(Color.white.opacity(0.2), lineWidth: 1))
+                                    .shadow(color: .black.opacity(0.2), radius: 4, x: 0, y: 2)
+                                }
+                                .opacity(isFirstTimeVisit ? (animationController.profileVisible ? 1.0 : 0.0) : 1.0)
+                                .navigationDestination(isPresented: $isProfilePresented) {
+                                    ProfileView()
+                                }
+                            }
+                        }
+                        .padding(.horizontal, 20)
+                        .padding(.top, geometry.safeAreaInsets.top + 39)
+                        
+                        Spacer()
+                    }
+                }
             }
             .onAppear(perform: groupRecordings)
         }
@@ -63,65 +124,11 @@ struct PregnancyTimelineView: View {
             print("Recordings changed: \(oldValue.count) -> \(newValue.count)")
             groupRecordings()
         }
-    }
-
-    private var navigationButtons: some View {
-        GeometryReader { _ in
-            VStack {
-                // Top Bar
-                HStack {
-                    if selectedWeek != nil {
-                        // Back Button (Detail -> List)
-                        Button {
-                            withAnimation(.spring(response: 0.6, dampingFraction: 0.75)) {
-                                selectedWeek = nil
-                            }
-                        } label: {
-                            Image(systemName: "chevron.left")
-                                .font(.system(size: 20, weight: .bold))
-                                .foregroundColor(.white)
-                                .frame(width: 50, height: 50)
-                                .clipShape(Circle())
-                        }
-                        .glassEffect(.clear)
-                        .matchedGeometryEffect(id: "navButton", in: animation)
-                    } else {
-                        Spacer()
-                    }
-                    
-                    Spacer()
-                    
-                    if selectedWeek == nil {
-                        NavigationLink {
-                            ProfileView()
-                        } label: {
-                            Group {
-                                if let image = userProfile.profileImage {
-                                    Image(uiImage: image)
-                                        .resizable()
-                                        .scaledToFill()
-                                } else {
-                                    Image(systemName: "person.crop.circle.fill")
-                                        .resizable()
-                                        .scaledToFit()
-                                        .foregroundColor(.white.opacity(0.8))
-                                }
-                            }
-                            .frame(width: 50, height: 50)
-                            .clipShape(Circle())
-                            .overlay(Circle().stroke(Color.white.opacity(0.2), lineWidth: 1))
-                            .shadow(color: .black.opacity(0.2), radius: 4, x: 0, y: 2)
-                        }
-                        .opacity(isFirstTimeVisit ? (animationController.profileVisible ? 1.0 : 0.0) : 1.0)
-                        .padding()
-                    }
-                }
-                .padding()
-
-                Spacer()
-            }
+        .onChange(of: isProfilePresented) { _, newValue in
+            // Disable TabView swipe when ProfileView is presented
+            print("🔄 Profile presented changed: \(newValue)")
+            onDisableSwipe(newValue)
         }
-        .ignoresSafeArea(.all, edges: .bottom)
     }
     
     private func initializeTimeline() {
@@ -166,12 +173,12 @@ struct PregnancyTimelineView: View {
             groupRecordings()
         }
     }
-
+    
     private func groupRecordings() {
         let raw = heartbeatSoundManager.savedRecordings
         print("📊 Grouping \(raw.count) recordings")
 
-        guard let currentPregnancyWeek = inputWeek else {
+        guard let initialPregnancyWeek = inputWeek else {
             print("⚠️ No pregnancy week available, showing empty timeline")
             groupedData = []
             return
@@ -180,16 +187,31 @@ struct PregnancyTimelineView: View {
         let calendar = Calendar.current
         let now = Date()
         
-        // Calculate when the pregnancy started (in weeks ago)
-        // If current pregnancy week is 20, pregnancy started 20 weeks ago
-        guard let pregnancyStartDate = calendar.date(byAdding: .weekOfYear, value: -currentPregnancyWeek, to: now) else {
-            print("⚠️ Could not calculate pregnancy start date")
+        // Store initial pregnancy week and date in UserDefaults if not already stored
+        if UserDefaults.standard.object(forKey: "pregnancyStartDate") == nil {
+            let pregnancyStartDate = calendar.date(byAdding: .weekOfYear, value: -initialPregnancyWeek, to: now)!
+            UserDefaults.standard.set(pregnancyStartDate, forKey: "pregnancyStartDate")
+            UserDefaults.standard.set(initialPregnancyWeek, forKey: "initialPregnancyWeek")
+            print("💾 Stored pregnancy start date: \(pregnancyStartDate)")
+        }
+        
+        // Get the stored pregnancy start date
+        guard let storedDate = UserDefaults.standard.object(forKey: "pregnancyStartDate") as? Date else {
+            print("⚠️ Could not get pregnancy start date")
             groupedData = []
             return
         }
+        // Normalize to start of day to avoid time-based drift
+        let pregnancyStartDate = calendar.startOfDay(for: storedDate)
         
-        print("📅 Pregnancy started approximately: \(pregnancyStartDate)")
-        print("📅 Current pregnancy week: \(currentPregnancyWeek)")
+        // Calculate CURRENT pregnancy week based on time elapsed since pregnancy start
+        let weeksSinceStart = calendar.dateComponents([.weekOfYear], from: pregnancyStartDate, to: now).weekOfYear ?? 0
+        let currentPregnancyWeek = weeksSinceStart
+        
+        print("📅 Pregnancy started: \(pregnancyStartDate)")
+        print("📅 Initial pregnancy week: \(initialPregnancyWeek)")
+        print("📅 Current pregnancy week (calculated): \(currentPregnancyWeek)")
+        print("📅 Weeks elapsed: \(currentPregnancyWeek - initialPregnancyWeek)")
 
         // Group recordings by pregnancy week
         let grouped = Dictionary(grouping: raw) { recording -> Int in
@@ -204,7 +226,7 @@ struct PregnancyTimelineView: View {
             WeekSection(weekNumber: $0.key, recordings: $0.value.sorted(by: { $0.createdAt > $1.createdAt }), type: .recorded)
         }.sorted(by: { $0.weekNumber > $1.weekNumber })  // Reversed: newest (highest week) at bottom
         
-        // Always ensure we show the current week and next 2 weeks
+        // Show current week + next 2 weeks (as placeholders if no recordings)
         let weeksToShow = [currentPregnancyWeek, currentPregnancyWeek + 1, currentPregnancyWeek + 2]
         
         for week in weeksToShow where !recordedWeeks.contains(where: { $0.weekNumber == week }) {
@@ -227,174 +249,63 @@ struct PregnancyTimelineView: View {
 
 #Preview {
     @Previewable @State var showTimeline = true
-    
-    // Create mock HeartbeatSoundManager with sample recordings
+
     let mockManager = HeartbeatSoundManager()
-    
     let themeManager = ThemeManager()
-    
-    // Create sample recordings across different weeks
     let calendar = Calendar.current
     let now = Date()
-    
-    // 10 weeks of data going back in time
-    // Week 1 (9 weeks ago): 2 recordings
-    if let weekDate = calendar.date(byAdding: .day, value: -63, to: now) {
-        mockManager.savedRecordings.append(
-            Recording(
-                fileURL: URL(fileURLWithPath: "/mock/week1-rec1.wav"),
-                createdAt: weekDate
-            )
-        )
-        mockManager.savedRecordings.append(
-            Recording(
-                fileURL: URL(fileURLWithPath: "/mock/week1-rec2.wav"),
-                createdAt: weekDate.addingTimeInterval(3600)
-            )
-        )
+
+    // Sample mock data per week
+    let mockData: [(weeksAgo: Int, count: Int)] = [
+        (9, 2), // Week 1
+        (8, 3), // Week 2
+        (7, 1), // Week 3
+        (6, 4), // Week 4
+        (5, 2), // Week 5
+        (4, 3), // Week 6
+        (3, 2), // Week 7
+        (2, 3), // Week 8
+        (1, 1)  // Week 9
+    ]
+
+    // Generate weeks 1–9
+    for (weeksAgo, count) in mockData {
+        if let weekDate = calendar.date(byAdding: .day, value: -(weeksAgo * 7), to: now) {
+            for index in 0..<count {
+                let file = "/mock/week\(weeksAgo)-rec\(index + 1).wav"
+                let createdAt = weekDate.addingTimeInterval(Double(index) * 3600)
+                mockManager.savedRecordings.append(
+                    Recording(
+                        fileURL: URL(fileURLWithPath: file),
+                        createdAt: createdAt
+                    )
+                )
+            }
+        }
     }
-    
-    // Week 2 (8 weeks ago): 3 recordings
-    if let weekDate = calendar.date(byAdding: .day, value: -56, to: now) {
-        mockManager.savedRecordings.append(Recording(fileURL: URL(fileURLWithPath: "/mock/week2-rec1.wav"), createdAt: weekDate))
+
+    // Current week (Week 10)
+    let currentWeekTimes: [TimeInterval] = [-10800, -7200, -3600, 0]
+    for (index, time) in currentWeekTimes.enumerated() {
         mockManager.savedRecordings.append(
             Recording(
-                fileURL: URL(fileURLWithPath: "/mock/week2-rec2.wav"),
-                createdAt: weekDate.addingTimeInterval(7200)
-            )
-        )
-        mockManager.savedRecordings.append(
-            Recording(
-                fileURL: URL(fileURLWithPath: "/mock/week2-rec3.wav"),
-                createdAt: weekDate.addingTimeInterval(14400)
-            )
-        )
-    }
-    
-    // Week 3 (7 weeks ago): 1 recording
-    if let weekDate = calendar.date(byAdding: .day, value: -49, to: now) {
-        mockManager.savedRecordings.append(Recording(fileURL: URL(fileURLWithPath: "/mock/week3-rec1.wav"), createdAt: weekDate))
-    }
-    
-    // Week 4 (6 weeks ago): 4 recordings
-    if let weekDate = calendar.date(byAdding: .day, value: -42, to: now) {
-        mockManager.savedRecordings.append(Recording(fileURL: URL(fileURLWithPath: "/mock/week4-rec1.wav"), createdAt: weekDate))
-        mockManager.savedRecordings.append(
-            Recording(
-                fileURL: URL(fileURLWithPath: "/mock/week4-rec2.wav"),
-                createdAt: weekDate.addingTimeInterval(3600)
-            )
-        )
-        mockManager.savedRecordings.append(
-            Recording(
-                fileURL: URL(fileURLWithPath: "/mock/week4-rec3.wav"),
-                createdAt: weekDate.addingTimeInterval(7200)))
-        mockManager.savedRecordings.append(
-            Recording(
-                fileURL: URL(fileURLWithPath: "/mock/week4-rec4.wav"),
-                createdAt: weekDate.addingTimeInterval(10800)
-            )
-        )
-    }
-    
-    // Week 5 (5 weeks ago): 2 recordings
-    if let weekDate = calendar.date(byAdding: .day, value: -35, to: now) {
-        mockManager.savedRecordings.append(
-            Recording(
-                fileURL: URL(fileURLWithPath: "/mock/week5-rec1.wav"),
-                createdAt: weekDate
-            )
-        )
-        mockManager.savedRecordings.append(
-            Recording(
-                fileURL: URL(fileURLWithPath: "/mock/week5-rec2.wav"),
-                createdAt: weekDate.addingTimeInterval(5400)
+                fileURL: URL(fileURLWithPath: "/mock/week10-rec\(index + 1).wav"),
+                createdAt: now.addingTimeInterval(time)
             )
         )
     }
 
-    // Week 6 (4 weeks ago): 3 recordings
-    if let weekDate = calendar.date(byAdding: .day, value: -28, to: now) {
-        mockManager.savedRecordings.append(
-            Recording(
-                fileURL: URL(fileURLWithPath: "/mock/week6-rec1.wav"),
-                createdAt: weekDate
-            )
-        )
-        mockManager.savedRecordings.append(
-            Recording(
-                fileURL: URL(fileURLWithPath: "/mock/week6-rec2.wav"),
-                createdAt: weekDate.addingTimeInterval(3600)
-            )
-        )
-        mockManager.savedRecordings.append(
-            Recording(
-                fileURL: URL(fileURLWithPath: "/mock/week6-rec3.wav"),
-                createdAt: weekDate.addingTimeInterval(7200)
-            )
-        )
-    }
-
-    // Week 7 (3 weeks ago): 2 recordings
-    if let weekDate = calendar.date(byAdding: .day, value: -21, to: now) {
-        mockManager.savedRecordings.append(
-            Recording(
-                fileURL: URL(fileURLWithPath: "/mock/week7-rec1.wav"),
-                createdAt: weekDate
-            )
-        )
-        mockManager.savedRecordings.append(
-            Recording(
-                fileURL: URL(fileURLWithPath: "/mock/week7-rec2.wav"),
-                createdAt: weekDate.addingTimeInterval(4800)
-            )
-        )
-    }
-
-    // Week 8 (2 weeks ago): 3 recordings
-    if let weekDate = calendar.date(byAdding: .day, value: -14, to: now) {
-        mockManager.savedRecordings.append(
-            Recording(
-                fileURL: URL(fileURLWithPath: "/mock/week8-rec1.wav"),
-                createdAt: weekDate
-            )
-        )
-        mockManager.savedRecordings.append(
-            Recording(
-                fileURL: URL(fileURLWithPath: "/mock/week8-rec2.wav"),
-                createdAt: weekDate.addingTimeInterval(3600)
-            )
-        )
-        mockManager.savedRecordings.append(
-            Recording(
-                fileURL: URL(fileURLWithPath: "/mock/week8-rec3.wav"),
-                createdAt: weekDate.addingTimeInterval(7200)
-            )
-        )
-    }
-    
-    // Week 9 (1 week ago): 1 recording
-    if let weekDate = calendar.date(byAdding: .day, value: -7, to: now) {
-        mockManager.savedRecordings.append(Recording(fileURL: URL(fileURLWithPath: "/mock/week9-rec1.wav"), createdAt: weekDate))
-    }
-    
-    // Week 10 (current week): 4 recordings
-    mockManager.savedRecordings.append(Recording(fileURL: URL(fileURLWithPath: "/mock/week10-rec1.wav"), createdAt: now.addingTimeInterval(-10800)))
-    mockManager.savedRecordings.append(Recording(fileURL: URL(fileURLWithPath: "/mock/week10-rec2.wav"), createdAt: now.addingTimeInterval(-7200)))
-    mockManager.savedRecordings.append(Recording(fileURL: URL(fileURLWithPath: "/mock/week10-rec3.wav"), createdAt: now.addingTimeInterval(-3600)))
-    mockManager.savedRecordings.append(Recording(fileURL: URL(fileURLWithPath: "/mock/week10-rec4.wav"), createdAt: now))
-    
-    // Reset animation flag to see the animation every time
     UserDefaults.standard.set(false, forKey: "hasSeenTimelineAnimation")
-    
+
     return PregnancyTimelineView(
         heartbeatSoundManager: mockManager,
         showTimeline: $showTimeline,
         onSelectRecording: { recording in
             print("Selected recording: \(recording.fileURL.lastPathComponent)")
         },
+        onDisableSwipe: { _ in },
         isMother: true,
-        inputWeek: 20  // Test with week 20
+        inputWeek: 20
     )
     .environmentObject(themeManager)
 }

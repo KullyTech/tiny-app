@@ -10,7 +10,9 @@ import SwiftData
 internal import Combine
 
 class HeartbeatMainViewModel: ObservableObject {
-    @Published var currentPage = 0  // 0 = Timeline (left), 1 = Orb (right)
+    @Published var currentPage: Int = 0
+    @Published var allowTabViewSwipe: Bool = true
+    @Published var selectedRecording: Recording?
     let heartbeatSoundManager = HeartbeatSoundManager()
     
     func setupManager(
@@ -31,13 +33,9 @@ class HeartbeatMainViewModel: ObservableObject {
     func handleRecordingSelection(_ recording: Recording) {
         print("🎵 Recording selected: \(recording.fileURL.lastPathComponent)")
         
-        // Set as last recording (but don't auto-play)
-        heartbeatSoundManager.lastRecording = recording
-        
-        // Switch to orb view (page 1) for playback
-        // User will need to tap the orb to start playback
+        // Show SavedRecordingPlaybackView
         withAnimation(.spring(response: 0.6, dampingFraction: 0.8)) {
-            currentPage = 1
+            selectedRecording = recording
         }
     }
 }

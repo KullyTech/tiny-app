@@ -14,6 +14,7 @@ class SavedHeartbeat {
     @Attribute(.unique) var id: UUID
     var filePath: String // Local file path
     var timestamp: Date
+    var displayName: String? // Custom name for the recording
     
     // Firebase fields
     var firebaseId: String? // Document ID in Firestore (for metadata)
@@ -26,6 +27,7 @@ class SavedHeartbeat {
     
     init(filePath: String,
          timestamp: Date = Date(),
+         displayName: String? = nil,
          motherUserId: String? = nil,
          roomCode: String? = nil,
          isShared: Bool = true,  // Changed default from false to true
@@ -36,6 +38,7 @@ class SavedHeartbeat {
         self.id = UUID()
         self.filePath = filePath
         self.timestamp = timestamp
+        self.displayName = displayName
         self.motherUserId = motherUserId
         self.roomCode = roomCode
         self.isShared = isShared
@@ -55,6 +58,9 @@ extension SavedHeartbeat {
             "isSyncedToCloud": isSyncedToCloud
         ]
         
+        if let displayName = displayName {
+            dict["displayName"] = displayName
+        }
         if let motherUserId = motherUserId {
             dict["motherUserId"] = motherUserId
         }
@@ -79,6 +85,7 @@ extension SavedHeartbeat {
         return SavedHeartbeat(
             filePath: "", // Will be set after downloading
             timestamp: timestamp,
+            displayName: data["displayName"] as? String,
             motherUserId: data["motherUserId"] as? String,
             roomCode: data["roomCode"] as? String,
             isShared: data["isShared"] as? Bool ?? false,

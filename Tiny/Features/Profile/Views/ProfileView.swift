@@ -246,7 +246,20 @@ struct ProfileView: View {
     }
 
     private func featureCardRight(width: CGFloat) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
+        // Calculate current pregnancy week dynamically
+        let currentWeek: Int = {
+            guard let pregnancyStartDate = UserDefaults.standard.object(forKey: "pregnancyStartDate") as? Date else {
+                // Fallback to user's stored pregnancy week if start date not available
+                return authService.currentUser?.pregnancyWeeks ?? 0
+            }
+            
+            let calendar = Calendar.current
+            let now = Date()
+            let weeksSinceStart = calendar.dateComponents([.weekOfYear], from: pregnancyStartDate, to: now).weekOfYear ?? 0
+            return weeksSinceStart
+        }()
+        
+        return VStack(alignment: .leading, spacing: 8) {
             HStack {
                 Image(systemName: "calendar")
                     .font(.caption)
@@ -259,7 +272,7 @@ struct ProfileView: View {
             Spacer()
 
             VStack(alignment: .center, spacing: 4) {
-                Text("20")
+                Text("\(currentWeek)")
                     .font(.title)
                     .fontWeight(.bold)
                     .foregroundColor(Color("mainViolet"))
@@ -484,45 +497,6 @@ private struct PhotoPickerButton: View {
             .cornerRadius(12)
         }
         .buttonStyle(.plain)
-    }
-}
-
-struct ImagePicker: UIViewControllerRepresentable {
-    @Binding var image: UIImage?
-    let sourceType: UIImagePickerController.SourceType
-    @Environment(\.dismiss) var dismiss
-
-    func makeUIViewController(context: Context) -> UIImagePickerController {
-        let picker = UIImagePickerController()
-        picker.sourceType = sourceType
-        picker.delegate = context.coordinator
-        picker.allowsEditing = false
-        return picker
-    }
-
-    func updateUIViewController(_ uiViewController: UIImagePickerController, context: Context) {}
-
-    func makeCoordinator() -> Coordinator {
-        Coordinator(self)
-    }
-
-    class Coordinator: NSObject, UIImagePickerControllerDelegate, UINavigationControllerDelegate {
-        let parent: ImagePicker
-
-        init(_ parent: ImagePicker) {
-            self.parent = parent
-        }
-
-        func imagePickerController(_ picker: UIImagePickerController, didFinishPickingMediaWithInfo info: [UIImagePickerController.InfoKey: Any]) {
-            if let image = info[.originalImage] as? UIImage {
-                parent.image = image
-            }
-            parent.dismiss()
-        }
-
-        func imagePickerControllerDidCancel(_ picker: UIImagePickerController) {
-            parent.dismiss()
-        }
     }
 }
 

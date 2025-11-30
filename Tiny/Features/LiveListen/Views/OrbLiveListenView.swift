@@ -1,9 +1,13 @@
 import SwiftUI
 import SwiftData
 
+// swiftlint:disable type_body_length
 struct OrbLiveListenView: View {
     @State private var showThemeCustomization = false
     @EnvironmentObject var themeManager: ThemeManager
+    
+    @State private var showSuccessAlert = false
+    @State private var successMessage = (title: "", subtitle: "")
     @Environment(\.modelContext) private var modelContext
     
     @ObservedObject var heartbeatSoundManager: HeartbeatSoundManager
@@ -18,19 +22,75 @@ struct OrbLiveListenView: View {
         GeometryReader { geometry in
             ZStack {
                 backgroundView
+                    .animation(.easeOut(duration: 0.2), value: viewModel.isDraggingToSave)
+                    .animation(.easeOut(duration: 0.2), value: viewModel.isDraggingToDelete)
+                
                 topControlsView
+                    .opacity(viewModel.isDraggingToSave || viewModel.isDraggingToDelete ? 0.0 : 1.0)
+                    .animation(.easeOut(duration: 0.2), value: viewModel.isDraggingToSave)
+                    .animation(.easeOut(duration: 0.2), value: viewModel.isDraggingToDelete)
+                
                 statusTextView
+                    .opacity(viewModel.isDraggingToSave || viewModel.isDraggingToDelete ? 0.0 : 1.0)
+                    .animation(.easeOut(duration: 0.2), value: viewModel.isDraggingToSave)
+                    .animation(.easeOut(duration: 0.2), value: viewModel.isDraggingToDelete)
+                
                 orbView(geometry: geometry)
                 
                 // Save/Library Button (Only visible when dragging)
                 saveButton(geometry: geometry)
                 
+                // Delete Button (Only visible when dragging up)
+                deleteButton(geometry: geometry)
+                
                 // Floating Button to Open Timeline manually
-                if !viewModel.isListening && !viewModel.isDraggingToSave {
+                if !viewModel.isListening && !viewModel.isDraggingToSave && !viewModel.isDraggingToDelete {
                     libraryOpenButton(geometry: geometry)
+                        .opacity(viewModel.isDraggingToSave || viewModel.isDraggingToDelete ? 0.0 : 1.0)
+                        .animation(.easeOut(duration: 0.2), value: viewModel.isDraggingToSave)
+                        .animation(.easeOut(duration: 0.2), value: viewModel.isDraggingToDelete)
                 }
                 
                 coachMarkView
+                
+                // Success Alert with dark overlay
+                if showSuccessAlert {
+                    ZStack {
+                        // Dark overlay
+                        Color.black.opacity(0.6)
+                            .ignoresSafeArea()
+                        
+                        // Alert on top
+                        VStack {
+                            HStack(spacing: 16) {
+                                Image(systemName: "checkmark.circle.fill")
+                                    .font(.system(size: 28))
+                                    .foregroundColor(.white)
+                                
+                                VStack(alignment: .leading, spacing: 4) {
+                                    Text(successMessage.title)
+                                        .font(.body)
+                                        .fontWeight(.semibold)
+                                        .foregroundColor(.white)
+                                    
+                                    Text(successMessage.subtitle)
+                                        .font(.caption)
+                                        .foregroundColor(.white.opacity(0.8))
+                                }
+                                
+                                Spacer()
+                            }
+                            .padding(20)
+                            .glassEffect(.clear)
+                            .padding(.horizontal, 20)
+                            .padding(.top, 60)
+                            
+                            Spacer()
+                        }
+                    }
+                    .transition(.opacity)
+                    .zIndex(300)
+                }
                 
                 if let context = tutorialViewModel.activeTutorial {
                     TutorialOverlay(viewModel: tutorialViewModel, context: context)
@@ -132,12 +192,26 @@ struct OrbLiveListenView: View {
             .font(.system(size: 28))
             .foregroundColor(.white)
             .frame(width: 77, height: 77)
-            .background(Circle().fill(Color.white.opacity(0.1)))
             .clipShape(Circle())
+            .glassEffect(.clear)
             .scaleEffect(viewModel.saveButtonScale)
-            .position(x: geometry.size.width / 2, y: geometry.size.height - 100)
+            .position(x: geometry.size.width / 2, y: geometry.size.height - 46)
             .opacity(viewModel.isDraggingToSave ? min(viewModel.dragOffset / 150.0, 1.0) : 0.0)
             .animation(.easeOut(duration: 0.2), value: viewModel.isDraggingToSave)
+            .animation(.easeOut(duration: 0.2), value: viewModel.dragOffset)
+    }
+    
+    private func deleteButton(geometry: GeometryProxy) -> some View {
+        Image(systemName: "trash.fill")
+            .font(.system(size: 28))
+            .foregroundColor(.red)
+            .frame(width: 77, height: 77)
+            .clipShape(Circle())
+            .glassEffect(.clear)
+            .scaleEffect(viewModel.deleteButtonScale)
+            .position(x: geometry.size.width / 2, y: 50)
+            .opacity(viewModel.isDraggingToDelete ? min(abs(viewModel.dragOffset) / 150.0, 1.0) : 0.0)
+            .animation(.easeOut(duration: 0.2), value: viewModel.isDraggingToDelete)
             .animation(.easeOut(duration: 0.2), value: viewModel.dragOffset)
     }
     
@@ -192,6 +266,7 @@ struct OrbLiveListenView: View {
             .animation(.easeInOut(duration: 0.2), value: viewModel.longPressScale)
             .animation(.easeInOut(duration: 0.2), value: viewModel.orbDragScale)
             .offset(y: viewModel.orbOffset(geometry: geometry) + viewModel.dragOffset)
+            .animation(.spring(response: 1.0, dampingFraction: 0.8), value: viewModel.isListening)
             .onTapGesture(count: 2) {
                 viewModel.handleDoubleTap {
                     heartbeatSoundManager.start()
@@ -208,12 +283,43 @@ struct OrbLiveListenView: View {
                     viewModel.handleDragChange(value: value, geometry: geometry)
                 },
                 handleDragEnd: { value in
-                    viewModel.handleDragEnd(value: value, geometry: geometry) {
-                        heartbeatSoundManager.saveRecording()
-                        withAnimation(.spring(response: 0.6, dampingFraction: 0.8)) {
-                            showTimeline = true
+                    viewModel.handleDragEnd(value: value, geometry: geometry, onSave: {
+                        // Show alert first
+                        successMessage = (title: "Saved!", subtitle: "Your recording is saved on timeline.")
+                        withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) {
+                            showSuccessAlert = true
                         }
-                    }
+                        // Then save after alert is visible
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+                            heartbeatSoundManager.saveRecording()
+                            // Navigate after another delay
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                                withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) {
+                                    showSuccessAlert = false
+                                    showTimeline = true
+                                }
+                            }
+                        }
+                    }, onDelete: {
+                        // Show alert first
+                        successMessage = (title: "Deleted.", subtitle: "Your recording is deleted.")
+                        withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) {
+                            showSuccessAlert = true
+                        }
+                        // Then delete after alert is visible
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+                            if let lastRecording = heartbeatSoundManager.lastRecording {
+                                heartbeatSoundManager.deleteRecording(lastRecording)
+                            }
+                            // Navigate after another delay
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                                withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) {
+                                    showSuccessAlert = false
+                                    showTimeline = true
+                                }
+                            }
+                        }
+                    })
                 },
                 handleLongPressChange: viewModel.handleLongPressChange,
                 handleLongPressComplete: {
@@ -317,6 +423,7 @@ struct OrbLiveListenView: View {
         }
     }
 }
+// swiftlint:enable type_body_length
 
 // #Preview("Normal Mode") {
 //    OrbLiveListenView(

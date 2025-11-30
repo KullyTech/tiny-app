@@ -15,6 +15,25 @@ enum WeekType {
     case placeholder  // Future week placeholder
 }
 
+enum TimelineItem: Identifiable, Equatable {
+    case recording(Recording)
+    case moment(Moment)
+    
+    var id: UUID {
+        switch self {
+        case .recording(let recording): return recording.id
+        case .moment(let moment): return moment.id
+        }
+    }
+    
+    var createdAt: Date {
+        switch self {
+        case .recording(let recording): return recording.createdAt
+        case .moment(let moment): return moment.createdAt
+        }
+    }
+}
+
 struct WeekSection: Identifiable, Equatable {
     let id = UUID()
     let weekNumber: Int
