@@ -55,8 +55,9 @@ struct HeartbeatMainView: View {
             }
             .tabViewStyle(.page(indexDisplayMode: .never))
             .highPriorityGesture(
-                // Block TabView swipe when navigation is active
-                !viewModel.allowTabViewSwipe ? DragGesture() : nil
+                // Block TabView swipe only on Orb View (page 1) when requested (e.g. recording/dragging)
+                // On Timeline View (page 0), we allow gestures to pass through so vertical scrolling (Profile/Tutorial) works
+                (viewModel.currentPage == 1 && !viewModel.allowTabViewSwipe) ? DragGesture() : nil
             )
             .ignoresSafeArea()
             

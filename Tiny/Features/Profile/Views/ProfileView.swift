@@ -27,7 +27,7 @@ struct ProfileView: View {
 
     var body: some View {
         ZStack {
-            Image(themeManager.selectedBackground.imageName)    
+            Image(themeManager.selectedBackground.imageName)
                 .resizable()
                 .scaledToFill()
                 .ignoresSafeArea()

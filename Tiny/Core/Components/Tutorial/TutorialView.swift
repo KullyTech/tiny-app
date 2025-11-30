@@ -44,16 +44,13 @@ struct TutorialView: View {
             .padding(.bottom, 40)
         }
         .background(
-            GeometryReader { geo in
-                Image("bgPurpleOnboarding")
-                    .resizable()
-                    .scaledToFill()
-                    .frame(width: geo.size.width,
-                           height: geo.size.height)
-                    .clipped()        // prevents blank leftover area
-            }
-            .ignoresSafeArea()
+            Image("bgPurpleOnboarding")
+                .resizable()
+                .scaledToFill()
+                .ignoresSafeArea()
         )
+        .navigationTitle("Tutorial")
+        .navigationBarTitleDisplayMode(.inline)
     }
 }
 

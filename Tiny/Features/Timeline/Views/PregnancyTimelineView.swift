@@ -102,9 +102,6 @@ struct PregnancyTimelineView: View {
                                     .shadow(color: .black.opacity(0.2), radius: 4, x: 0, y: 2)
                                 }
                                 .opacity(isFirstTimeVisit ? (animationController.profileVisible ? 1.0 : 0.0) : 1.0)
-                                .navigationDestination(isPresented: $isProfilePresented) {
-                                    ProfileView()
-                                }
                             }
                         }
                         .padding(.horizontal, 20)
@@ -113,6 +110,9 @@ struct PregnancyTimelineView: View {
                         Spacer()
                     }
                 }
+            }
+            .navigationDestination(isPresented: $isProfilePresented) {
+                ProfileView()
             }
             .onAppear(perform: groupRecordings)
         }
