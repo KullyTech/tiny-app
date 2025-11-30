@@ -124,7 +124,7 @@ struct OrbLiveListenView: View {
     }
     
     private var topControlsView: some View {
-        GeometryReader { geometry in
+        GeometryReader { _ in
             VStack {
                 HStack {
                     if viewModel.isPlaybackMode {
@@ -423,14 +423,14 @@ struct OrbLiveListenView: View {
     }
 }
 
-//#Preview("Normal Mode") {
+// #Preview("Normal Mode") {
 //    OrbLiveListenView(
 //        heartbeatSoundManager: HeartbeatSoundManager(),
 //        showTimeline: .constant(true)
 //    )
 //    .environmentObject(ThemeManager())
 //    .modelContainer(for: SavedHeartbeat.self, inMemory: true)
-//}
+// }
 
 #Preview("Playback Mode") {
     let manager = HeartbeatSoundManager()
