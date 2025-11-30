@@ -340,6 +340,170 @@ class HeartbeatSyncManager: ObservableObject {
         
         return syncedHeartbeats
     }
+
+    
+    // MARK: - Moment Sync
+    
+    func uploadMoment(
+        _ moment: SavedMoment,
+        motherUserId: String,
+        roomCode: String
+    ) async throws {
+        isSyncing = true
+        defer { isSyncing = false }
+        
+        // 1. Reconstruct full path from filename (since we store relative paths)
+        let fileName = URL(fileURLWithPath: moment.filePath).lastPathComponent
+        let documentsPath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
+        let localURL = documentsPath.appendingPathComponent(fileName)
+        let momentId = moment.id.uuidString
+        
+        print("📤 Uploading moment...")
+        print("   Local file: \(localURL.path)")
+        
+        let downloadURL = try await storageService.uploadMomentImage(
+            localFileURL: localURL,
+            motherUserId: motherUserId,
+            momentId: momentId
+        )
+        
+        // 2. Update local model
+        moment.firebaseStorageURL = downloadURL
+        moment.isSyncedToCloud = true
+        moment.motherUserId = motherUserId
+        moment.roomCode = roomCode
+        
+        // 3. Save metadata to Firestore
+        let metadata: [String: Any] = [
+            "momentId": momentId,
+            "motherUserId": motherUserId,
+            "roomCode": roomCode,
+            "firebaseStorageURL": downloadURL,
+            "timestamp": Timestamp(date: moment.timestamp),
+            "isShared": moment.isShared,
+            "pregnancyWeeks": moment.pregnancyWeeks ?? 0,
+            "createdAt": Timestamp(date: Date())
+        ]
+        
+        let docRef = try await dbf.collection("moments").addDocument(data: metadata)
+        moment.firebaseId = docRef.documentID
+        
+        print("✅ Moment metadata saved to Firestore")
+    }
+    
+    func deleteMoment(_ moment: SavedMoment) async throws {
+        // Delete from Storage if synced
+        if let storageURL = moment.firebaseStorageURL {
+            try await storageService.deleteMomentImage(downloadURL: storageURL)
+        }
+        
+        // Delete from Firestore
+        if let firebaseId = moment.firebaseId {
+            try await dbf.collection("moments").document(firebaseId).delete()
+        }
+    }
+    
+    func fetchAllMomentsForRoom(roomCode: String) async throws -> [MomentMetadata] {
+        print("🔍 Fetching ALL moments for room code: '\(roomCode)'")
+        
+        let snapshot = try await dbf.collection("moments")
+            .whereField("roomCode", isEqualTo: roomCode)
+            .getDocuments()
+        
+        let moments = snapshot.documents.compactMap { doc -> MomentMetadata? in
+            let data = doc.data()
+            
+            return MomentMetadata(
+                id: doc.documentID,
+                momentId: data["momentId"] as? String ?? "",
+                motherUserId: data["motherUserId"] as? String ?? "",
+                roomCode: data["roomCode"] as? String ?? "",
+                firebaseStorageURL: data["firebaseStorageURL"] as? String ?? "",
+                timestamp: (data["timestamp"] as? Timestamp)?.dateValue() ?? Date(),
+                isShared: data["isShared"] as? Bool ?? false,
+                pregnancyWeeks: data["pregnancyWeeks"] as? Int
+            )
+        }
+        
+        return moments.sorted { $0.timestamp > $1.timestamp }
+    }
+    
+    func downloadMoment(metadata: MomentMetadata) async throws -> URL {
+        return try await storageService.downloadMomentImage(
+            downloadURL: metadata.firebaseStorageURL,
+            momentId: metadata.momentId,
+            timestamp: metadata.timestamp
+        )
+    }
+    
+    func syncMomentsFromCloud(
+        roomCode: String,
+        modelContext: ModelContext
+    ) async throws -> [SavedMoment] {
+        print("🔄 Syncing moments from cloud...")
+        
+        let metadataList = try await fetchAllMomentsForRoom(roomCode: roomCode)
+        var syncedMoments: [SavedMoment] = []
+        
+        for metadata in metadataList {
+            // Check if we already have this moment locally
+            let allMoments = try modelContext.fetch(FetchDescriptor<SavedMoment>())
+            let existingMoment = allMoments.first { $0.firebaseId == metadata.id }
+            
+            if let existing = existingMoment {
+                // Fix: Check existence using filename only
+                let storedPath = existing.filePath
+                let fileName = URL(fileURLWithPath: storedPath).lastPathComponent
+                let documentsPath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
+                let localURL = documentsPath.appendingPathComponent(fileName)
+                
+                if !FileManager.default.fileExists(atPath: localURL.path) {
+                    // Re-download if file is missing
+                    do {
+                        let downloadedURL = try await downloadMoment(metadata: metadata)
+                        // Update to relative path (filename)
+                        existing.filePath = downloadedURL.lastPathComponent
+                    } catch {
+                        print("❌ Re-download moment failed: \(error)")
+                    }
+                } else {
+                    // If file exists but path was absolute, update to relative for consistency
+                    if existing.filePath != fileName {
+                        existing.filePath = fileName
+                    }
+                }
+                syncedMoments.append(existing)
+            } else {
+                // Download new moment
+                do {
+                    let localURL = try await downloadMoment(metadata: metadata)
+                    
+                    let moment = SavedMoment(
+                        filePath: localURL.lastPathComponent, // Store relative path
+                        timestamp: metadata.timestamp,
+                        pregnancyWeeks: metadata.pregnancyWeeks,
+                        firebaseId: metadata.id,
+                        motherUserId: metadata.motherUserId,
+                        roomCode: metadata.roomCode,
+                        isShared: metadata.isShared,
+                        firebaseStorageURL: metadata.firebaseStorageURL,
+                        isSyncedToCloud: true
+                    )
+                    
+                    modelContext.insert(moment)
+                    syncedMoments.append(moment)
+                    print("   ✅ Saved moment to SwiftData: \(metadata.id)")
+                } catch {
+                    print("   ❌ Failed to download moment \(metadata.id): \(error)")
+                }
+            }
+        }
+        
+        try modelContext.save()
+        print("✅ Moment sync complete: \(syncedMoments.count) moments")
+        
+        return syncedMoments
+    }
 }
 
 // MARK: - Supporting Types
@@ -356,6 +520,17 @@ struct HeartbeatMetadata: Identifiable {
     let displayName: String?
 }
 
+struct MomentMetadata: Identifiable {
+    let id: String
+    let momentId: String
+    let motherUserId: String
+    let roomCode: String
+    let firebaseStorageURL: String
+    let timestamp: Date
+    let isShared: Bool
+    let pregnancyWeeks: Int?
+}
+
 enum SyncError: LocalizedError {
     case notSynced
     case uploadFailed
@@ -364,11 +539,11 @@ enum SyncError: LocalizedError {
     var errorDescription: String? {
         switch self {
         case .notSynced:
-            return "Heartbeat has not been synced to cloud yet"
+            return "Item has not been synced to cloud yet"
         case .uploadFailed:
-            return "Failed to upload heartbeat"
+            return "Failed to upload item"
         case .downloadFailed:
-            return "Failed to download heartbeat"
+            return "Failed to download item"
         }
     }
 }

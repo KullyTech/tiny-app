@@ -25,7 +25,8 @@ struct TinyApp: App {
     // Define the container configuration
     var sharedModelContainer: ModelContainer = {
         let schema = Schema([
-            SavedHeartbeat.self
+            SavedHeartbeat.self,
+            SavedMoment.self
         ])
         let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
 

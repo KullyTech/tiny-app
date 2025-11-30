@@ -18,6 +18,8 @@ struct SavedRecordingPlaybackView: View {
     @FocusState private var isNameFieldFocused: Bool
     @Environment(\.modelContext) private var modelContext
     
+    @State private var showDeleteSuccessAlert = false
+    
     var body: some View {
         GeometryReader { geometry in
             ZStack {
@@ -38,6 +40,45 @@ struct SavedRecordingPlaybackView: View {
                     successAlertView
                         .transition(.move(edge: .top).combined(with: .opacity))
                         .zIndex(100)
+                }
+                
+                // Delete Success Alert with dark overlay
+                if showDeleteSuccessAlert {
+                    ZStack {
+                        // Dark overlay
+                        Color.black.opacity(0.6)
+                            .ignoresSafeArea()
+                        
+                        // Alert on top
+                        VStack {
+                            HStack(spacing: 16) {
+                                Image(systemName: "checkmark.circle.fill")
+                                    .font(.system(size: 28))
+                                    .foregroundColor(.white)
+                                
+                                VStack(alignment: .leading, spacing: 4) {
+                                    Text("Deleted.")
+                                        .font(.body)
+                                        .fontWeight(.semibold)
+                                        .foregroundColor(.white)
+                                    
+                                    Text("Your recording is deleted.")
+                                        .font(.caption)
+                                        .foregroundColor(.white.opacity(0.8))
+                                }
+                                
+                                Spacer()
+                            }
+                            .padding(20)
+                            .glassEffect(.clear)
+                            .padding(.horizontal, 20)
+                            .padding(.top, 60)
+                            
+                            Spacer()
+                        }
+                    }
+                    .transition(.opacity)
+                    .zIndex(300)
                 }
             }
             .ignoresSafeArea()
@@ -159,10 +200,20 @@ struct SavedRecordingPlaybackView: View {
                 }
                 .onEnded { value in
                     viewModel.handleDragEnd(value: value, geometry: geometry) {
-                        
-                        heartbeatSoundManager.deleteRecording(recording)
-                        withAnimation(.spring(response: 0.6, dampingFraction: 0.8)) {
-                            showTimeline = true
+                        // Show alert first
+                        withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) {
+                            showDeleteSuccessAlert = true
+                        }
+                        // Then delete after alert is visible
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+                            heartbeatSoundManager.deleteRecording(recording)
+                            // Navigate after another delay
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                                withAnimation(.spring(response: 0.6, dampingFraction: 0.8)) {
+                                    showDeleteSuccessAlert = false
+                                    showTimeline = true
+                                }
+                            }
                         }
                     }
                 }

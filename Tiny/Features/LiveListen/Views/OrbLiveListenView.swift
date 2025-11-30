@@ -4,6 +4,9 @@ import SwiftData
 struct OrbLiveListenView: View {
     @State private var showThemeCustomization = false
     @EnvironmentObject var themeManager: ThemeManager
+    
+    @State private var showSuccessAlert = false
+    @State private var successMessage = (title: "", subtitle: "")
     @Environment(\.modelContext) private var modelContext
     
     @ObservedObject var heartbeatSoundManager: HeartbeatSoundManager
@@ -48,6 +51,45 @@ struct OrbLiveListenView: View {
                 }
                 
                 coachMarkView
+                
+                // Success Alert with dark overlay
+                if showSuccessAlert {
+                    ZStack {
+                        // Dark overlay
+                        Color.black.opacity(0.6)
+                            .ignoresSafeArea()
+                        
+                        // Alert on top
+                        VStack {
+                            HStack(spacing: 16) {
+                                Image(systemName: "checkmark.circle.fill")
+                                    .font(.system(size: 28))
+                                    .foregroundColor(.white)
+                                
+                                VStack(alignment: .leading, spacing: 4) {
+                                    Text(successMessage.title)
+                                        .font(.body)
+                                        .fontWeight(.semibold)
+                                        .foregroundColor(.white)
+                                    
+                                    Text(successMessage.subtitle)
+                                        .font(.caption)
+                                        .foregroundColor(.white.opacity(0.8))
+                                }
+                                
+                                Spacer()
+                            }
+                            .padding(20)
+                            .glassEffect(.clear)
+                            .padding(.horizontal, 20)
+                            .padding(.top, 60)
+                            
+                            Spacer()
+                        }
+                    }
+                    .transition(.opacity)
+                    .zIndex(300)
+                }
                 
                 if let context = tutorialViewModel.activeTutorial {
                     TutorialOverlay(viewModel: tutorialViewModel, context: context)
@@ -241,14 +283,41 @@ struct OrbLiveListenView: View {
                 },
                 handleDragEnd: { value in
                     viewModel.handleDragEnd(value: value, geometry: geometry, onSave: {
-                        heartbeatSoundManager.saveRecording()
-                        showTimeline = true
-                    }, onDelete: {
-                        // Delete the recording if it's saved, or just dismiss if it's unsaved
-                        if let lastRecording = heartbeatSoundManager.lastRecording {
-                            heartbeatSoundManager.deleteRecording(lastRecording)
+                        // Show alert first
+                        successMessage = (title: "Saved!", subtitle: "Your recording is saved on timeline.")
+                        withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) {
+                            showSuccessAlert = true
                         }
-                        showTimeline = true
+                        // Then save after alert is visible
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+                            heartbeatSoundManager.saveRecording()
+                            // Navigate after another delay
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                                withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) {
+                                    showSuccessAlert = false
+                                    showTimeline = true
+                                }
+                            }
+                        }
+                    }, onDelete: {
+                        // Show alert first
+                        successMessage = (title: "Deleted.", subtitle: "Your recording is deleted.")
+                        withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) {
+                            showSuccessAlert = true
+                        }
+                        // Then delete after alert is visible
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+                            if let lastRecording = heartbeatSoundManager.lastRecording {
+                                heartbeatSoundManager.deleteRecording(lastRecording)
+                            }
+                            // Navigate after another delay
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                                withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) {
+                                    showSuccessAlert = false
+                                    showTimeline = true
+                                }
+                            }
+                        }
                     })
                 },
                 handleLongPressChange: viewModel.handleLongPressChange,

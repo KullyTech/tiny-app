@@ -109,6 +109,65 @@ class FirebaseStorageService: ObservableObject {
         try await storageRef.delete()
     }
     
+    // MARK: - Upload Moment Image
+    
+    func uploadMomentImage(
+        localFileURL: URL,
+        motherUserId: String,
+        momentId: String
+    ) async throws -> String {
+        let storageRef = storage.reference()
+        let momentRef = storageRef.child("moments/\(motherUserId)/\(momentId).jpg")
+        
+        let data = try Data(contentsOf: localFileURL)
+        
+        let metadata = StorageMetadata()
+        metadata.contentType = "image/jpeg"
+        metadata.customMetadata = [
+            "motherUserId": motherUserId,
+            "momentId": momentId,
+            "uploadedAt": ISO8601DateFormatter().string(from: Date())
+        ]
+        
+        _ = try await momentRef.putDataAsync(data, metadata: metadata)
+        let downloadURL = try await momentRef.downloadURL()
+        
+        return downloadURL.absoluteString
+    }
+    
+    // MARK: - Download Moment Image
+    
+    func downloadMomentImage(
+        downloadURL: String,
+        momentId: String,
+        timestamp: Date
+    ) async throws -> URL {
+        guard let _ = URL(string: downloadURL) else {
+            throw StorageError.invalidURL
+        }
+        
+        let documentsPath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
+        let timeInterval = timestamp.timeIntervalSince1970
+        let fileName = "moment-\(timeInterval).jpg"
+        let localURL = documentsPath.appendingPathComponent(fileName)
+        
+        if FileManager.default.fileExists(atPath: localURL.path) {
+            return localURL
+        }
+        
+        let storageRef = storage.reference(forURL: downloadURL)
+        _ = try await storageRef.writeAsync(toFile: localURL)
+        
+        return localURL
+    }
+    
+    // MARK: - Delete Moment Image
+    
+    func deleteMomentImage(downloadURL: String) async throws {
+        let storageRef = storage.reference(forURL: downloadURL)
+        try await storageRef.delete()
+    }
+    
     // MARK: - Get Shared Heartbeats for Room
     
     /// Lists all heartbeats shared in a room

@@ -26,6 +26,18 @@ struct Recording: Identifiable, Equatable {
     var isPlaying: Bool = false
 }
 
+struct Moment: Identifiable, Equatable {
+    let id: UUID
+    let fileURL: URL
+    let createdAt: Date
+    
+    init(id: UUID = UUID(), fileURL: URL, createdAt: Date) {
+        self.id = id
+        self.fileURL = fileURL
+        self.createdAt = createdAt
+    }
+}
+
 struct HeartbeatData {
     let timestamp: Date
     let bpm: Double
@@ -74,6 +86,7 @@ class HeartbeatSoundManager: NSObject, ObservableObject {
     @Published var isRecording = false
     @Published var lastRecording: Recording?
     @Published var savedRecordings: [Recording] = []
+    @Published var savedMoments: [Moment] = []
     @Published var isPlayingPlayback = false
     @Published var amplitudeVal: Float = 0.0
     @Published var blinkAmplitude: Float = 0.0
@@ -138,6 +151,29 @@ class HeartbeatSoundManager: NSObject, ObservableObject {
                 print("✅ Loaded \(self.savedRecordings.count) recordings from SwiftData")
             }
             
+            // Load Moments
+            let momentResults = try modelContext.fetch(FetchDescriptor<SavedMoment>())
+            DispatchQueue.main.async {
+                self.savedMoments = momentResults.compactMap { savedItem in
+                    // Fix: Use filename only to reconstruct path, as absolute paths change on container recreation
+                    let storedPath = savedItem.filePath
+                    let fileName = URL(fileURLWithPath: storedPath).lastPathComponent
+                    let fileURL = self.getDocumentsDirectory().appendingPathComponent(fileName)
+                    
+                    if !FileManager.default.fileExists(atPath: fileURL.path) {
+                        print("⚠️ Moment file missing: \(fileURL.path)")
+                        return nil
+                    }
+                    
+                    return Moment(
+                        id: savedItem.id,
+                        fileURL: fileURL,
+                        createdAt: savedItem.timestamp
+                    )
+                }
+                print("✅ Loaded \(self.savedMoments.count) moments from SwiftData")
+            }
+            
             // Sync from cloud if we have the necessary info
             if let roomCode = currentRoomCode, let syncManager = syncManager {
                 Task { @MainActor in
@@ -152,8 +188,15 @@ class HeartbeatSoundManager: NSObject, ObservableObject {
                             isMother: isMother
                         )
                         
+                        // Fetch moments from cloud
+                        _ = try await syncManager.syncMomentsFromCloud(
+                            roomCode: roomCode,
+                            modelContext: modelContext
+                        )
+                        
                         // Reload from SwiftData after sync
                         let updatedResults = try modelContext.fetch(FetchDescriptor<SavedHeartbeat>())
+                        let updatedMoments = try modelContext.fetch(FetchDescriptor<SavedMoment>())
                         
                         // Show all heartbeats for both mothers and fathers (all are shared by default)
                         self.savedRecordings = updatedResults.compactMap { savedItem in
@@ -173,6 +216,25 @@ class HeartbeatSoundManager: NSObject, ObservableObject {
                             )
                         }
                         print("✅ Reloaded \(self.savedRecordings.count) recordings after sync (isMother: \(isMother))")
+                        
+                        // Reload moments with SavedMoment IDs to prevent duplicates
+                        self.savedMoments = updatedMoments.compactMap { savedItem in
+                            // Fix: Use filename only
+                            let storedPath = savedItem.filePath
+                            let fileName = URL(fileURLWithPath: storedPath).lastPathComponent
+                            let fileURL = self.getDocumentsDirectory().appendingPathComponent(fileName)
+                            
+                            if !FileManager.default.fileExists(atPath: fileURL.path) {
+                                return nil
+                            }
+                            
+                            return Moment(
+                                id: savedItem.id,
+                                fileURL: fileURL,
+                                createdAt: savedItem.timestamp
+                            )
+                        }
+                        print("✅ Reloaded \(self.savedMoments.count) moments after sync")
                         
                         // Force UI update
                         self.objectWillChange.send()
@@ -793,6 +855,164 @@ class HeartbeatSoundManager: NSObject, ObservableObject {
             
         } catch {
             print("❌ Delete failed: \(error)")
+        }
+    }
+    
+    // MARK: - Moment Management
+    
+    func saveMoment(image: UIImage) {
+        guard let modelContext = modelContext else { return }
+        
+        // Save image to disk
+        guard let data = image.jpegData(compressionQuality: 0.8) else { return }
+        let timestamp = Date()
+        let filename = "moment-\(timestamp.timeIntervalSince1970).jpg"
+        let fileURL = getDocumentsDirectory().appendingPathComponent(filename)
+        
+        do {
+            try data.write(to: fileURL)
+            
+            // Calculate pregnancy week
+            let pregnancyWeek: Int? = {
+                guard let pregnancyStartDate = UserDefaults.standard.object(forKey: "pregnancyStartDate") as? Date else {
+                    return nil
+                }
+                let calendar = Calendar.current
+                let weeksSinceStart = calendar.dateComponents([.weekOfYear], from: pregnancyStartDate, to: Date()).weekOfYear ?? 0
+                return weeksSinceStart
+            }()
+            
+            // Save to SwiftData
+            // Store just the filename (relative path) to avoid absolute path issues
+            let savedMoment = SavedMoment(
+                filePath: filename,
+                timestamp: timestamp,
+                pregnancyWeeks: pregnancyWeek
+            )
+            
+            
+            modelContext.insert(savedMoment)
+            try modelContext.save()
+            
+            print("✅ Saved moment to SwiftData")
+            print("   File: \(filename)")
+            print("   Timestamp: \(timestamp)")
+            print("   Pregnancy Week: \(pregnancyWeek ?? -1)")
+            
+            // Update local array
+            let moment = Moment(id: savedMoment.id, fileURL: fileURL, createdAt: savedMoment.timestamp)
+            DispatchQueue.main.async {
+                self.savedMoments.append(moment)
+                self.objectWillChange.send()
+            }
+            
+            print("✅ Added moment to local array (count: \(savedMoments.count + 1))")
+            
+            // Upload to Firebase if possible
+            print("🔍 Checking Firebase upload requirements:")
+            print("   currentUserId: \(currentUserId ?? "nil")")
+            print("   currentRoomCode: \(currentRoomCode ?? "nil")")
+            print("   syncManager: \(syncManager != nil ? "available" : "nil")")
+            
+            if let userId = currentUserId, let roomCode = currentRoomCode, let syncManager = syncManager {
+                Task { @MainActor in
+                    do {
+                        print("📤 Uploading moment to Firebase...")
+                        try await syncManager.uploadMoment(savedMoment, motherUserId: userId, roomCode: roomCode)
+                        print("✅ Uploaded moment to Firebase")
+                        print("   Storage URL: \(savedMoment.firebaseStorageURL ?? "not set")")
+                        print("   Firebase ID: \(savedMoment.firebaseId ?? "not set")")
+                    } catch {
+                        print("❌ Failed to upload moment: \(error)")
+                    }
+                }
+            } else {
+                print("⚠️ Skipping Firebase upload - missing required data")
+                if currentUserId == nil { print("   - User ID is nil") }
+                if currentRoomCode == nil { print("   - Room Code is nil") }
+                if syncManager == nil { print("   - Sync Manager is nil") }
+            }
+            
+        } catch {
+            print("❌ Failed to save moment: \(error)")
+        }
+    }
+    
+    func deleteMoment(_ moment: Moment) {
+        guard let modelContext = modelContext else { return }
+        
+        print("🗑️ Deleting moment with ID: \(moment.id)")
+        
+        // Remove from savedMoments array
+        if let index = savedMoments.firstIndex(where: { $0.id == moment.id }) {
+            savedMoments.remove(at: index)
+            print("✅ Removed from savedMoments array. New count: \(savedMoments.count)")
+            objectWillChange.send()
+        }
+        
+        // Remove from SwiftData using the Moment's ID (which is the SavedMoment's ID)
+        do {
+            // Capture the ID first for use in the Predicate
+            let momentId = moment.id
+            let descriptor = FetchDescriptor<SavedMoment>(
+                predicate: #Predicate { $0.id == momentId }
+            )
+            let results = try modelContext.fetch(descriptor)
+            
+            guard let entry = results.first else {
+                print("⚠️ No SavedMoment found with ID: \(moment.id)")
+                return
+            }
+            
+            let filePath = entry.filePath
+            let fileName = URL(fileURLWithPath: filePath).lastPathComponent
+            let fullPath = getDocumentsDirectory().appendingPathComponent(fileName).path
+            
+            // Delete from Firebase FIRST (before deleting from SwiftData)
+            if let firebaseId = entry.firebaseId, let syncManager = syncManager {
+                Task { @MainActor in
+                    do {
+                        print("🔥 Deleting moment from Firebase...")
+                        try await syncManager.deleteMoment(entry)
+                        print("✅ Deleted moment from Firebase")
+                        print("   Firebase ID: \(firebaseId)")
+                        
+                        // After Firebase deletion succeeds, delete locally
+                        self.deleteLocalMoment(entry: entry, fullPath: fullPath, modelContext: modelContext)
+                    } catch {
+                        print("❌ Failed to delete moment from Firebase: \(error)")
+                        // Still delete locally even if Firebase delete fails
+                        self.deleteLocalMoment(entry: entry, fullPath: fullPath, modelContext: modelContext)
+                    }
+                }
+            } else {
+                // No Firebase sync, just delete locally
+                print("ℹ️ No Firebase ID, deleting locally only")
+                deleteLocalMoment(entry: entry, fullPath: fullPath, modelContext: modelContext)
+            }
+            
+        } catch {
+            print("❌ Delete moment failed: \(error)")
+        }
+    }
+    
+    private func deleteLocalMoment(entry: SavedMoment, fullPath: String, modelContext: ModelContext) {
+        do {
+            // Delete from SwiftData
+            modelContext.delete(entry)
+            try modelContext.save()
+            print("✅ Deleted moment from SwiftData")
+            
+            // Delete file from disk
+            let fileManager = FileManager.default
+            if fileManager.fileExists(atPath: fullPath) {
+                try fileManager.removeItem(atPath: fullPath)
+                print("✅ Deleted moment file from disk: \(fullPath)")
+            } else {
+                print("ℹ️ File not found on disk: \(fullPath)")
+            }
+        } catch {
+            print("❌ Failed to delete local moment: \(error)")
         }
     }
 }
