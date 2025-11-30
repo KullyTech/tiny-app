@@ -88,7 +88,9 @@ struct SavedRecordingPlaybackView: View {
                 }
             }
             .ignoresSafeArea()
-
+            .sheet(isPresented: $viewModel.showShareSheet) {
+                ShareSheet(activityItems: [recording.fileURL])
+            }
         }
         .onAppear {
             viewModel.setupPlayback(
@@ -157,15 +159,17 @@ struct SavedRecordingPlaybackView: View {
                     // Normal buttons
                     HStack {
                         Button {
+                            viewModel.toggleHaptics()
                         } label: {
                             Image(systemName: "iphone.gen3.radiowaves.left.and.right")
                                 .font(.body)
-                                .foregroundColor(.white)
+                                .foregroundColor(viewModel.isHapticsEnabled ? .white : .white.opacity(0.4))
                                 .frame(width: 48, height: 48)
                         }
                         .glassEffect(.clear)
 
                         Button {
+                            viewModel.showShareSheet = true
                         } label: {
                             Image(systemName: "square.and.arrow.up")
                                 .font(.body)
