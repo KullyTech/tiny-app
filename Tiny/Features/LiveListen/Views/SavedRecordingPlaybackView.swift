@@ -216,6 +216,7 @@ struct SavedRecordingPlaybackView: View {
                         }
                         // Then delete after alert is visible
                         DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+                            viewModel.cleanup()
                             heartbeatSoundManager.deleteRecording(recording)
                             // Navigate after another delay
                             DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
@@ -242,6 +243,12 @@ struct SavedRecordingPlaybackView: View {
                 Text(viewModel.isPlaying ? "Playing" : "Tap to play")
                     .font(.system(size: 14))
                     .foregroundColor(.white.opacity(0.7))
+                
+                if viewModel.duration > 0 && !viewModel.isDraggingToDelete {
+                    Text("\(Int(viewModel.currentTime))s / \(Int(viewModel.duration))s")
+                        .font(.caption)
+                        .foregroundColor(.white.opacity(0.7))
+                }
                 
                 if !viewModel.isDraggingToDelete {
                     Text("Drag up to delete")

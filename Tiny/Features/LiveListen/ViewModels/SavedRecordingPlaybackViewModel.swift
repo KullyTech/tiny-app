@@ -15,6 +15,7 @@ import SwiftData
 class SavedRecordingPlaybackViewModel: ObservableObject {
     @Published var isPlaying = false
     @Published var currentTime: TimeInterval = 0
+    @Published var duration: TimeInterval = 0
     @Published var recordingName = "Heartbeat Recording"
     @Published var editedName = "Heartbeat Recording"
     @Published var isEditingName = false
@@ -48,6 +49,7 @@ class SavedRecordingPlaybackViewModel: ObservableObject {
                 guard let self = self else { return }
                 self.isPlaying = self.audioPostProcessingManager.isPlaying
                 self.currentTime = self.audioPostProcessingManager.currentTime
+                self.duration = self.audioPostProcessingManager.duration
             }
             .store(in: &cancellables)
     }
