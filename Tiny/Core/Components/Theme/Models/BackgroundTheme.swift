@@ -33,7 +33,7 @@ enum BackgroundTheme: String, CaseIterable, Identifiable {
     var color: Color {
         switch self {
         case .purple:
-            return Color(hex: "32173F") ?? Color.black
+                return Color(hex: "32173F") ?? Color.black
         case .pink:
             return Color(hex: "3F1738") ?? Color.black
         case .blue:

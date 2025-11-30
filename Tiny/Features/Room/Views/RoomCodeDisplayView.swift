@@ -6,31 +6,36 @@
 //
 
 import SwiftUI
-import UIKit // Added import for UIScreen
+import UIKit
 
 struct RoomCodeDisplayView: View {
     @EnvironmentObject var authService: AuthenticationService
-    @EnvironmentObject var themeManager: ThemeManager // Add ThemeManager
+    @EnvironmentObject var themeManager: ThemeManager
     @Environment(\.dismiss) var dismiss
     @State private var showCopiedMessage = false
-    
+
     var body: some View {
         ZStack {
-            // Dynamic background based on theme
-            themeManager.selectedBackground.color
-                .ignoresSafeArea()
-            
-            // Middle-bottom gradient circle
-            RadialGradient(
-                gradient: Gradient(colors: [themeManager.selectedBackground.color.opacity(0.8), themeManager.selectedBackground.color]),
-                center: .bottom,
-                startRadius: 0,
-                endRadius: UIScreen.main.bounds.width * 0.3
-            )
-            .offset(y: UIScreen.main.bounds.height / 3) // Adjust position to be middle-bottom
-            .ignoresSafeArea()
-            
-            VStack(spacing: 30) {
+            Color(hex: "030411").ignoresSafeArea()
+
+            // Bottom circular glow
+            Circle()
+                .fill(
+                    RadialGradient(
+                        gradient: Gradient(colors: [
+                            themeManager.selectedBackground.color.opacity(1),
+                            themeManager.selectedBackground.color.opacity(0)
+                        ]),
+                        center: .center,
+                        startRadius: 0,
+                        endRadius: 600
+                    )
+                )
+                .frame(width: 200, height: 200)
+                .blur(radius: 60)
+                .offset(y: 120) // Near bottom
+
+            VStack(spacing: 10) {
                 // Header
                 HStack {
                     Spacer()
@@ -44,66 +49,54 @@ struct RoomCodeDisplayView: View {
                 }
                 .padding(.horizontal)
                 .padding(.top, 10)
-                
+
                 Spacer()
-                
+
                 // Icon
                 Image("yellowHeart")
                     .resizable()
                     .scaledToFit()
-                    .frame(width: 20)
+                    .frame(width: 30)
 
                 // Title
-                VStack(spacing: 10) {
+                VStack(spacing: 5) {
                     Text(authService.currentUser?.role == .mother ? "Your Room Code" : "Room Code")
                         .font(.title2)
                         .fontWeight(.bold)
-                    
-                    Text(authService.currentUser?.role == .mother ? 
-                         "Share this code with your partner" : 
-                         "You're connected to this room")
-                        .font(.subheadline)
-                        .foregroundColor(.secondary)
-                        .multilineTextAlignment(.center)
-                        .padding(.horizontal, 40)
+
+                    Text(authService.currentUser?.role == .mother ?
+                         "Share this code with your partner" :
+                            "You're connected to this room")
+                    .font(.subheadline)
+                    .foregroundColor(.secondary)
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal, 40)
                 }
-                
+
                 // Room Code Display
                 if let roomCode = authService.currentUser?.roomCode {
-                    VStack(spacing: 15) {
-                        Text(roomCode)
-                            .font(.system(size: 48, weight: .bold, design: .rounded))
-                            .tracking(8)
-                            .foregroundColor(.primary)
-                            .padding(.vertical, 20)
-                            .padding(.horizontal, 40)
-                            .background(
-                                RoundedRectangle(cornerRadius: 16)
-                                    .fill(Color(.systemGray6))
-                            )
-                        
-                        // Copy Button
-                        Button(action: copyRoomCode) {
-                            HStack(spacing: 8) {
-                                Image(systemName: showCopiedMessage ? "checkmark" : "doc.on.doc")
-                                    .font(.system(size: 16))
-                                Text(showCopiedMessage ? "Copied!" : "Copy Code")
-                                    .fontWeight(.medium)
-                            }
-                            .foregroundColor(showCopiedMessage ? .green : .blue)
-                            .padding(.horizontal, 24)
-                            .padding(.vertical, 12)
-                            .background(
-                                RoundedRectangle(cornerRadius: 10)
-                                    .fill(showCopiedMessage ? Color.green.opacity(0.1) : Color.blue.opacity(0.1))
-                            )
+                    Button(action: copyRoomCode) {
+                        HStack {
+                            Text(roomCode)
+                                .font(.system(size: 18, weight: .heavy, design: .rounded))
+                                .tracking(3)
+                                .foregroundColor(.white)
+                            Image(systemName: "doc.on.doc")
+                                .foregroundColor(.white)
                         }
+                        .padding(.vertical, 20)
+                        .padding(.horizontal, 40)
+                        .background(
+                            // Frosted capsule background
+                            Capsule()
+                                .fill(.ultraThinMaterial) // frosted glass effect
+                                .opacity(0.8)
+                        )
                     }
                 } else {
                     VStack(spacing: 15) {
                         if authService.currentUser?.role == .mother {
-                            ProgressView()
-                                .padding()
+                            ProgressView().padding()
                             Text("Creating room...")
                                 .font(.subheadline)
                                 .foregroundColor(.secondary)
@@ -111,7 +104,6 @@ struct RoomCodeDisplayView: View {
                             Text("No room code")
                                 .font(.subheadline)
                                 .foregroundColor(.secondary)
-                            
                             Text("Ask your partner for their room code")
                                 .font(.caption)
                                 .foregroundColor(.secondary)
@@ -120,26 +112,17 @@ struct RoomCodeDisplayView: View {
                         }
                     }
                 }
-                
-                Spacer()
                 Spacer()
             }
         }
     }
-    
+
     private func copyRoomCode() {
         if let roomCode = authService.currentUser?.roomCode {
             UIPasteboard.general.string = roomCode
-            
-            withAnimation {
-                showCopiedMessage = true
-            }
-            
-            // Reset after 2 seconds
+            withAnimation { showCopiedMessage = true }
             DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
-                withAnimation {
-                    showCopiedMessage = false
-                }
+                withAnimation { showCopiedMessage = false }
             }
         }
     }
@@ -148,5 +131,26 @@ struct RoomCodeDisplayView: View {
 #Preview {
     RoomCodeDisplayView()
         .environmentObject(AuthenticationService())
-        .environmentObject(ThemeManager()) // Add ThemeManager to the preview
+        .environmentObject(ThemeManager())
+}
+
+#Preview {
+    // Create a mock AuthenticationService with a sample user
+    let authService = AuthenticationService()
+    authService.currentUser = User(
+        id: "1",
+        email: "mother@example.com",
+        name: "Jane Doe",
+        role: .mother,
+        pregnancyWeeks: 20,
+        roomCode: "ABCD12", // Sample room code
+        createdAt: Date()
+    )
+
+    let themeManager = ThemeManager()
+
+    return RoomCodeDisplayView()
+        .environmentObject(authService)
+        .environmentObject(themeManager)
+        .preferredColorScheme(.dark) // Optional: show dark mode preview
 }
