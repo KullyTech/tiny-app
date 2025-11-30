@@ -25,6 +25,14 @@ class OrbLiveListenViewModel: ObservableObject {
     @Published var orbDragScale: CGFloat = 1.0
     @Published var canSaveCurrentRecording = false
     @Published var currentTime: TimeInterval = 0
+    
+    var isHapticsEnabled: Bool {
+        audioPostProcessingManager.isHapticsEnabled
+    }
+    
+    func toggleHaptics() {
+        audioPostProcessingManager.toggleHaptics()
+    }
 
     private var longPressTimer: Timer?
     private var playbackTimer: Timer?
