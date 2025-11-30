@@ -13,7 +13,6 @@ class ProfileViewModel: ObservableObject {
     // Observe the singleton manager so this ViewModel publishes changes when manager changes
     var manager = UserProfileManager.shared
     private var cancellables = Set<AnyCancellable>()
-
     @AppStorage("appTheme") var appTheme: String = "System"
 
     init() {
@@ -24,13 +23,13 @@ class ProfileViewModel: ObservableObject {
             }
             .store(in: &cancellables)
     }
-
+    
     // MARK: - Computed Properties for View Bindings
-
+    
     var isSignedIn: Bool {
         manager.isSignedIn
     }
-
+    
     var userName: String {
         get { manager.userName }
         set { manager.userName = newValue }
@@ -44,6 +43,12 @@ class ProfileViewModel: ObservableObject {
     var profileImage: UIImage? {
         get { manager.profileImage }
         set { manager.saveProfileImage(newValue) }
+    }
+
+    // MARK: - Actions
+    func saveName() {
+        manager.saveUserData()
+        print("Name saved: \(manager.userName)")
     }
 
     func signIn() {

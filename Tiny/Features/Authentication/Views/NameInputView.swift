@@ -97,18 +97,20 @@ struct NameInputView: View {
         Task {
             do {
                 try await authService.updateUserName(name: name.trimmingCharacters(in: .whitespaces))
-                if selectedRole == .mother {
-                    try await authService.updateUserRole(role: selectedRole, pregnancyMonths: 5)
-                } else {
+                // For mothers, proceed to week input before setting role
+                // For fathers, set role now and proceed to room code input
+                if selectedRole == .father {
+                    try await authService.updateUserRole(role: selectedRole)
+                }
+                await MainActor.run {
+                    isLoading = false
                     onContinue()
                 }
             } catch {
-                errorMessage = error.localizedDescription
-                isLoading = false
-            }
-            
-            if selectedRole == .father {
-                isLoading = false
+                await MainActor.run {
+                    errorMessage = error.localizedDescription
+                    isLoading = false
+                }
             }
         }
     }

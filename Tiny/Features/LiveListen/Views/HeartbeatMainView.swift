@@ -24,23 +24,58 @@ struct HeartbeatMainView: View {
 
     var body: some View {
         ZStack {
-            // Timeline view - accessible by both mom and dad
-            if viewModel.showTimeline {
+            // TabView with swipe navigation
+            TabView(selection: $viewModel.currentPage) {
+                // Left page: Timeline (default)
                 PregnancyTimelineView(
                     heartbeatSoundManager: viewModel.heartbeatSoundManager,
-                    showTimeline: $viewModel.showTimeline,
+                    showTimeline: .constant(true),
                     onSelectRecording: viewModel.handleRecordingSelection,
-                    isMother: isMother
+                    isMother: isMother,
+                    inputWeek: authService.currentUser?.pregnancyWeeks
                 )
-                .transition(.opacity)
-            } else {
-                // Orb view - for playback (both) and recording (mother only)
+                .tag(0)
+                .transition(.asymmetric(
+                    insertion: .scale(scale: 0.95).combined(with: .opacity),
+                    removal: .scale(scale: 1.05).combined(with: .opacity)
+                ))
+                
+                // Right page: Orb Live Listen
                 OrbLiveListenView(
                     heartbeatSoundManager: viewModel.heartbeatSoundManager,
-                    showTimeline: $viewModel.showTimeline
+                    showTimeline: Binding(
+                        get: { viewModel.currentPage == 0 },
+                        set: { if $0 { viewModel.currentPage = 0 } else { viewModel.currentPage = 1 } }
+                    )
                 )
-                .transition(.opacity)
+                .tag(1)
+                .transition(.asymmetric(
+                    insertion: .scale(scale: 0.95).combined(with: .opacity),
+                    removal: .scale(scale: 1.05).combined(with: .opacity)
+                ))
             }
+            .tabViewStyle(.page(indexDisplayMode: .never))
+            .ignoresSafeArea()
+        }
+        .preferredColorScheme(.dark)
+        .onAppear {
+            // Initialize only once
+            if !isInitialized {
+                initializeManager()
+            }
+        }
+        .onChange(of: authService.currentUser?.roomCode) { oldValue, newValue in
+            // Re-initialize when room code changes
+            if newValue != nil && newValue != oldValue {
+                print("🔄 Room code updated: \(newValue ?? "nil")")
+                initializeManager()
+            }
+        }
+        .sheet(isPresented: $showRoomCode) {
+            RoomCodeDisplayView()
+                .environmentObject(authService)
+                .presentationDetents([.medium])
+                .presentationDragIndicator(.visible)
         }
     }
 
@@ -76,13 +111,6 @@ struct HeartbeatMainView: View {
                     userRole: authService.currentUser?.role
                 )
                 isInitialized = true
-            }
-
-            // For fathers, start in timeline view
-            if !isMother {
-                await MainActor.run {
-                    viewModel.showTimeline = true
-                }
             }
         }
     }

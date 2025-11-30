@@ -10,7 +10,7 @@ import SwiftData
 internal import Combine
 
 class HeartbeatMainViewModel: ObservableObject {
-    @Published var showTimeline = false
+    @Published var currentPage = 0  // 0 = Timeline (left), 1 = Orb (right)
     let heartbeatSoundManager = HeartbeatSoundManager()
     
     func setupManager(
@@ -31,15 +31,13 @@ class HeartbeatMainViewModel: ObservableObject {
     func handleRecordingSelection(_ recording: Recording) {
         print("🎵 Recording selected: \(recording.fileURL.lastPathComponent)")
         
-        // Set as last recording
+        // Set as last recording (but don't auto-play)
         heartbeatSoundManager.lastRecording = recording
         
-        // Play the recording
-        heartbeatSoundManager.togglePlayback(recording: recording)
-        
-        // Close timeline and go to orb view for playback (for both mother and father)
+        // Switch to orb view (page 1) for playback
+        // User will need to tap the orb to start playback
         withAnimation(.spring(response: 0.6, dampingFraction: 0.8)) {
-            showTimeline = false
+            currentPage = 1
         }
     }
 }
