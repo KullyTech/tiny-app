@@ -71,10 +71,10 @@ class FirebaseStorageService: ObservableObject {
         heartbeatId: String,
         timestamp: Date
     ) async throws -> URL {
-        guard let _ = URL(string: downloadURL) else {
+        guard URL(string: downloadURL) != nil else {
             throw StorageError.invalidURL
         }
-        
+
         // Create local file path with timestamp-based name (matching original format)
         let documentsPath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
         let timeInterval = timestamp.timeIntervalSince1970
@@ -142,10 +142,10 @@ class FirebaseStorageService: ObservableObject {
         momentId: String,
         timestamp: Date
     ) async throws -> URL {
-        guard let _ = URL(string: downloadURL) else {
+        guard URL(string: downloadURL) != nil else {
             throw StorageError.invalidURL
         }
-        
+
         let documentsPath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
         let timeInterval = timestamp.timeIntervalSince1970
         let fileName = "moment-\(timeInterval).jpg"

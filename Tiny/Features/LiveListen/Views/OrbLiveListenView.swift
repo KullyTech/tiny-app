@@ -1,6 +1,7 @@
 import SwiftUI
 import SwiftData
 
+// swiftlint:disable type_body_length
 struct OrbLiveListenView: View {
     @State private var showThemeCustomization = false
     @EnvironmentObject var themeManager: ThemeManager
@@ -422,6 +423,7 @@ struct OrbLiveListenView: View {
         }
     }
 }
+// swiftlint:enable type_body_length
 
 // #Preview("Normal Mode") {
 //    OrbLiveListenView(

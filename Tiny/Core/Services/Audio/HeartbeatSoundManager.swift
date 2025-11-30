@@ -123,7 +123,7 @@ class HeartbeatSoundManager: NSObject, ObservableObject {
         guard let modelContext = modelContext else { return }
         do {
             let results = try modelContext.fetch(FetchDescriptor<SavedHeartbeat>())
-            let _ = getDocumentsDirectory()
+            _ = getDocumentsDirectory()
             
             DispatchQueue.main.async {
                 // Map the REAL timestamp from SwiftData
@@ -889,7 +889,6 @@ class HeartbeatSoundManager: NSObject, ObservableObject {
                 timestamp: timestamp,
                 pregnancyWeeks: pregnancyWeek
             )
-            
             
             modelContext.insert(savedMoment)
             try modelContext.save()

@@ -35,7 +35,7 @@ struct MainTimelineListView: View {
                     ScrollViewReader { proxy in
                         ZStack(alignment: .top) {
                             let orbPositions = groupedData.indices.map { index in
-                                topPadding + (CGFloat(index) * itemSpacing)
+                                topPadding + CGFloat(index) * itemSpacing
                             }
 
                             SegmentedWave(

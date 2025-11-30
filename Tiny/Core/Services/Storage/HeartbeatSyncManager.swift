@@ -10,6 +10,7 @@ import FirebaseFirestore
 import SwiftData
 internal import Combine
 
+// swiftlint:disable type_body_length
 @MainActor
 class HeartbeatSyncManager: ObservableObject {
     private let dbf = Firestore.firestore()
@@ -341,7 +342,6 @@ class HeartbeatSyncManager: ObservableObject {
         return syncedHeartbeats
     }
 
-    
     // MARK: - Moment Sync
     
     func uploadMoment(
@@ -505,6 +505,7 @@ class HeartbeatSyncManager: ObservableObject {
         return syncedMoments
     }
 }
+// swiftlint:enable type_body_length
 
 // MARK: - Supporting Types
 

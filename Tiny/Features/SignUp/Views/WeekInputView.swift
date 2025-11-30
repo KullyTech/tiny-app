@@ -51,7 +51,7 @@ enum PregnancyStage {
 
 struct WeekInputView: View {
     @State private var selectedWeek: Int = 20
-    var onComplete: ((Int) -> Void)? // Callback when user completes
+    var onComplete: ((Int) -> Void)?  // Callback when user completes
     
     var body: some View {
         ZStack {

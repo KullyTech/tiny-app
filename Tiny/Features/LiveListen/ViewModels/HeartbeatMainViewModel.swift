@@ -12,7 +12,7 @@ internal import Combine
 class HeartbeatMainViewModel: ObservableObject {
     @Published var currentPage: Int = 0
     @Published var allowTabViewSwipe: Bool = true
-    @Published var selectedRecording: Recording? = nil
+    @Published var selectedRecording: Recording?
     let heartbeatSoundManager = HeartbeatSoundManager()
     
     func setupManager(
