@@ -71,7 +71,7 @@ class FirebaseStorageService: ObservableObject {
         heartbeatId: String,
         timestamp: Date
     ) async throws -> URL {
-        guard let url = URL(string: downloadURL) else {
+        guard let _ = URL(string: downloadURL) else {
             throw StorageError.invalidURL
         }
         

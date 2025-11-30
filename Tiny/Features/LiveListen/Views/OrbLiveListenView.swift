@@ -18,16 +18,33 @@ struct OrbLiveListenView: View {
         GeometryReader { geometry in
             ZStack {
                 backgroundView
+                    .animation(.easeOut(duration: 0.2), value: viewModel.isDraggingToSave)
+                    .animation(.easeOut(duration: 0.2), value: viewModel.isDraggingToDelete)
+                
                 topControlsView
+                    .opacity(viewModel.isDraggingToSave || viewModel.isDraggingToDelete ? 0.0 : 1.0)
+                    .animation(.easeOut(duration: 0.2), value: viewModel.isDraggingToSave)
+                    .animation(.easeOut(duration: 0.2), value: viewModel.isDraggingToDelete)
+                
                 statusTextView
+                    .opacity(viewModel.isDraggingToSave || viewModel.isDraggingToDelete ? 0.0 : 1.0)
+                    .animation(.easeOut(duration: 0.2), value: viewModel.isDraggingToSave)
+                    .animation(.easeOut(duration: 0.2), value: viewModel.isDraggingToDelete)
+                
                 orbView(geometry: geometry)
                 
                 // Save/Library Button (Only visible when dragging)
                 saveButton(geometry: geometry)
                 
+                // Delete Button (Only visible when dragging up)
+                deleteButton(geometry: geometry)
+                
                 // Floating Button to Open Timeline manually
-                if !viewModel.isListening && !viewModel.isDraggingToSave {
+                if !viewModel.isListening && !viewModel.isDraggingToSave && !viewModel.isDraggingToDelete {
                     libraryOpenButton(geometry: geometry)
+                        .opacity(viewModel.isDraggingToSave || viewModel.isDraggingToDelete ? 0.0 : 1.0)
+                        .animation(.easeOut(duration: 0.2), value: viewModel.isDraggingToSave)
+                        .animation(.easeOut(duration: 0.2), value: viewModel.isDraggingToDelete)
                 }
                 
                 coachMarkView
@@ -132,12 +149,26 @@ struct OrbLiveListenView: View {
             .font(.system(size: 28))
             .foregroundColor(.white)
             .frame(width: 77, height: 77)
-            .background(Circle().fill(Color.white.opacity(0.1)))
             .clipShape(Circle())
+            .glassEffect(.clear)
             .scaleEffect(viewModel.saveButtonScale)
-            .position(x: geometry.size.width / 2, y: geometry.size.height - 100)
+            .position(x: geometry.size.width / 2, y: geometry.size.height - 46)
             .opacity(viewModel.isDraggingToSave ? min(viewModel.dragOffset / 150.0, 1.0) : 0.0)
             .animation(.easeOut(duration: 0.2), value: viewModel.isDraggingToSave)
+            .animation(.easeOut(duration: 0.2), value: viewModel.dragOffset)
+    }
+    
+    private func deleteButton(geometry: GeometryProxy) -> some View {
+        Image(systemName: "trash.fill")
+            .font(.system(size: 28))
+            .foregroundColor(.red)
+            .frame(width: 77, height: 77)
+            .clipShape(Circle())
+            .glassEffect(.clear)
+            .scaleEffect(viewModel.deleteButtonScale)
+            .position(x: geometry.size.width / 2, y: 50)
+            .opacity(viewModel.isDraggingToDelete ? min(abs(viewModel.dragOffset) / 150.0, 1.0) : 0.0)
+            .animation(.easeOut(duration: 0.2), value: viewModel.isDraggingToDelete)
             .animation(.easeOut(duration: 0.2), value: viewModel.dragOffset)
     }
     
@@ -192,6 +223,7 @@ struct OrbLiveListenView: View {
             .animation(.easeInOut(duration: 0.2), value: viewModel.longPressScale)
             .animation(.easeInOut(duration: 0.2), value: viewModel.orbDragScale)
             .offset(y: viewModel.orbOffset(geometry: geometry) + viewModel.dragOffset)
+            .animation(.spring(response: 1.0, dampingFraction: 0.8), value: viewModel.isListening)
             .onTapGesture(count: 2) {
                 viewModel.handleDoubleTap {
                     heartbeatSoundManager.start()
@@ -208,12 +240,16 @@ struct OrbLiveListenView: View {
                     viewModel.handleDragChange(value: value, geometry: geometry)
                 },
                 handleDragEnd: { value in
-                    viewModel.handleDragEnd(value: value, geometry: geometry) {
+                    viewModel.handleDragEnd(value: value, geometry: geometry, onSave: {
                         heartbeatSoundManager.saveRecording()
-                        withAnimation(.spring(response: 0.6, dampingFraction: 0.8)) {
-                            showTimeline = true
+                        showTimeline = true
+                    }, onDelete: {
+                        // Delete the recording if it's saved, or just dismiss if it's unsaved
+                        if let lastRecording = heartbeatSoundManager.lastRecording {
+                            heartbeatSoundManager.deleteRecording(lastRecording)
                         }
-                    }
+                        showTimeline = true
+                    })
                 },
                 handleLongPressChange: viewModel.handleLongPressChange,
                 handleLongPressComplete: {

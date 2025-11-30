@@ -22,6 +22,7 @@ struct Recording: Identifiable, Equatable {
     let id = UUID()
     let fileURL: URL
     let createdAt: Date
+    var displayName: String? // Custom name from SwiftData
     var isPlaying: Bool = false
 }
 
@@ -109,7 +110,7 @@ class HeartbeatSoundManager: NSObject, ObservableObject {
         guard let modelContext = modelContext else { return }
         do {
             let results = try modelContext.fetch(FetchDescriptor<SavedHeartbeat>())
-            let documentsURL = getDocumentsDirectory()
+            let _ = getDocumentsDirectory()
             
             DispatchQueue.main.async {
                 // Map the REAL timestamp from SwiftData
@@ -124,10 +125,14 @@ class HeartbeatSoundManager: NSObject, ObservableObject {
                     }
                     
                     print("✅ Found recording: \(fileURL.lastPathComponent)")
+                    if let displayName = savedItem.displayName {
+                        print("   Custom name: \(displayName)")
+                    }
                     
                     return Recording(
                         fileURL: fileURL,
-                        createdAt: savedItem.timestamp
+                        createdAt: savedItem.timestamp,
+                        displayName: savedItem.displayName
                     )
                 }
                 print("✅ Loaded \(self.savedRecordings.count) recordings from SwiftData")
@@ -141,7 +146,7 @@ class HeartbeatSoundManager: NSObject, ObservableObject {
                         let isMother = currentUserRole == .mother
                         
                         // Fetch heartbeats from cloud
-                        let syncedHeartbeats = try await syncManager.syncHeartbeatsFromCloud(
+                        _ = try await syncManager.syncHeartbeatsFromCloud(
                             roomCode: roomCode,
                             modelContext: modelContext,
                             isMother: isMother
@@ -163,7 +168,8 @@ class HeartbeatSoundManager: NSObject, ObservableObject {
                             
                             return Recording(
                                 fileURL: fileURL,
-                                createdAt: savedItem.timestamp
+                                createdAt: savedItem.timestamp,
+                                displayName: savedItem.displayName
                             )
                         }
                         print("✅ Reloaded \(self.savedRecordings.count) recordings after sync (isMother: \(isMother))")
@@ -674,11 +680,22 @@ class HeartbeatSoundManager: NSObject, ObservableObject {
         
         guard let modelContext = modelContext else { return }
 
-        // Create entry with isShared = true by default
+        // Calculate current pregnancy week
+        let pregnancyWeek: Int? = {
+            guard let pregnancyStartDate = UserDefaults.standard.object(forKey: "pregnancyStartDate") as? Date else {
+                return nil
+            }
+            let calendar = Calendar.current
+            let weeksSinceStart = calendar.dateComponents([.weekOfYear], from: pregnancyStartDate, to: recording.createdAt).weekOfYear ?? 0
+            return weeksSinceStart
+        }()
+        
+        // Create entry with isShared = true by default and pregnancy week
         let entry = SavedHeartbeat(
             filePath: recording.fileURL.path,
             timestamp: recording.createdAt,
-            isShared: true  // Auto-share all heartbeats
+            isShared: true,  // Auto-share all heartbeats
+            pregnancyWeeks: pregnancyWeek
         )
         
         modelContext.insert(entry)
@@ -717,6 +734,65 @@ class HeartbeatSoundManager: NSObject, ObservableObject {
             }
         } catch {
             print("❌ SwiftData save failed: \(error)")
+        }
+    }
+    
+    func deleteRecording(_ recording: Recording) {
+        guard let modelContext = modelContext else { return }
+        
+        print("🗑️ Deleting recording: \(recording.fileURL.lastPathComponent)")
+        
+        // Remove from savedRecordings array
+        if let index = savedRecordings.firstIndex(where: { $0.id == recording.id }) {
+            savedRecordings.remove(at: index)
+            print("✅ Removed from savedRecordings array. New count: \(savedRecordings.count)")
+            // Force UI update
+            objectWillChange.send()
+        }
+        
+        // Remove from SwiftData
+        do {
+            let filePath = recording.fileURL.path
+            let descriptor = FetchDescriptor<SavedHeartbeat>(
+                predicate: #Predicate { $0.filePath == filePath }
+            )
+            let results = try modelContext.fetch(descriptor)
+            
+            for entry in results {
+                modelContext.delete(entry)
+            }
+            
+            try modelContext.save()
+            print("✅ Deleted from SwiftData")
+            
+            // Delete the audio file from disk
+            let fileManager = FileManager.default
+            if fileManager.fileExists(atPath: filePath) {
+                try fileManager.removeItem(atPath: filePath)
+                print("✅ Deleted audio file from disk")
+            }
+            
+            // Clear lastRecording if it's the one being deleted
+            if lastRecording?.id == recording.id {
+                lastRecording = nil
+            }
+            
+            // Delete from Firebase if it was synced
+            if let firebaseId = results.first?.firebaseId,
+               let syncManager = syncManager,
+               let entry = results.first {
+                Task { @MainActor in
+                    do {
+                        try await syncManager.deleteHeartbeat(entry)
+                        print("✅ Deleted from Firebase")
+                    } catch {
+                        print("❌ Firebase deletion failed: \(error.localizedDescription)")
+                    }
+                }
+            }
+            
+        } catch {
+            print("❌ Delete failed: \(error)")
         }
     }
 }

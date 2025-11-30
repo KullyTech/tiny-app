@@ -17,20 +17,21 @@ struct HeartbeatMainView: View {
     @State private var showRoomCode = false
     @State private var isInitialized = false
 
-    // Check if user is a mother
     private var isMother: Bool {
         authService.currentUser?.role == .mother
     }
 
     var body: some View {
         ZStack {
-            // TabView with swipe navigation
             TabView(selection: $viewModel.currentPage) {
-                // Left page: Timeline (default)
                 PregnancyTimelineView(
                     heartbeatSoundManager: viewModel.heartbeatSoundManager,
                     showTimeline: .constant(true),
                     onSelectRecording: viewModel.handleRecordingSelection,
+                    onDisableSwipe: { disable in
+                        print("🚫 Swipe disable requested: \(disable), allowTabViewSwipe will be: \(!disable)")
+                        viewModel.allowTabViewSwipe = !disable
+                    },
                     isMother: isMother,
                     inputWeek: authService.currentUser?.pregnancyWeeks
                 )
@@ -39,8 +40,6 @@ struct HeartbeatMainView: View {
                     insertion: .scale(scale: 0.95).combined(with: .opacity),
                     removal: .scale(scale: 1.05).combined(with: .opacity)
                 ))
-                
-                // Right page: Orb Live Listen
                 OrbLiveListenView(
                     heartbeatSoundManager: viewModel.heartbeatSoundManager,
                     showTimeline: Binding(
@@ -55,7 +54,44 @@ struct HeartbeatMainView: View {
                 ))
             }
             .tabViewStyle(.page(indexDisplayMode: .never))
+            .highPriorityGesture(
+                // Block TabView swipe when navigation is active
+                !viewModel.allowTabViewSwipe ? DragGesture() : nil
+            )
             .ignoresSafeArea()
+            
+            // Page indicator dots
+            VStack {
+                Spacer()
+                HStack(spacing: 8) {
+                    // Timeline dot (page 0)
+                    Circle()
+                        .fill(viewModel.currentPage == 0 ? Color.white : Color.white.opacity(0.3))
+                        .frame(width: 8, height: 8)
+                        .animation(.easeInOut(duration: 0.2), value: viewModel.currentPage)
+                    
+                    // Orb dot (page 1)
+                    Circle()
+                        .fill(viewModel.currentPage == 1 ? Color.white : Color.white.opacity(0.3))
+                        .frame(width: 8, height: 8)
+                        .animation(.easeInOut(duration: 0.2), value: viewModel.currentPage)
+                }
+                .padding(.bottom, 20)
+            }
+            
+            // SavedRecordingPlaybackView overlay
+            if let recording = viewModel.selectedRecording {
+                SavedRecordingPlaybackView(
+                    recording: recording,
+                    heartbeatSoundManager: viewModel.heartbeatSoundManager,
+                    showTimeline: Binding(
+                        get: { false },
+                        set: { if $0 { viewModel.selectedRecording = nil } }
+                    )
+                )
+                .transition(.move(edge: .trailing).combined(with: .opacity))
+                .zIndex(10)
+            }
         }
         .preferredColorScheme(.dark)
         .onAppear {
@@ -121,4 +157,5 @@ struct HeartbeatMainView: View {
         .modelContainer(for: SavedHeartbeat.self, inMemory: true)
         .environmentObject(AuthenticationService())
         .environmentObject(HeartbeatSyncManager())
+        .environmentObject(ThemeManager())
 }

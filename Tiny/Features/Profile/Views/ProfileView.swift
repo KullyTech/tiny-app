@@ -246,7 +246,20 @@ struct ProfileView: View {
     }
 
     private func featureCardRight(width: CGFloat) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
+        // Calculate current pregnancy week dynamically
+        let currentWeek: Int = {
+            guard let pregnancyStartDate = UserDefaults.standard.object(forKey: "pregnancyStartDate") as? Date else {
+                // Fallback to user's stored pregnancy week if start date not available
+                return authService.currentUser?.pregnancyWeeks ?? 0
+            }
+            
+            let calendar = Calendar.current
+            let now = Date()
+            let weeksSinceStart = calendar.dateComponents([.weekOfYear], from: pregnancyStartDate, to: now).weekOfYear ?? 0
+            return weeksSinceStart
+        }()
+        
+        return VStack(alignment: .leading, spacing: 8) {
             HStack {
                 Image(systemName: "calendar")
                     .font(.caption)
@@ -259,7 +272,7 @@ struct ProfileView: View {
             Spacer()
 
             VStack(alignment: .center, spacing: 4) {
-                Text("20")
+                Text("\(currentWeek)")
                     .font(.title)
                     .fontWeight(.bold)
                     .foregroundColor(Color("mainViolet"))

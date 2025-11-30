@@ -56,7 +56,7 @@ class HeartbeatSyncManager: ObservableObject {
         // Keep the isShared value from the heartbeat (should be true by default)
         
         // 3. Save metadata to Firestore
-        let metadata: [String: Any] = [
+        var metadata: [String: Any] = [
             "heartbeatId": heartbeatId,
             "motherUserId": motherUserId,
             "roomCode": roomCode,
@@ -66,6 +66,10 @@ class HeartbeatSyncManager: ObservableObject {
             "pregnancyWeeks": heartbeat.pregnancyWeeks ?? 0,
             "createdAt": Timestamp(date: Date())
         ]
+        
+        if let displayName = heartbeat.displayName {
+            metadata["displayName"] = displayName
+        }
         
         print("💾 Saving metadata to Firestore...")
         print("   Metadata: \(metadata)")
@@ -93,6 +97,28 @@ class HeartbeatSyncManager: ObservableObject {
         
         // Update local model
         heartbeat.isShared = true
+    }
+    
+    // MARK: - Update Heartbeat Name
+    
+    /// Updates the display name of a heartbeat in Firestore
+    func updateHeartbeatName(_ heartbeat: SavedHeartbeat, newName: String) async throws {
+        guard let firebaseId = heartbeat.firebaseId else {
+            throw SyncError.notSynced
+        }
+        
+        print("📝 Updating heartbeat name in Firestore...")
+        print("   ID: \(firebaseId)")
+        print("   New Name: \(newName)")
+        
+        // Update Firestore
+        try await dbf.collection("heartbeats").document(firebaseId).updateData([
+            "displayName": newName
+        ])
+        
+        // Update local model
+        heartbeat.displayName = newName
+        print("✅ Heartbeat name updated in Firestore")
     }
     
     // MARK: - Unshare Heartbeat
@@ -154,7 +180,8 @@ class HeartbeatSyncManager: ObservableObject {
                 firebaseStorageURL: data["firebaseStorageURL"] as? String ?? "",
                 timestamp: (data["timestamp"] as? Timestamp)?.dateValue() ?? Date(),
                 isShared: isShared,
-                pregnancyWeeks: data["pregnancyWeeks"] as? Int
+                pregnancyWeeks: data["pregnancyWeeks"] as? Int,
+                displayName: data["displayName"] as? String
             )
             
             print("   ✅ Including heartbeat: \(metadata.id)")
@@ -190,7 +217,8 @@ class HeartbeatSyncManager: ObservableObject {
                 firebaseStorageURL: data["firebaseStorageURL"] as? String ?? "",
                 timestamp: (data["timestamp"] as? Timestamp)?.dateValue() ?? Date(),
                 isShared: data["isShared"] as? Bool ?? false,
-                pregnancyWeeks: data["pregnancyWeeks"] as? Int
+                pregnancyWeeks: data["pregnancyWeeks"] as? Int,
+                displayName: data["displayName"] as? String
             )
         }
         
@@ -293,6 +321,11 @@ class HeartbeatSyncManager: ObservableObject {
                         firebaseId: metadata.id
                     )
                     
+                    // Set display name if available
+                    if let displayName = metadata.displayName {
+                        heartbeat.displayName = displayName
+                    }
+                    
                     modelContext.insert(heartbeat)
                     syncedHeartbeats.append(heartbeat)
                     print("   ✅ Saved heartbeat to SwiftData: \(metadata.id)")
@@ -320,6 +353,7 @@ struct HeartbeatMetadata: Identifiable {
     let timestamp: Date
     let isShared: Bool
     let pregnancyWeeks: Int?
+    let displayName: String?
 }
 
 enum SyncError: LocalizedError {
