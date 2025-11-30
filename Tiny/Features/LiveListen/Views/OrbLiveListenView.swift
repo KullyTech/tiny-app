@@ -45,15 +45,6 @@ struct OrbLiveListenView: View {
                 // Delete Button (Only visible when dragging up)
                 deleteButton(geometry: geometry)
                 
-                // Floating Button to Open Timeline manually
-                if !viewModel.isListening && !viewModel.isDraggingToSave && !viewModel.isDraggingToDelete {
-                    libraryOpenButton(geometry: geometry)
-                        .opacity(viewModel.isDraggingToSave || viewModel.isDraggingToDelete || showSuccessAlert ? 0.0 : 1.0)
-                        .animation(.easeOut(duration: 0.2), value: viewModel.isDraggingToSave)
-                        .animation(.easeOut(duration: 0.2), value: viewModel.isDraggingToDelete)
-                        .animation(.easeOut(duration: 0.2), value: showSuccessAlert)
-                }
-                
                 coachMarkView
                 
                 // Success Alert (Slide down, no overlay)
@@ -133,53 +124,39 @@ struct OrbLiveListenView: View {
                                 .clipShape(Circle())
                         })
                         .glassEffect(.clear)
-                        .padding(.bottom, 50)
                         .transition(.opacity.animation(.easeInOut))
+                        
+                        Spacer()
+                        
+                        HStack {
+                            Button {
+                                viewModel.toggleHaptics()
+                            } label: {
+                                Image(systemName: "iphone.gen3.radiowaves.left.and.right")
+                                    .font(.body)
+                                    .foregroundColor(viewModel.isHapticsEnabled ? .white : .white.opacity(0.4))
+                                    .frame(width: 50, height: 50)
+                            }
+                            .glassEffect(.clear)
+
+                            Button {
+                                viewModel.showShareSheet = true
+                            } label: {
+                                Image(systemName: "square.and.arrow.up")
+                                    .font(.body)
+                                    .foregroundColor(.white)
+                                    .frame(width: 50, height: 50)
+                            }
+                            .glassEffect(.clear)
+                        }
+                        .transition(.opacity.animation(.easeInOut))
+                    } else {
+                        Spacer()
                     }
-                    Spacer()
                 }
                 .padding()
                 Spacer()
             }
-        }
-    }
-    
-    private func libraryOpenButton(geometry: GeometryProxy) -> some View {
-        VStack {
-            HStack {
-                Spacer()
-                
-                if viewModel.isPlaybackMode {
-                    Button {
-                        viewModel.showShareSheet = true
-                    } label: {
-                        Image(systemName: "square.and.arrow.up")
-                            .font(.body)
-                            .foregroundColor(.white)
-                            .frame(width: 50, height: 50)
-                            .clipShape(Circle())
-                    }
-                    .glassEffect(.clear)
-                    .padding(.bottom, 50)
-                    .transition(.opacity.animation(.easeInOut))
-                }
-                
-                Button {
-                    withAnimation(.spring(response: 0.6, dampingFraction: 0.8)) {
-                        showTimeline = true
-                    }
-                } label: {
-                    Image(systemName: "book.fill")
-                        .font(.body)
-                        .foregroundColor(.white)
-                        .frame(width: 50, height: 50)
-                        .clipShape(Circle())
-                }
-                .glassEffect(.clear)
-                .padding(.bottom, 50)
-            }
-            .padding()
-            Spacer()
         }
     }
     

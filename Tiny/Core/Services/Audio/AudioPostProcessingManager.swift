@@ -25,6 +25,15 @@ class AudioPostProcessingManager: ObservableObject {
     @Published var currentTime: TimeInterval = 0
     @Published var duration: TimeInterval = 0
     @Published var amplitude: Float = 0.0
+    
+    var isHapticsEnabled: Bool {
+        hapticManager?.isHapticsEnabled ?? false
+    }
+    
+    func toggleHaptics() {
+        hapticManager?.isHapticsEnabled.toggle()
+        objectWillChange.send()
+    }
 
     init() {
         engine = AudioEngine()

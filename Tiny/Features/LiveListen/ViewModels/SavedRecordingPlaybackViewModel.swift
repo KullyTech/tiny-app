@@ -15,11 +15,13 @@ import SwiftData
 class SavedRecordingPlaybackViewModel: ObservableObject {
     @Published var isPlaying = false
     @Published var currentTime: TimeInterval = 0
+    @Published var duration: TimeInterval = 0
     @Published var recordingName = "Heartbeat Recording"
     @Published var editedName = "Heartbeat Recording"
     @Published var isEditingName = false
     @Published var showSuccessAlert = false
     @Published var formattedDate = ""
+    @Published var showShareSheet = false
     
     // Drag state
     @Published var dragOffset: CGFloat = 0
@@ -27,11 +29,35 @@ class SavedRecordingPlaybackViewModel: ObservableObject {
     @Published var isDraggingToDelete = false
     @Published var deleteButtonScale: CGFloat = 1.0
     
-    private var playbackTimer: Timer?
     private var audioManager: HeartbeatSoundManager?
     private var currentRecording: Recording?
     private var modelContext: ModelContext?
     private var onRecordingUpdated: (() -> Void)?
+    
+    let audioPostProcessingManager = AudioPostProcessingManager()
+    private var cancellables = Set<AnyCancellable>()
+    
+    var isHapticsEnabled: Bool {
+        audioPostProcessingManager.isHapticsEnabled
+    }
+    
+    init() {
+        // Subscribe to audioPostProcessingManager changes to trigger UI updates
+        audioPostProcessingManager.objectWillChange
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] _ in
+                guard let self = self else { return }
+                self.isPlaying = self.audioPostProcessingManager.isPlaying
+                self.currentTime = self.audioPostProcessingManager.currentTime
+                self.duration = self.audioPostProcessingManager.duration
+            }
+            .store(in: &cancellables)
+    }
+    
+    func toggleHaptics() {
+        audioPostProcessingManager.toggleHaptics()
+        objectWillChange.send()
+    }
     
     func setupPlayback(for recording: Recording, manager: HeartbeatSoundManager, modelContext: ModelContext, onRecordingUpdated: @escaping () -> Void) {
         self.audioManager = manager
@@ -66,24 +92,27 @@ class SavedRecordingPlaybackViewModel: ObservableObject {
         formatter.dateFormat = "d MMMM yyyy"
         self.formattedDate = formatter.string(from: recording.createdAt)
         
-        // Start playback
-        manager.togglePlayback(recording: recording)
-        startPlaybackTimer(manager: manager)
+        // Stop any existing playback in manager
+        manager.stop()
+        
+        // Start playback with AudioPostProcessingManager
+        audioPostProcessingManager.loadAndPlay(fileURL: recording.fileURL)
     }
     
     func togglePlayback(manager: HeartbeatSoundManager, recording: Recording) {
-        manager.togglePlayback(recording: recording)
-        
-        if manager.isPlayingPlayback {
-            startPlaybackTimer(manager: manager)
+        if audioPostProcessingManager.isPlaying {
+            audioPostProcessingManager.pause()
         } else {
-            stopPlaybackTimer()
+            if audioPostProcessingManager.currentTime > 0 {
+                audioPostProcessingManager.resume()
+            } else {
+                audioPostProcessingManager.loadAndPlay(fileURL: recording.fileURL)
+            }
         }
     }
     
     func cleanup() {
-        stopPlaybackTimer()
-        audioManager?.player?.stop()
+        audioPostProcessingManager.stop()
     }
     
     func handleDragChange(value: DragGesture.Value, geometry: GeometryProxy) {
@@ -131,21 +160,6 @@ class SavedRecordingPlaybackViewModel: ObservableObject {
             orbDragScale = 1.0
             isDraggingToDelete = false
             deleteButtonScale = 1.0
-        }
-    }
-    
-    private func startPlaybackTimer(manager: HeartbeatSoundManager) {
-        stopPlaybackTimer()
-        isPlaying = true
-        
-        playbackTimer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { [weak self, weak manager] _ in
-            guard let self = self, let manager = manager else { return }
-            
-            self.isPlaying = manager.isPlayingPlayback
-            
-            if !manager.isPlayingPlayback {
-                self.stopPlaybackTimer()
-            }
         }
     }
     
@@ -225,11 +239,5 @@ class SavedRecordingPlaybackViewModel: ObservableObject {
         } catch {
             print("❌ Error saving recording name: \(error)")
         }
-    }
-    
-    private func stopPlaybackTimer() {
-        playbackTimer?.invalidate()
-        playbackTimer = nil
-        isPlaying = false
     }
 }

@@ -88,7 +88,9 @@ struct SavedRecordingPlaybackView: View {
                 }
             }
             .ignoresSafeArea()
-
+            .sheet(isPresented: $viewModel.showShareSheet) {
+                ShareSheet(activityItems: [recording.fileURL])
+            }
         }
         .onAppear {
             viewModel.setupPlayback(
@@ -157,15 +159,17 @@ struct SavedRecordingPlaybackView: View {
                     // Normal buttons
                     HStack {
                         Button {
+                            viewModel.toggleHaptics()
                         } label: {
                             Image(systemName: "iphone.gen3.radiowaves.left.and.right")
                                 .font(.body)
-                                .foregroundColor(.white)
+                                .foregroundColor(viewModel.isHapticsEnabled ? .white : .white.opacity(0.4))
                                 .frame(width: 48, height: 48)
                         }
                         .glassEffect(.clear)
 
                         Button {
+                            viewModel.showShareSheet = true
                         } label: {
                             Image(systemName: "square.and.arrow.up")
                                 .font(.body)
@@ -212,6 +216,7 @@ struct SavedRecordingPlaybackView: View {
                         }
                         // Then delete after alert is visible
                         DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+                            viewModel.cleanup()
                             heartbeatSoundManager.deleteRecording(recording)
                             // Navigate after another delay
                             DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
@@ -238,6 +243,12 @@ struct SavedRecordingPlaybackView: View {
                 Text(viewModel.isPlaying ? "Playing" : "Tap to play")
                     .font(.system(size: 14))
                     .foregroundColor(.white.opacity(0.7))
+                
+                if viewModel.duration > 0 && !viewModel.isDraggingToDelete {
+                    Text("\(Int(viewModel.currentTime))s / \(Int(viewModel.duration))s")
+                        .font(.caption)
+                        .foregroundColor(.white.opacity(0.7))
+                }
                 
                 if !viewModel.isDraggingToDelete {
                     Text("Drag up to delete")

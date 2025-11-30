@@ -14,7 +14,16 @@ class HapticManager {
     private let amplitudeThresholdLower: Float = 0.08 // Triggers for sounds above this
     private let amplitudeThresholdUpper: Float = 0.2 // Does not trigger for sounds above this (too loud noise)
 
+    var isHapticsEnabled: Bool {
+        get { UserDefaults.standard.bool(forKey: "isHapticsEnabled") }
+        set { UserDefaults.standard.set(newValue, forKey: "isHapticsEnabled") }
+    }
+
     init() {
+        // Initialize default value if not set
+        if UserDefaults.standard.object(forKey: "isHapticsEnabled") == nil {
+            UserDefaults.standard.set(true, forKey: "isHapticsEnabled")
+        }
         prepareHaptics()
     }
 
@@ -55,6 +64,8 @@ class HapticManager {
     }
 
     func playHapticFromAmplitude(_ amplitude: Float) {
+        guard isHapticsEnabled else { return }
+        
         let now = Date()
         var shouldTriggerHaptic = false
 
