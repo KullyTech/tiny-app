@@ -61,23 +61,7 @@ struct HeartbeatMainView: View {
             .ignoresSafeArea()
             
             // Page indicator dots
-            VStack {
-                Spacer()
-                HStack(spacing: 8) {
-                    // Timeline dot (page 0)
-                    Circle()
-                        .fill(viewModel.currentPage == 0 ? Color.white : Color.white.opacity(0.3))
-                        .frame(width: 8, height: 8)
-                        .animation(.easeInOut(duration: 0.2), value: viewModel.currentPage)
-                    
-                    // Orb dot (page 1)
-                    Circle()
-                        .fill(viewModel.currentPage == 1 ? Color.white : Color.white.opacity(0.3))
-                        .frame(width: 8, height: 8)
-                        .animation(.easeInOut(duration: 0.2), value: viewModel.currentPage)
-                }
-                .padding(.bottom, 20)
-            }
+            PageIndicators(viewModel: viewModel, manager: viewModel.heartbeatSoundManager)
             
             // SavedRecordingPlaybackView overlay
             if let recording = viewModel.selectedRecording {
@@ -148,6 +132,36 @@ struct HeartbeatMainView: View {
                 )
                 isInitialized = true
             }
+        }
+    }
+}
+
+private struct PageIndicators: View {
+    @ObservedObject var viewModel: HeartbeatMainViewModel
+    @ObservedObject var manager: HeartbeatSoundManager
+    
+    var body: some View {
+        if manager.isRecording || manager.isPlayingPlayback || viewModel.selectedRecording != nil || !viewModel.allowTabViewSwipe {
+            EmptyView()
+        } else {
+            VStack {
+                Spacer()
+                HStack(spacing: 8) {
+                    // Timeline dot (page 0)
+                    Circle()
+                        .fill(viewModel.currentPage == 0 ? Color.white : Color.white.opacity(0.3))
+                        .frame(width: 8, height: 8)
+                        .animation(.easeInOut(duration: 0.2), value: viewModel.currentPage)
+                    
+                    // Orb dot (page 1)
+                    Circle()
+                        .fill(viewModel.currentPage == 1 ? Color.white : Color.white.opacity(0.3))
+                        .frame(width: 8, height: 8)
+                        .animation(.easeInOut(duration: 0.2), value: viewModel.currentPage)
+                }
+                .padding(.bottom, 20)
+            }
+            .transition(.opacity)
         }
     }
 }
