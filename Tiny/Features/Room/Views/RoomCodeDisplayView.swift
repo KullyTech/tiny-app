@@ -75,23 +75,37 @@ struct RoomCodeDisplayView: View {
 
                 // Room Code Display
                 if let roomCode = authService.currentUser?.roomCode {
-                    Button(action: copyRoomCode) {
-                        HStack {
-                            Text(roomCode)
-                                .font(.system(size: 18, weight: .heavy, design: .rounded))
-                                .tracking(3)
-                                .foregroundColor(.white)
-                            Image(systemName: "doc.on.doc")
-                                .foregroundColor(.white)
+                    ZStack {
+                        Button(action: copyRoomCode) {
+                            HStack {
+                                Text(roomCode)
+                                    .font(.system(size: 18, weight: .heavy, design: .rounded))
+                                    .tracking(3)
+                                    .foregroundColor(.white)
+                                Image(systemName: "doc.on.doc")
+                                    .foregroundColor(.white)
+                            }
+                            .padding(.vertical, 20)
+                            .padding(.horizontal, 40)
+                            .background(
+                                // Frosted capsule background
+                                Capsule()
+                                    .fill(.ultraThinMaterial) // frosted glass effect
+                                    .opacity(0.8)
+                            )
                         }
-                        .padding(.vertical, 20)
-                        .padding(.horizontal, 40)
-                        .background(
-                            // Frosted capsule background
-                            Capsule()
-                                .fill(.ultraThinMaterial) // frosted glass effect
-                                .opacity(0.8)
-                        )
+
+                        if showCopiedMessage {
+                            Text("Copied!")
+                                .font(.caption)
+                                .fontWeight(.bold)
+                                .foregroundColor(.white)
+                                .padding(.vertical, 8)
+                                .padding(.horizontal, 12)
+                                .background(Capsule().fill(Color.black.opacity(0.6)))
+                                .offset(y: 50) // Position below the button
+                                .transition(.opacity)
+                        }
                     }
                 } else {
                     VStack(spacing: 15) {
