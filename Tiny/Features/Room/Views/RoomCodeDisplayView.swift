@@ -6,16 +6,29 @@
 //
 
 import SwiftUI
+import UIKit // Added import for UIScreen
 
 struct RoomCodeDisplayView: View {
     @EnvironmentObject var authService: AuthenticationService
+    @EnvironmentObject var themeManager: ThemeManager // Add ThemeManager
     @Environment(\.dismiss) var dismiss
     @State private var showCopiedMessage = false
     
     var body: some View {
         ZStack {
-            Color(.systemBackground)
+            // Dynamic background based on theme
+            themeManager.selectedBackground.color
                 .ignoresSafeArea()
+            
+            // Middle-bottom gradient circle
+            RadialGradient(
+                gradient: Gradient(colors: [themeManager.selectedBackground.color.opacity(0.8), themeManager.selectedBackground.color]),
+                center: .bottom,
+                startRadius: 0,
+                endRadius: UIScreen.main.bounds.width * 0.3
+            )
+            .offset(y: UIScreen.main.bounds.height / 3) // Adjust position to be middle-bottom
+            .ignoresSafeArea()
             
             VStack(spacing: 30) {
                 // Header
@@ -35,10 +48,11 @@ struct RoomCodeDisplayView: View {
                 Spacer()
                 
                 // Icon
-                Image(systemName: "person.2.circle.fill")
-                    .font(.system(size: 80))
-                    .foregroundColor(.pink)
-                
+                Image("yellowHeart")
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: 20)
+
                 // Title
                 VStack(spacing: 10) {
                     Text(authService.currentUser?.role == .mother ? "Your Room Code" : "Room Code")
@@ -134,4 +148,5 @@ struct RoomCodeDisplayView: View {
 #Preview {
     RoomCodeDisplayView()
         .environmentObject(AuthenticationService())
+        .environmentObject(ThemeManager()) // Add ThemeManager to the preview
 }
