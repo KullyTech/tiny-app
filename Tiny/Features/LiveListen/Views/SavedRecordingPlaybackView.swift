@@ -26,13 +26,19 @@ struct SavedRecordingPlaybackView: View {
                 backgroundView
                 
                 topControlsView(geometry: geometry)
+                    .opacity(showDeleteSuccessAlert ? 0.0 : 1.0)
+                    .animation(.easeOut(duration: 0.2), value: showDeleteSuccessAlert)
                 
                 orbView(geometry: geometry)
                 
                 nameAndDateView
                     .zIndex(10)
+                    .opacity(showDeleteSuccessAlert ? 0.0 : 1.0)
+                    .animation(.easeOut(duration: 0.2), value: showDeleteSuccessAlert)
                 
                 statusTextView
+                    .opacity(showDeleteSuccessAlert ? 0.0 : 1.0)
+                    .animation(.easeOut(duration: 0.2), value: showDeleteSuccessAlert)
                 
                 deleteButton(geometry: geometry)
                 
@@ -211,6 +217,8 @@ struct SavedRecordingPlaybackView: View {
                             DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
                                 withAnimation(.spring(response: 0.6, dampingFraction: 0.8)) {
                                     showDeleteSuccessAlert = false
+                                }
+                                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
                                     showTimeline = true
                                 }
                             }
