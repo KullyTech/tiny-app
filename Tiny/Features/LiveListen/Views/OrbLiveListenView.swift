@@ -26,14 +26,16 @@ struct OrbLiveListenView: View {
                     .animation(.easeOut(duration: 0.2), value: viewModel.isDraggingToDelete)
                 
                 topControlsView
-                    .opacity(viewModel.isDraggingToSave || viewModel.isDraggingToDelete ? 0.0 : 1.0)
+                    .opacity(viewModel.isDraggingToSave || viewModel.isDraggingToDelete || showSuccessAlert ? 0.0 : 1.0)
                     .animation(.easeOut(duration: 0.2), value: viewModel.isDraggingToSave)
                     .animation(.easeOut(duration: 0.2), value: viewModel.isDraggingToDelete)
+                    .animation(.easeOut(duration: 0.2), value: showSuccessAlert)
                 
                 statusTextView
-                    .opacity(viewModel.isDraggingToSave || viewModel.isDraggingToDelete ? 0.0 : 1.0)
+                    .opacity(viewModel.isDraggingToSave || viewModel.isDraggingToDelete || showSuccessAlert ? 0.0 : 1.0)
                     .animation(.easeOut(duration: 0.2), value: viewModel.isDraggingToSave)
                     .animation(.easeOut(duration: 0.2), value: viewModel.isDraggingToDelete)
+                    .animation(.easeOut(duration: 0.2), value: showSuccessAlert)
                 
                 orbView(geometry: geometry)
                 
@@ -46,49 +48,43 @@ struct OrbLiveListenView: View {
                 // Floating Button to Open Timeline manually
                 if !viewModel.isListening && !viewModel.isDraggingToSave && !viewModel.isDraggingToDelete {
                     libraryOpenButton(geometry: geometry)
-                        .opacity(viewModel.isDraggingToSave || viewModel.isDraggingToDelete ? 0.0 : 1.0)
+                        .opacity(viewModel.isDraggingToSave || viewModel.isDraggingToDelete || showSuccessAlert ? 0.0 : 1.0)
                         .animation(.easeOut(duration: 0.2), value: viewModel.isDraggingToSave)
                         .animation(.easeOut(duration: 0.2), value: viewModel.isDraggingToDelete)
+                        .animation(.easeOut(duration: 0.2), value: showSuccessAlert)
                 }
                 
                 coachMarkView
                 
-                // Success Alert with dark overlay
+                // Success Alert (Slide down, no overlay)
                 if showSuccessAlert {
-                    ZStack {
-                        // Dark overlay
-                        Color.black.opacity(0.6)
-                            .ignoresSafeArea()
-                        
-                        // Alert on top
-                        VStack {
-                            HStack(spacing: 16) {
-                                Image(systemName: "checkmark.circle.fill")
-                                    .font(.system(size: 28))
+                    VStack {
+                        HStack(spacing: 16) {
+                            Image(systemName: "checkmark.circle.fill")
+                                .font(.system(size: 28))
+                                .foregroundColor(.white)
+                            
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text(successMessage.title)
+                                    .font(.body)
+                                    .fontWeight(.semibold)
                                     .foregroundColor(.white)
                                 
-                                VStack(alignment: .leading, spacing: 4) {
-                                    Text(successMessage.title)
-                                        .font(.body)
-                                        .fontWeight(.semibold)
-                                        .foregroundColor(.white)
-                                    
-                                    Text(successMessage.subtitle)
-                                        .font(.caption)
-                                        .foregroundColor(.white.opacity(0.8))
-                                }
-                                
-                                Spacer()
+                                Text(successMessage.subtitle)
+                                    .font(.caption)
+                                    .foregroundColor(.white.opacity(0.8))
                             }
-                            .padding(20)
-                            .glassEffect(.clear)
-                            .padding(.horizontal, 20)
-                            .padding(.top, 60)
                             
                             Spacer()
                         }
+                        .padding(20)
+                        .glassEffect(.clear)
+                        .padding(.horizontal, 20)
+                        .padding(.top, 20)
+
+                        Spacer()
                     }
-                    .transition(.opacity)
+                    .transition(.move(edge: .top).combined(with: .opacity))
                     .zIndex(300)
                 }
                 
