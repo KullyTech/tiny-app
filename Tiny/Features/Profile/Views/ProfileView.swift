@@ -27,8 +27,7 @@ struct ProfileView: View {
 
     var body: some View {
         ZStack {
-            Image(themeManager.selectedBackground.imageName)
-
+            Image(themeManager.selectedBackground.imageName)    
                 .resizable()
                 .scaledToFill()
                 .ignoresSafeArea()
@@ -80,6 +79,7 @@ struct ProfileView: View {
 
                     NavigationLink {
                         ProfilePhotoDetailView(viewModel: viewModel)
+                            .environmentObject(authService)
                     } label: {
                         profileImageView(size: size)
                     }
@@ -94,6 +94,7 @@ struct ProfileView: View {
             }
             .frame(height: 260)
         }
+        .listRowBackground(Color.clear)
     }
 
     private func profileImageView(size: CGFloat) -> some View {
@@ -140,7 +141,7 @@ struct ProfileView: View {
                 Label("Theme", systemImage: "paintpalette.fill")
                     .foregroundStyle(.white)
             }
-            NavigationLink(destination: TutorialDummy()) {
+            NavigationLink(destination: TutorialView()) {
                 Label("Tutorial", systemImage: "book.fill")
                     .foregroundStyle(.white)
             }
@@ -518,6 +519,6 @@ struct TutorialDummy: View {
     ProfileView()
         .environmentObject(AuthenticationService())   // <-- mock
         .environmentObject(HeartbeatSyncManager())
-
+        .environmentObject(ThemeManager())
         .preferredColorScheme(.dark)
 }
