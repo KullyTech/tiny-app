@@ -60,4 +60,8 @@ class ProfileViewModel: ObservableObject {
         manager.signOut()
         print("User signed out")
     }
+    
+    func deleteAccount() async throws {
+        manager.deleteAllData()
+    }
 }

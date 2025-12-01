@@ -101,4 +101,55 @@ class UserProfileManager: ObservableObject {
         userEmail = "john.doe@example.com"
         saveUserData()
     }
+    
+    // MARK: - Delete Account
+    func deleteAllData() {
+        // Clear all published properties
+        isSignedIn = false
+        userName = "Guest"
+        userEmail = nil
+        profileImage = nil
+        
+        // Clear UserDefaults
+        let defaults = UserDefaults.standard
+        defaults.removeObject(forKey: kIsSignedIn)
+        defaults.removeObject(forKey: kUserName)
+        defaults.removeObject(forKey: kUserEmail)
+        defaults.removeObject(forKey: "pregnancyStartDate")
+        
+        // Delete profile image from disk
+        deleteProfileImageFromDisk()
+        
+        // Delete all local heartbeat recordings and moment images
+        deleteAllLocalFiles()
+        
+        print("✅ All local user data cleared")
+    }
+    
+    private func deleteAllLocalFiles() {
+        let fileManager = FileManager.default
+        let documentsPath = fileManager.urls(for: .documentDirectory, in: .userDomainMask)[0]
+        
+        do {
+            let fileURLs = try fileManager.contentsOfDirectory(at: documentsPath, includingPropertiesForKeys: nil)
+            
+            for fileURL in fileURLs {
+                let fileName = fileURL.lastPathComponent
+                
+                // Delete heartbeat recordings (recording-*.caf)
+                if fileName.hasPrefix("recording-") && fileName.hasSuffix(".caf") {
+                    try? fileManager.removeItem(at: fileURL)
+                    print("   🗑️ Deleted local heartbeat: \(fileName)")
+                }
+                
+                // Delete moment images (moment-*.jpg)
+                if fileName.hasPrefix("moment-") && fileName.hasSuffix(".jpg") {
+                    try? fileManager.removeItem(at: fileURL)
+                    print("   🗑️ Deleted local moment: \(fileName)")
+                }
+            }
+        } catch {
+            print("   ⚠️ Error cleaning local files: \(error.localizedDescription)")
+        }
+    }
 }
