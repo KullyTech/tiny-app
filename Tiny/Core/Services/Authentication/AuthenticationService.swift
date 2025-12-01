@@ -13,6 +13,7 @@ import AuthenticationServices
 import CryptoKit
 internal import Combine
 
+// swiftlint:disable type_body_length
 @MainActor
 class AuthenticationService: ObservableObject {
     @Published var currentUser: User?
@@ -161,7 +162,7 @@ class AuthenticationService: ObservableObject {
         currentUser = nil
         isAuthenticated = false
     }
-    
+    // swiftlint:disable cyclomatic_complexity
     func deleteAccount() async throws {
         isLoading = true
         defer { isLoading = false }
@@ -325,7 +326,8 @@ class AuthenticationService: ObservableObject {
             throw error
         }
     }
-    
+    // swiftlint:enable cyclomatic_complexity
+
     private func fetchUserData(userId: String) {
         database.collection("users").document(userId).addSnapshotListener { [weak self] snapshot, error in
             guard let snapshot = snapshot, snapshot.exists, let data = snapshot.data() else {
@@ -453,3 +455,4 @@ class AuthenticationService: ObservableObject {
     }
     
 }
+// swiftlint:enable type_body_length

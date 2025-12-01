@@ -240,8 +240,6 @@ struct ProfileView: View {
             } message: {
                 Text("This will permanently delete your account and all associated data. This action cannot be undone.")
             }
-            
-
         }
         .disabled(authService.isLoading)
     }
