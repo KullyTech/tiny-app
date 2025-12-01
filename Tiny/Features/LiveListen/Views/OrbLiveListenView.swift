@@ -329,7 +329,7 @@ struct OrbLiveListenView: View {
             if !viewModel.isListening && !viewModel.isPlaybackMode {
                 GeometryReader { proxy in
                     CoachMarkView()
-                        .position(x: proxy.size.width / 2, y: proxy.size.height / 2 + 250)
+                        .position(x: proxy.size.width / 2, y: proxy.size.height / 2 + 230)
                 }
                 .transition(.opacity)
             }

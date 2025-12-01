@@ -105,10 +105,16 @@ class HeartbeatSoundManager: NSObject, ObservableObject {
     @Published var noiseGateThreshold: Float = 0.005
     
     private let heartbeatDetector = HeartbeatDetector()
+    private var syncTimer: Timer?
     
     override init() {
         super.init()
         engine = AudioEngine()
+    }
+    
+    deinit {
+        syncTimer?.invalidate()
+        syncTimer = nil
     }
     
     func requestMicrophonePermission(completion: @escaping (Bool) -> Void) {
@@ -116,6 +122,111 @@ class HeartbeatSoundManager: NSObject, ObservableObject {
             DispatchQueue.main.async {
                 completion(granted)
             }
+        }
+    }
+    
+    // MARK: - Periodic Sync
+    
+    func startPeriodicSync() {
+        // Stop any existing timer
+        syncTimer?.invalidate()
+        
+        // Only start periodic sync for fathers (moms upload directly)
+        guard currentUserRole == .father, 
+              let roomCode = currentRoomCode,
+              let syncManager = syncManager,
+              let modelContext = modelContext else {
+            print("⚠️ Periodic sync not started - missing requirements or user is mother")
+            return
+        }
+        
+        print("🔄 Starting periodic sync every 30 seconds for father")
+        
+        // Create timer that fires every 30 seconds
+        syncTimer = Timer.scheduledTimer(withTimeInterval: 30.0, repeats: true) { [weak self] _ in
+            guard let self = self else { return }
+            
+            Task { @MainActor in
+                await self.performSync()
+            }
+        }
+        
+        // Also perform initial sync
+        Task { @MainActor in
+            await self.performSync()
+        }
+    }
+    
+    func stopPeriodicSync() {
+        print("🛑 Stopping periodic sync")
+        syncTimer?.invalidate()
+        syncTimer = nil
+    }
+    
+    private func performSync() async {
+        guard let roomCode = currentRoomCode,
+              let syncManager = syncManager,
+              let modelContext = modelContext else {
+            return
+        }
+        
+        do {
+            print("🔄 Performing periodic sync...")
+            
+            // Sync heartbeats
+            _ = try await syncManager.syncHeartbeatsFromCloud(
+                roomCode: roomCode,
+                modelContext: modelContext,
+                isMother: false
+            )
+            
+            // Sync moments
+            _ = try await syncManager.syncMomentsFromCloud(
+                roomCode: roomCode,
+                modelContext: modelContext
+            )
+            
+            // Reload data
+            let updatedResults = try modelContext.fetch(FetchDescriptor<SavedHeartbeat>())
+            let updatedMoments = try modelContext.fetch(FetchDescriptor<SavedMoment>())
+            
+            self.savedRecordings = updatedResults.compactMap { savedItem in
+                let filePath = savedItem.filePath
+                let fileURL = URL(fileURLWithPath: filePath)
+                
+                guard FileManager.default.fileExists(atPath: filePath) else {
+                    return nil
+                }
+                
+                return Recording(
+                    fileURL: fileURL,
+                    createdAt: savedItem.timestamp,
+                    displayName: savedItem.displayName
+                )
+            }
+            
+            self.savedMoments = updatedMoments.compactMap { savedItem in
+                let storedPath = savedItem.filePath
+                let fileName = URL(fileURLWithPath: storedPath).lastPathComponent
+                let fileURL = self.getDocumentsDirectory().appendingPathComponent(fileName)
+                
+                guard FileManager.default.fileExists(atPath: fileURL.path) else {
+                    return nil
+                }
+                
+                return Moment(
+                    id: savedItem.id,
+                    fileURL: fileURL,
+                    createdAt: savedItem.timestamp
+                )
+            }
+            
+            print("✅ Periodic sync complete: \(self.savedRecordings.count) recordings, \(self.savedMoments.count) moments")
+            
+            // Force UI update
+            self.objectWillChange.send()
+        } catch {
+            print("❌ Periodic sync failed: \(error.localizedDescription)")
         }
     }
     
@@ -238,6 +349,9 @@ class HeartbeatSoundManager: NSObject, ObservableObject {
                         
                         // Force UI update
                         self.objectWillChange.send()
+                        
+                        // Start periodic sync for fathers
+                        self.startPeriodicSync()
                     } catch {
                         print("❌ Cloud sync failed: \(error.localizedDescription)")
                     }
