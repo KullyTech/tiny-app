@@ -103,25 +103,25 @@ struct OnBoardingView: View {
 
                         // 4. Calculate the required Vertical Offset for the path's position (375):
                         // This value places the heart's center at the path's start Y coordinate (375).
-                        let yOffsetCorrection = 375 - (heartSize / 2)
-
-                        Image("yellowHeart")
-                            .resizable()
-                            .frame(width: heartSize, height: heartSize)
-                            .modifier(
-                                FollowEffect(
-                                    pct: progress,
-                                    path: LinePath().path(in: pathRect),
-                                    rotate: false
-                                )
-                            )
-                            // 🔥 The key is to shift the view so the initial center of the heart
-                            // is placed at the path's visual start point (which is pathStartXRelative
-                            // horizontally, and 375 vertically in the ZStack).
-                            .offset(
-                                x: xOffsetCorrection, // Uses the actual path start X point
-                                y: yOffsetCorrection  // Uses the fixed Y offset (375)
-                            )
+//                        let yOffsetCorrection = 375 - (heartSize / 2)
+//
+//                        Image("yellowHeart")
+//                            .resizable()
+//                            .frame(width: heartSize, height: heartSize)
+//                            .modifier(
+//                                FollowEffect(
+//                                    pct: progress,
+//                                    path: LinePath().path(in: pathRect),
+//                                    rotate: false
+//                                )
+//                            )
+//                            // 🔥 The key is to shift the view so the initial center of the heart
+//                            // is placed at the path's visual start point (which is pathStartXRelative
+//                            // horizontally, and 375 vertically in the ZStack).
+//                            .offset(
+//                                x: xOffsetCorrection, // Uses the actual path start X point
+//                                y: yOffsetCorrection  // Uses the fixed Y offset (375)
+//                            )
                     }
 
                     VStack(spacing: 0) {
@@ -237,6 +237,13 @@ private struct OnboardingPage1: View {
                     .font(.body)
                     .fontWeight(.regular)
                     .multilineTextAlignment(.center)
+                    .padding(.horizontal, 30)
+
+                Text("Tiny isn’t a medical app")
+                    .font(.caption)
+                    .foregroundStyle(.peryWinkle)
+                    .fontWeight(.regular)
+                    .italic()
                     .padding(.horizontal, 30)
             }
         }
