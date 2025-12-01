@@ -42,7 +42,13 @@ struct RootView: View {
 
     var body: some View {
         Group {
-            if !authService.isAuthenticated {
+            if authService.isRestoringSession {
+                ZStack {
+                    Color.black.ignoresSafeArea()
+                    ProgressView()
+                        .tint(.white)
+                }
+            } else if !authService.isAuthenticated {
                 // Step 1: Landing screen with Sign in with Apple
                 SignInView()
             } else if authService.currentUser?.role == nil {

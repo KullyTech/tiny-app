@@ -20,6 +20,7 @@ class AuthenticationService: ObservableObject {
     @Published var isAuthenticated = false
     @Published var isLoading = false
     @Published var partnerPregnancyWeeks: Int?
+    @Published var isRestoringSession = true
     
     private let auth = Auth.auth()
     private let database = Firestore.firestore()
@@ -32,7 +33,12 @@ class AuthenticationService: ObservableObject {
     
     func checkAuthStatus() {
         if let firebaseUser = auth.currentUser {
+            print("🔄 Found existing session for user: \(firebaseUser.uid)")
+            isAuthenticated = true
             fetchUserData(userId: firebaseUser.uid)
+        } else {
+            print("ℹ️ No existing session found")
+            isRestoringSession = false
         }
     }
     
@@ -330,6 +336,9 @@ class AuthenticationService: ObservableObject {
 
     private func fetchUserData(userId: String) {
         database.collection("users").document(userId).addSnapshotListener { [weak self] snapshot, error in
+            // Ensure we mark session restoration as complete once we get a response (success or failure)
+            defer { self?.isRestoringSession = false }
+            
             guard let snapshot = snapshot, snapshot.exists, let data = snapshot.data() else {
                 print("Error fetching user data: \(error?.localizedDescription ?? "Unknown error")")
                 return

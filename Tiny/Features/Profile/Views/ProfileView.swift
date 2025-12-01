@@ -212,6 +212,7 @@ struct ProfileView: View {
                 titleVisibility: .visible
             ) {
                 Button("Sign Out", role: .destructive) {
+                    try? authService.signOut()
                     viewModel.signOut()
                 }
                 Button("Cancel", role: .cancel) {}
