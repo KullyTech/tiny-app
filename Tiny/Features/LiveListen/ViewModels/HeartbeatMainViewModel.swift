@@ -10,18 +10,32 @@ import SwiftData
 internal import Combine
 
 class HeartbeatMainViewModel: ObservableObject {
-    @Published var showTimeline = false
+    @Published var currentPage: Int = 0
+    @Published var allowTabViewSwipe: Bool = true
+    @Published var selectedRecording: Recording?
     let heartbeatSoundManager = HeartbeatSoundManager()
     
-    func setupManager(modelContext: ModelContext) {
+    func setupManager(
+        modelContext: ModelContext,
+        syncManager: HeartbeatSyncManager,
+        userId: String?,
+        roomCode: String?,
+        userRole: UserRole?
+    ) {
         heartbeatSoundManager.modelContext = modelContext
+        heartbeatSoundManager.syncManager = syncManager
+        heartbeatSoundManager.currentUserId = userId
+        heartbeatSoundManager.currentRoomCode = roomCode
+        heartbeatSoundManager.currentUserRole = userRole
         heartbeatSoundManager.loadFromSwiftData()
     }
     
     func handleRecordingSelection(_ recording: Recording) {
-        heartbeatSoundManager.lastRecording = recording
+        print("🎵 Recording selected: \(recording.fileURL.lastPathComponent)")
+        
+        // Show SavedRecordingPlaybackView
         withAnimation(.spring(response: 0.6, dampingFraction: 0.8)) {
-            showTimeline = false
+            selectedRecording = recording
         }
     }
 }

@@ -8,19 +8,23 @@
 import SwiftUI
 
 struct SplashScreenView: View {
+    @EnvironmentObject var themeManager: ThemeManager
     @Binding var isShowingSplashScreen: Bool
     @State private var animate: Bool = false
 
     var body: some View {
         ZStack {
-            Image("bgSplashScreen")
+            // Use customizable background from ThemeManager
+            Color.black.ignoresSafeArea()
+            Image(themeManager.selectedBackground.imageName)
                 .resizable()
                 .scaledToFill()
+                .ignoresSafeArea()
 
             Image("titleSplashScreen")
                 .resizable()
                 .scaledToFill()
-                .frame(width: animate ? 100 :80, height: animate ? 100 : 80) // Animate size
+                .frame(width: animate ? 100 : 80, height: animate ? 100 : 80) // Animate size
                 .opacity(animate ? 1 : 0.5) // Animate opacity
         }
         .ignoresSafeArea()
@@ -39,5 +43,6 @@ struct SplashScreenView: View {
 
 #Preview {
     SplashScreenView(isShowingSplashScreen: .constant(true))
+        .environmentObject(ThemeManager())
         .preferredColorScheme(.dark)
 }

@@ -19,10 +19,20 @@ class OrbLiveListenViewModel: ObservableObject {
     @Published var longPressScale: CGFloat = 1.0
     @Published var dragOffset: CGFloat = 0
     @Published var isDraggingToSave = false
+    @Published var isDraggingToDelete = false
     @Published var saveButtonScale: CGFloat = 1.0
+    @Published var deleteButtonScale: CGFloat = 1.0
     @Published var orbDragScale: CGFloat = 1.0
     @Published var canSaveCurrentRecording = false
     @Published var currentTime: TimeInterval = 0
+    
+    var isHapticsEnabled: Bool {
+        audioPostProcessingManager.isHapticsEnabled
+    }
+    
+    func toggleHaptics() {
+        audioPostProcessingManager.toggleHaptics()
+    }
 
     private var longPressTimer: Timer?
     private var playbackTimer: Timer?
@@ -60,6 +70,7 @@ class OrbLiveListenViewModel: ObservableObject {
     }
     
     func setupPlayback(for recording: Recording) {
+        // This is only called for fresh recordings after countdown
         isPlaybackMode = true
         animateOrb = true
         audioPostProcessingManager.stop()
@@ -68,30 +79,55 @@ class OrbLiveListenViewModel: ObservableObject {
     }
 
     func handleDragChange(value: SequenceGesture<LongPressGesture, DragGesture>.Value, geometry: GeometryProxy) {
-        guard canSaveCurrentRecording else { return }
+        guard canSaveCurrentRecording || isPlaybackMode else { return }
         switch value {
         case .second(true, let drag):
-            isDraggingToSave = true
-            let translation = max(0, drag?.translation.height ?? 0)
-            dragOffset = translation
-            let maxDragDistance = geometry.size.height / 2
-            let dragProgress = min(translation / maxDragDistance, 1.0)
-            withAnimation(.interactiveSpring(response: 0.3, dampingFraction: 0.7)) {
-                orbDragScale = 1.0 - (dragProgress * 0.4)
-                saveButtonScale = 1.0 + (dragProgress * 0.4)
+            let translation = drag?.translation.height ?? 0
+            
+            if translation > 0 {
+                // Dragging DOWN - Save
+                isDraggingToSave = true
+                isDraggingToDelete = false
+                dragOffset = translation
+                let maxDragDistance = geometry.size.height / 2
+                let dragProgress = min(translation / maxDragDistance, 1.0)
+                withAnimation(.interactiveSpring(response: 0.3, dampingFraction: 0.7)) {
+                    orbDragScale = 1.0 - (dragProgress * 0.4)
+                    saveButtonScale = 1.0 + (dragProgress * 0.4)
+                    deleteButtonScale = 1.0
+                }
+            } else if translation < 0 {
+                // Dragging UP - Delete
+                isDraggingToDelete = true
+                isDraggingToSave = false
+                dragOffset = translation
+                let maxDragDistance = geometry.size.height / 2
+                let dragProgress = min(abs(translation) / maxDragDistance, 1.0)
+                withAnimation(.interactiveSpring(response: 0.3, dampingFraction: 0.7)) {
+                    orbDragScale = 1.0 - (dragProgress * 0.4)
+                    deleteButtonScale = 1.0 + (dragProgress * 0.4)
+                    saveButtonScale = 1.0
+                }
             }
         default: break
         }
     }
     
-    func handleDragEnd(value: SequenceGesture<LongPressGesture, DragGesture>.Value, geometry: GeometryProxy, onSave: @escaping () -> Void) {
-        guard canSaveCurrentRecording else { return }
+    func handleDragEnd(value: SequenceGesture<LongPressGesture, DragGesture>.Value, geometry: GeometryProxy, onSave: @escaping () -> Void, onDelete: @escaping () -> Void) {
+        guard canSaveCurrentRecording || isPlaybackMode else { return }
         switch value {
         case .second(true, let drag):
             let translation = drag?.translation.height ?? 0
-            if translation > geometry.size.height / 4 {
+            let threshold = geometry.size.height / 4
+            
+            if translation > threshold {
+                // Dragged down enough - Save
                 handleSaveRecording(onSave: onSave)
+            } else if translation < -threshold {
+                // Dragged up enough - Delete/Dismiss
+                handleDeleteRecording(onDelete: onDelete)
             } else {
+                // Not dragged enough - Reset
                 resetDragState()
             }
         default: resetDragState()
@@ -103,7 +139,9 @@ class OrbLiveListenViewModel: ObservableObject {
             dragOffset = 0
             orbDragScale = 1.0
             saveButtonScale = 1.0
+            deleteButtonScale = 1.0
             isDraggingToSave = false
+            isDraggingToDelete = false
         }
     }
     
@@ -113,10 +151,41 @@ class OrbLiveListenViewModel: ObservableObject {
             saveButtonScale = 1.6
             orbDragScale = 0.05
         }
-        onSave()
-        canSaveCurrentRecording = false
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-            self.resetDragState()
+        
+        // Wait for animation to complete before saving and navigating
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+            onSave()
+            self.canSaveCurrentRecording = false
+            
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                self.resetDragState()
+            }
+        }
+    }
+    
+    func handleDeleteRecording(onDelete: @escaping () -> Void) {
+        withAnimation(.interpolatingSpring(mass: 1, stiffness: 200, damping: 15)) {
+            deleteButtonScale = 1.6
+            orbDragScale = 0.05
+        }
+        
+        // Wait for animation to complete before deleting and navigating
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+            // Call the delete callback
+            onDelete()
+            
+            // Stop playback and reset state
+            self.audioPostProcessingManager.stop()
+            self.stopPlaybackTimer()
+            self.canSaveCurrentRecording = false
+            
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) {
+                    self.isPlaybackMode = false
+                    self.animateOrb = false
+                    self.resetDragState()
+                }
+            }
         }
     }
 
@@ -133,6 +202,7 @@ class OrbLiveListenViewModel: ObservableObject {
     
     func handleDoubleTap(onStart: @escaping () -> Void) {
         guard !isLongPressing, !isListening, !isPlaybackMode else { return }
+        
         withAnimation(.interpolatingSpring(mass: 2, stiffness: 100, damping: 20)) {
             animateOrb = true
             isListening = true
@@ -222,31 +292,29 @@ class OrbLiveListenViewModel: ObservableObject {
     }
 
     func handleLongPressComplete(onStop: @escaping () -> Void) {
-        cancelLongPressCountdown()
+        // Stop the timer but don't trigger separate animation
+        longPressTimer?.invalidate()
+        longPressTimer = nil
+        longPressCountdown = 3
 
-        withAnimation(.interpolatingSpring(mass: 2, stiffness: 100, damping: 20)) {
+        // 1. First animation: Move orb to center and reset scale
+        withAnimation(.spring(response: 0.8, dampingFraction: 0.8)) {
             isListening = false
+            isLongPressing = false
+            longPressScale = 1.0
             animateOrb = false
-            isPlaybackMode = true
-            canSaveCurrentRecording = true
         }
         
         onStop()
-    }
-    
-    func handleSelectRecordingFromTimeline(_ recording: Recording, onSelect: @escaping (Recording) -> Void) {
-        isListening = false
         
-        withAnimation(.easeInOut(duration: 0.4)) {
-            isPlaybackMode = true
-            canSaveCurrentRecording = false
-            animateOrb = true
+        // 2. Second phase: Switch to playback mode after movement starts
+        // We delay this slightly to prevent the GestureModifier from reconstructing the view
+        // and cancelling the spring animation mid-flight.
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
+            withAnimation(.easeIn(duration: 0.3)) {
+                self.isPlaybackMode = true
+                self.canSaveCurrentRecording = true
+            }
         }
-
-        audioPostProcessingManager.stop()
-        audioPostProcessingManager.loadAndPlay(fileURL: recording.fileURL)
-        startPlaybackTimer()
-
-        onSelect(recording)
     }
 }

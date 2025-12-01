@@ -56,7 +56,7 @@ struct OrbStylePicker: View {
 }
 
 #Preview {
-    @Previewable @State var selectedStyle: OrbStyles = .ocean
+    @Previewable @State var selectedStyle: OrbStyles = .yellow
     
     VStack {
         OrbStylePicker(selectedStyle: $selectedStyle)
