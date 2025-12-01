@@ -7,41 +7,46 @@
 
 import SwiftUI
 
+// swiftlint:disable type_body_length
 struct ProfileView: View {
     @StateObject private var viewModel = ProfileViewModel()
     @State private var showingSignOutConfirmation = false
-
+    
+    @State private var showingDeleteAccountConfirmation = false
+    @State private var showingDeleteError = false
+    @State private var deleteErrorMessage = ""
+    
     @Environment(\.modelContext) private var modelContext
     @EnvironmentObject var authService: AuthenticationService
     @EnvironmentObject var syncManager: HeartbeatSyncManager
     @StateObject private var heartbeatMainViewModel = HeartbeatMainViewModel()
     @EnvironmentObject var themeManager: ThemeManager
-
+    
     @State private var showRoomCode = false
     @State private var isInitialized = false
-
+    
     // Check if user is a mother
     private var isMother: Bool {
         authService.currentUser?.role == .mother
     }
-
+    
     var body: some View {
         ZStack {
             Image(themeManager.selectedBackground.imageName)
                 .resizable()
                 .scaledToFill()
                 .ignoresSafeArea()
-
+            
             VStack(spacing: 0) {
                 // HEADER
                 profileHeader
                     .padding(.bottom, 30)
-
+                
                 // FEATURE CARDS
                 featureCards
                     .padding(.horizontal, 16)
                     .frame(height: 160)
-
+                
                 // SETTINGS LIST
                 settingsList
             }
@@ -65,18 +70,23 @@ struct ProfileView: View {
                 .presentationDetents([.medium])
                 .presentationDragIndicator(.visible)
         }
+        .alert("Error Deleting Account", isPresented: $showingDeleteError) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text(deleteErrorMessage)
+        }
     }
-
+    
     // MARK: - View Components
-
+    
     private var profileHeader: some View {
         VStack(spacing: 16) {
             GeometryReader { geo in
                 let size = geo.size.width * 0.28
-
+                
                 VStack(spacing: 16) {
                     Spacer()
-
+                    
                     NavigationLink {
                         ProfilePhotoDetailView(viewModel: viewModel)
                             .environmentObject(authService)
@@ -84,7 +94,7 @@ struct ProfileView: View {
                         profileImageView(size: size)
                     }
                     .buttonStyle(.plain)
-
+                    
                     Text(authService.currentUser?.name ?? "Guest")
                         .font(.title2)
                         .fontWeight(.semibold)
@@ -96,7 +106,7 @@ struct ProfileView: View {
         }
         .listRowBackground(Color.clear)
     }
-
+    
     private func profileImageView(size: CGFloat) -> some View {
         Group {
             if let img = viewModel.profileImage {
@@ -113,18 +123,18 @@ struct ProfileView: View {
         .frame(width: size, height: size)
         .clipShape(Circle())
     }
-
+    
     private var featureCards: some View {
         HStack(spacing: 12) {
             let padding: CGFloat = 5
             let spacing: CGFloat = 12
             let cardWidth = (UIScreen.main.bounds.width - (padding * 5 + spacing)) / 2
-
+            
             featureCardLeft(width: cardWidth)
             featureCardRight(width: cardWidth)
         }
     }
-
+    
     private var settingsList: some View {
         List {
             settingsSection
@@ -134,7 +144,7 @@ struct ProfileView: View {
         .scrollContentBackground(.hidden)
         .background(Color.clear)
     }
-
+    
     private var settingsSection: some View {
         Section {
             NavigationLink(destination: ThemeCustomizationView()) {
@@ -156,10 +166,10 @@ struct ProfileView: View {
         }
         .listRowBackground(Color("rowProfileGrey"))
     }
-
+    
     private var accountSection: some View {
         Section {
-            if viewModel.isSignedIn {
+            if authService.isAuthenticated {
                 signedInView
             } else {
                 signInView
@@ -167,9 +177,10 @@ struct ProfileView: View {
         }
         .listRowBackground(Color("rowProfileGrey"))
     }
-
+    
     private var signedInView: some View {
         Group {
+            // Sign Out Button
             Button(role: .destructive) {
                 showingSignOutConfirmation = true
             } label: {
@@ -188,12 +199,48 @@ struct ProfileView: View {
             } message: {
                 Text("You'll need to sign in again to sync your data and access personalized features.")
             }
+            
+            // Delete Account Button
+            Button(role: .destructive) {
+                showingDeleteAccountConfirmation = true
+            } label: {
+                Label("Delete Account", systemImage: "trash.fill")
+                    .foregroundStyle(.red)
+            }
+            .confirmationDialog(
+                "Delete Account",
+                isPresented: $showingDeleteAccountConfirmation,
+                titleVisibility: .visible
+            ) {
+                Button("Delete Account", role: .destructive) {
+                    Task {
+                        await deleteAccount()
+                    }
+                }
+                Button("Cancel", role: .cancel) {}
+            } message: {
+                Text("This will permanently delete your account and all associated data. This action cannot be undone.")
+            }
         }
     }
-
+    
+    private func deleteAccount() async {
+        do {
+            
+            try await authService.deleteAccount()
+            
+            viewModel.manager.deleteAllData()
+            
+            print("✅ Account successfully deleted")
+        } catch {
+            deleteErrorMessage = error.localizedDescription
+            showingDeleteError = true
+            print("❌ Error deleting account: \(error)")
+        }
+    }
+    
     private var signInView: some View {
         VStack(spacing: 12) {
-            // Dummy Sign In Button styled like Apple's
             Button {
                 viewModel.signIn()
             } label: {
@@ -213,9 +260,7 @@ struct ProfileView: View {
         }
         .padding(.vertical, 8)
     }
-
-    // MARK: - Feature Cards
-
+    
     private func featureCardLeft(width: CGFloat) -> some View {
         VStack(alignment: .leading) {
             HStack {
@@ -226,9 +271,9 @@ struct ProfileView: View {
                     .font(.caption)
                     .foregroundColor(.gray)
             }
-
+            
             Spacer()
-
+            
             Button(action: {
                 showRoomCode.toggle()
             }, label: {
@@ -237,7 +282,7 @@ struct ProfileView: View {
                     .foregroundColor(.blue)
                     .fontWeight(.medium)
             })
-
+            
             Spacer()
         }
         .frame(width: width, height: width * 0.63, alignment: .topLeading)
@@ -245,12 +290,10 @@ struct ProfileView: View {
         .background(Color("rowProfileGrey"))
         .cornerRadius(14)
     }
-
+    
     private func featureCardRight(width: CGFloat) -> some View {
-        // Calculate current pregnancy week dynamically
         let currentWeek: Int = {
             guard let pregnancyStartDate = UserDefaults.standard.object(forKey: "pregnancyStartDate") as? Date else {
-                // Fallback to user's stored pregnancy week if start date not available
                 return authService.currentUser?.pregnancyWeeks ?? 0
             }
             
@@ -269,9 +312,9 @@ struct ProfileView: View {
                     .font(.caption)
                     .foregroundColor(.gray)
             }
-
+            
             Spacer()
-
+            
             VStack(alignment: .center, spacing: 4) {
                 Text("\(currentWeek)")
                     .font(.title)
@@ -282,7 +325,6 @@ struct ProfileView: View {
                     .foregroundColor(Color("mainViolet"))
             }
             .frame(maxWidth: .infinity, alignment: .center)
-
             Spacer()
         }
         .frame(width: width * 0.65, height: width * 0.63)
@@ -290,10 +332,9 @@ struct ProfileView: View {
         .background(Color("rowProfileGrey"))
         .cornerRadius(14)
     }
-
+    
     private func initializeManager() {
         Task {
-            // Auto-create room for mothers if they don't have one
             if isMother && authService.currentUser?.roomCode == nil {
                 do {
                     let roomCode = try await authService.createRoom()
@@ -302,18 +343,16 @@ struct ProfileView: View {
                     print("❌ Error creating room: \(error)")
                 }
             }
-
-            // Wait a bit for room code to be set
-            try? await Task.sleep(nanoseconds: 500_000_000) // 0.5 seconds
-
-            // Now setup the manager with current user data
+            
+            try? await Task.sleep(nanoseconds: 500_000_000)
+            
             let userId = authService.currentUser?.id
             let roomCode = authService.currentUser?.roomCode
-
+            
             print("🔍 Initializing manager with:")
             print("   User ID: \(userId ?? "nil")")
             print("   Room Code: \(roomCode ?? "nil")")
-
+            
             await MainActor.run {
                 heartbeatMainViewModel.setupManager(
                     modelContext: modelContext,
@@ -326,8 +365,9 @@ struct ProfileView: View {
             }
         }
     }
-
+    
 }
+// swiftlint:enable type_body_length
 
 struct ProfilePhotoDetailView: View {
     @EnvironmentObject var authService: AuthenticationService
@@ -337,21 +377,21 @@ struct ProfilePhotoDetailView: View {
     @State private var showingPhotoOptions = false
     @State private var tempUserName: String = ""
     @Environment(\.dismiss) private var dismiss
-
+    
     var body: some View {
         ZStack {
             Image("backgroundPurple")
                 .resizable()
                 .scaledToFill()
                 .ignoresSafeArea()
-
+            
             VStack(spacing: 30) {
                 profilePhotoButton
                     .padding(.top, 80)
-
+                
                 nameEditSection
                     .padding(.horizontal, 30)
-
+                
                 Spacer()
             }
         }
@@ -390,7 +430,7 @@ struct ProfilePhotoDetailView: View {
             ), sourceType: .camera)
         }
     }
-
+    
     private var profilePhotoButton: some View {
         Button {
             showingPhotoOptions = true
@@ -414,7 +454,7 @@ struct ProfilePhotoDetailView: View {
                     Circle()
                         .stroke(Color.white, lineWidth: 3)
                 )
-
+                
                 // Camera badge
                 Image(systemName: "camera.circle.fill")
                     .font(.system(size: 44))
@@ -424,7 +464,7 @@ struct ProfilePhotoDetailView: View {
         }
         .buttonStyle(.plain)
     }
-
+    
     private var nameEditSection: some View {
         VStack(spacing: 16) {
             HStack {
@@ -433,7 +473,7 @@ struct ProfilePhotoDetailView: View {
                     .font(.subheadline)
                 Spacer()
             }
-
+            
             TextField("Enter your name", text: $tempUserName)
                 .textFieldStyle(.roundedBorder)
                 .textInputAutocapitalization(.words)
@@ -446,14 +486,14 @@ struct BottomPhotoPickerSheet: View {
     @Binding var showingCamera: Bool
     @Binding var showingImagePicker: Bool
     @Environment(\.dismiss) private var dismiss
-
+    
     var body: some View {
         VStack(spacing: 20) {
             Text("Change Profile Photo")
                 .font(.headline)
                 .foregroundColor(.primary)
                 .padding(.bottom, 8)
-
+            
             PhotoPickerButton(
                 title: "Take Photo",
                 icon: "camera",
@@ -462,7 +502,7 @@ struct BottomPhotoPickerSheet: View {
                     showingCamera = true
                 }
             )
-
+            
             PhotoPickerButton(
                 title: "Choose From Library",
                 icon: "photo.on.rectangle",
@@ -482,7 +522,7 @@ private struct PhotoPickerButton: View {
     let title: String
     let icon: String
     let action: () -> Void
-
+    
     var body: some View {
         Button(action: action) {
             HStack {

@@ -18,9 +18,10 @@ struct NameInputView: View {
     @State private var errorMessage: String?
     
     func makeTitle() -> AttributedString {
-        var title = AttributedString("Hello Mom!")
+        let roleText = selectedRole == .mother ? "Mom" : "Dad"
+        var title = AttributedString("Hello \(roleText)!")
         
-        if let range = title.range(of: "Mom") {
+        if let range = title.range(of: roleText) {
             title[range].foregroundColor = Color("mainYellow")
         }
         
@@ -45,7 +46,7 @@ struct NameInputView: View {
                         .multilineTextAlignment(.center)
                 }
                 VStack(alignment: .center, spacing: 56) {
-                    Image("tinyMom")
+                    Image(selectedRole == .mother ? "tinyMom" : "tinyDad")
                         .resizable()
                         .frame(width: 126, height: 136)
                     TextField("I can call you...", text: $name)
@@ -97,11 +98,11 @@ struct NameInputView: View {
         Task {
             do {
                 try await authService.updateUserName(name: name.trimmingCharacters(in: .whitespaces))
-                // For mothers, proceed to week input before setting role
-                // For fathers, set role now and proceed to room code input
-                if selectedRole == .father {
-                    try await authService.updateUserRole(role: selectedRole)
-                }
+                
+                // Don't set role here for fathers - they need to go to RoomCodeInputView first
+                // For mothers, they'll set their role in WeekInputView
+                // For fathers, they'll set their role in RoomCodeInputView
+                
                 await MainActor.run {
                     isLoading = false
                     onContinue()
