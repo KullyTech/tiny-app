@@ -17,6 +17,8 @@ internal import Combine
 class AuthenticationService: ObservableObject {
     @Published var currentUser: User?
     @Published var isAuthenticated = false
+    @Published var isLoading = false
+    @Published var partnerPregnancyWeeks: Int?
     
     private let auth = Auth.auth()
     private let database = Firestore.firestore()
@@ -34,6 +36,9 @@ class AuthenticationService: ObservableObject {
     }
     
     func signInWithApple(authorization: ASAuthorization) async throws {
+        isLoading = true
+        defer { isLoading = false }
+        
         guard let appleIDCredential = authorization.credential as? ASAuthorizationAppleIDCredential else {
             throw NSError(domain: "AuthError", code: -1, userInfo: [NSLocalizedDescriptionKey: "Invalid Credentials"])
         }
@@ -92,6 +97,9 @@ class AuthenticationService: ObservableObject {
     }
     
     func updateUserRole(role: UserRole, pregnancyWeeks: Int? = nil, roomCode: String? = nil) async throws {
+        isLoading = true
+        defer { isLoading = false }
+        
         guard let userId = auth.currentUser?.uid else {
             return
         }
@@ -111,6 +119,9 @@ class AuthenticationService: ObservableObject {
     }
     
     func updateUserName(name: String) async throws {
+        isLoading = true
+        defer { isLoading = false }
+        
         guard let userId = auth.currentUser?.uid else {
             return
         }
@@ -120,6 +131,9 @@ class AuthenticationService: ObservableObject {
     }
     
     func createRoom() async throws -> String {
+        isLoading = true
+        defer { isLoading = false }
+        
         guard let userId = auth.currentUser?.uid,
               currentUser?.role == .mother else {
             throw NSError(domain: "AuthError", code: -1, userInfo: [NSLocalizedDescriptionKey: "Only mothers can create rooms!"])
@@ -149,6 +163,9 @@ class AuthenticationService: ObservableObject {
     }
     
     func deleteAccount() async throws {
+        isLoading = true
+        defer { isLoading = false }
+        
         guard let user = auth.currentUser else {
             throw NSError(domain: "AuthError", code: -1, userInfo: [NSLocalizedDescriptionKey: "No user is currently signed in"])
         }
@@ -323,6 +340,43 @@ class AuthenticationService: ObservableObject {
             )
             
             self?.currentUser = user
+            
+            // If user is a father, fetch the mother's pregnancy weeks via the room
+            if user.role == .father, let roomCode = user.roomCode {
+                self?.fetchPartnerPregnancyWeeks(roomCode: roomCode)
+            }
+        }
+    }
+    
+    private func fetchPartnerPregnancyWeeks(roomCode: String) {
+        Task {
+            do {
+                // 1. Find the room
+                let roomSnapshot = try await database.collection("rooms")
+                    .whereField("code", isEqualTo: roomCode)
+                    .limit(to: 1)
+                    .getDocuments()
+                
+                guard let roomDoc = roomSnapshot.documents.first else { return }
+                let roomData = roomDoc.data()
+                
+                // 2. Get mother's ID
+                guard let motherUserId = roomData["motherUserId"] as? String else { return }
+                
+                // 3. Fetch mother's user doc
+                let motherDoc = try await database.collection("users").document(motherUserId).getDocument()
+                guard let motherData = motherDoc.data() else { return }
+                
+                // 4. Get pregnancy weeks
+                if let weeks = motherData["pregnancyWeeks"] as? Int {
+                    await MainActor.run {
+                        self.partnerPregnancyWeeks = weeks
+                        print("✅ Fetched partner's pregnancy weeks: \(weeks)")
+                    }
+                }
+            } catch {
+                print("❌ Error fetching partner pregnancy weeks: \(error)")
+            }
         }
     }
     
@@ -357,6 +411,9 @@ class AuthenticationService: ObservableObject {
     }
     
     func joinRoom(roomCode: String) async throws {
+        isLoading = true
+        defer { isLoading = false }
+        
         guard let userId = auth.currentUser?.uid else {
             throw NSError(domain: "AuthError", code: -1, userInfo: [NSLocalizedDescriptionKey: "User not authenticated"])
         }

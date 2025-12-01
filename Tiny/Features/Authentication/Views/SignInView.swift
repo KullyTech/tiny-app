@@ -56,30 +56,45 @@ struct SignInView: View {
                             .cornerRadius(8)
                             .padding(.horizontal)
                     }
-                    SignInWithAppleButton(
-                        onRequest: { request in
-                            request.requestedScopes = [.email, .fullName]
-                            request.nonce = authService.startSignInWithAppleFlow()
-                        },
-                        onCompletion: { result in
-                            switch result {
-                            case .success(let authorization):
-                                Task {
-                                    do {
-                                        try await authService.signInWithApple(authorization: authorization)
-                                    } catch {
-                                        errorMessage = error.localizedDescription
-                                    }
-                                }
-                            case .failure(let error):
-                                errorMessage = error.localizedDescription
-                            }
+                    if authService.isLoading {
+                        HStack(spacing: 12) {
+                            ProgressView()
+                                .tint(.black)
+                            Text("Signing in...")
+                                .font(.system(size: 17, weight: .semibold))
+                                .foregroundColor(.black)
                         }
-                    )
-                    .signInWithAppleButtonStyle(.white)
-                    .frame(height: 50)
-                    .cornerRadius(12)
-                    .padding(.horizontal, 40)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 50)
+                        .background(Color.white)
+                        .cornerRadius(12)
+                        .padding(.horizontal, 40)
+                    } else {
+                        SignInWithAppleButton(
+                            onRequest: { request in
+                                request.requestedScopes = [.email, .fullName]
+                                request.nonce = authService.startSignInWithAppleFlow()
+                            },
+                            onCompletion: { result in
+                                switch result {
+                                case .success(let authorization):
+                                    Task {
+                                        do {
+                                            try await authService.signInWithApple(authorization: authorization)
+                                        } catch {
+                                            errorMessage = error.localizedDescription
+                                        }
+                                    }
+                                case .failure(let error):
+                                    errorMessage = error.localizedDescription
+                                }
+                            }
+                        )
+                        .signInWithAppleButtonStyle(.white)
+                        .frame(height: 50)
+                        .cornerRadius(12)
+                        .padding(.horizontal, 40)
+                    }
                 }
             }
         }

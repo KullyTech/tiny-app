@@ -220,7 +220,20 @@ struct ProfileView: View {
             } message: {
                 Text("This will permanently delete your account and all associated data. This action cannot be undone.")
             }
+            
+            if authService.isLoading {
+                HStack {
+                    Spacer()
+                    ProgressView()
+                    Text("Processing...")
+                        .font(.caption)
+                        .foregroundColor(.gray)
+                    Spacer()
+                }
+                .listRowBackground(Color.clear)
+            }
         }
+        .disabled(authService.isLoading)
     }
     
     private func deleteAccount() async {
@@ -244,10 +257,15 @@ struct ProfileView: View {
                 viewModel.signIn()
             } label: {
                 HStack {
-                    Image(systemName: "applelogo")
-                        .font(.system(size: 20, weight: .medium))
-                    Text("Sign in with Apple")
-                        .font(.system(size: 17, weight: .semibold))
+                    if authService.isLoading {
+                        ProgressView()
+                            .tint(.black)
+                    } else {
+                        Image(systemName: "applelogo")
+                            .font(.system(size: 20, weight: .medium))
+                        Text("Sign in with Apple")
+                            .font(.system(size: 17, weight: .semibold))
+                    }
                 }
                 .frame(maxWidth: .infinity)
                 .frame(height: 44)
@@ -256,6 +274,7 @@ struct ProfileView: View {
                 .cornerRadius(8)
             }
             .buttonStyle(.plain)
+            .disabled(authService.isLoading)
         }
         .padding(.vertical, 8)
     }
@@ -403,7 +422,13 @@ struct ProfilePhotoDetailView: View {
                         dismiss()
                     }
                 }
-                .disabled(tempUserName.trimmingCharacters(in: .whitespaces).isEmpty)
+                .disabled(tempUserName.trimmingCharacters(in: .whitespaces).isEmpty || authService.isLoading)
+                .opacity(authService.isLoading ? 0.5 : 1.0)
+                .overlay {
+                    if authService.isLoading {
+                        ProgressView()
+                    }
+                }
             }
         }
         .onAppear {

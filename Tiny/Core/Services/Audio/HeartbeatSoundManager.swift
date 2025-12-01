@@ -58,7 +58,15 @@ enum HeartbeatFilterMode {
 class HeartbeatSoundManager: NSObject, ObservableObject {
     var currentUserRole: UserRole? // Add this after currentRoomCode
     
-    var syncManager: HeartbeatSyncManager?
+    var syncManager: HeartbeatSyncManager? {
+        didSet {
+            cancellables.removeAll()
+            syncManager?.$isSyncing
+                .receive(on: DispatchQueue.main)
+                .assign(to: \.isSyncing, on: self)
+                .store(in: &cancellables)
+        }
+    }
     var currentUserId: String?
     var currentRoomCode: String?
     
@@ -84,6 +92,7 @@ class HeartbeatSoundManager: NSObject, ObservableObject {
     @Published var isPlaying = false
     @Published var isRunning = false
     @Published var isRecording = false
+    @Published var isSyncing = false
     @Published var lastRecording: Recording?
     @Published var savedRecordings: [Recording] = []
     @Published var savedMoments: [Moment] = []
@@ -106,6 +115,7 @@ class HeartbeatSoundManager: NSObject, ObservableObject {
     
     private let heartbeatDetector = HeartbeatDetector()
     private var syncTimer: Timer?
+    private var cancellables = Set<AnyCancellable>()
     
     override init() {
         super.init()
@@ -130,6 +140,12 @@ class HeartbeatSoundManager: NSObject, ObservableObject {
     func startPeriodicSync() {
         // Stop any existing timer
         syncTimer?.invalidate()
+        
+        print("🔍 Checking periodic sync requirements:")
+        print("   - Role: \(currentUserRole?.rawValue ?? "nil")")
+        print("   - Room Code: \(currentRoomCode ?? "nil")")
+        print("   - SyncManager: \(syncManager == nil ? "nil" : "present")")
+        print("   - ModelContext: \(modelContext == nil ? "nil" : "present")")
         
         // Only start periodic sync for fathers (moms upload directly)
         guard currentUserRole == .father, 

@@ -6,7 +6,6 @@
 //
 
 import SwiftUI
-import SwiftData
 
 struct PregnancyTimelineView: View {
     @ObservedObject var heartbeatSoundManager: HeartbeatSoundManager
@@ -77,6 +76,24 @@ struct PregnancyTimelineView: View {
                                 .matchedGeometryEffect(id: "navButton", in: animation)
                             } else {
                                 Spacer()
+                            }
+                            
+                            Spacer()
+                            
+                            if heartbeatSoundManager.isSyncing {
+                                HStack(spacing: 6) {
+                                    ProgressView()
+                                        .scaleEffect(0.7)
+                                        .tint(.white)
+                                    Text("Syncing")
+                                        .font(.system(size: 14, weight: .medium))
+                                        .foregroundColor(.white.opacity(0.9))
+                                }
+                                .padding(.horizontal, 12)
+                                .padding(.vertical, 6)
+                                .background(Color.black.opacity(0.3))
+                                .clipShape(Capsule())
+                                .transition(.opacity)
                             }
                             
                             Spacer()
@@ -179,63 +196,45 @@ struct PregnancyTimelineView: View {
         let raw = heartbeatSoundManager.savedRecordings
         print("📊 Grouping \(raw.count) recordings")
 
-        let calendar = Calendar.current
-        let now = Date()
-        
-        // Try to get pregnancy start date from UserDefaults first (set by synced heartbeats)
-        var pregnancyStartDate: Date?
-        
-        if let storedDate = UserDefaults.standard.object(forKey: "pregnancyStartDate") as? Date {
-            pregnancyStartDate = calendar.startOfDay(for: storedDate)
-            print("📅 Using stored pregnancy start date: \(pregnancyStartDate!)")
-        } else if let initialPregnancyWeek = inputWeek {
-            // If no stored date but we have inputWeek (for mothers), calculate and store it
-            pregnancyStartDate = calendar.date(byAdding: .weekOfYear, value: -initialPregnancyWeek, to: now)!
-            pregnancyStartDate = calendar.startOfDay(for: pregnancyStartDate!)
-            UserDefaults.standard.set(pregnancyStartDate, forKey: "pregnancyStartDate")
-            UserDefaults.standard.set(initialPregnancyWeek, forKey: "initialPregnancyWeek")
-            print("💾 Stored new pregnancy start date: \(pregnancyStartDate!)")
-        } else if !raw.isEmpty {
-            // For fathers: Try to infer from the earliest synced heartbeat's pregnancy week
-            if let earliestRecording = raw.min(by: { $0.createdAt < $1.createdAt }) {
-                // Get the pregnancy week from the heartbeat metadata if available
-                if let modelContext = heartbeatSoundManager.modelContext {
-                    do {
-                        let results = try modelContext.fetch(FetchDescriptor<SavedHeartbeat>())
-                        if let savedHeartbeat = results.first(where: { $0.timestamp == earliestRecording.createdAt }),
-                           let pregnancyWeeks = savedHeartbeat.pregnancyWeeks {
-                            // Calculate pregnancy start date from this heartbeat
-                            let weeksSinceStart = calendar.dateComponents([.weekOfYear], from: earliestRecording.createdAt, to: now).weekOfYear ?? 0
-                            let estimatedCurrentWeek = pregnancyWeeks + weeksSinceStart
-                            pregnancyStartDate = calendar.date(byAdding: .weekOfYear, value: -estimatedCurrentWeek, to: now)!
-                            pregnancyStartDate = calendar.startOfDay(for: pregnancyStartDate!)
-                            UserDefaults.standard.set(pregnancyStartDate, forKey: "pregnancyStartDate")
-                            print("💾 Inferred pregnancy start date from heartbeat: \(pregnancyStartDate!)")
-                        }
-                    } catch {
-                        print("⚠️ Error fetching heartbeat data: \(error)")
-                    }
-                }
-            }
-        }
-        
-        guard let startDate = pregnancyStartDate else {
-            print("⚠️ No pregnancy data available, showing empty timeline")
+        guard let initialPregnancyWeek = inputWeek else {
+            print("⚠️ No pregnancy week available, showing empty timeline")
             groupedData = []
             return
         }
         
+        let calendar = Calendar.current
+        let now = Date()
+        
+        // Store initial pregnancy week and date in UserDefaults if not already stored
+        if UserDefaults.standard.object(forKey: "pregnancyStartDate") == nil {
+            let pregnancyStartDate = calendar.date(byAdding: .weekOfYear, value: -initialPregnancyWeek, to: now)!
+            UserDefaults.standard.set(pregnancyStartDate, forKey: "pregnancyStartDate")
+            UserDefaults.standard.set(initialPregnancyWeek, forKey: "initialPregnancyWeek")
+            print("💾 Stored pregnancy start date: \(pregnancyStartDate)")
+        }
+        
+        // Get the stored pregnancy start date
+        guard let storedDate = UserDefaults.standard.object(forKey: "pregnancyStartDate") as? Date else {
+            print("⚠️ Could not get pregnancy start date")
+            groupedData = []
+            return
+        }
+        // Normalize to start of day to avoid time-based drift
+        let pregnancyStartDate = calendar.startOfDay(for: storedDate)
+        
         // Calculate CURRENT pregnancy week based on time elapsed since pregnancy start
-        let weeksSinceStart = calendar.dateComponents([.weekOfYear], from: startDate, to: now).weekOfYear ?? 0
+        let weeksSinceStart = calendar.dateComponents([.weekOfYear], from: pregnancyStartDate, to: now).weekOfYear ?? 0
         let currentPregnancyWeek = weeksSinceStart
         
-        print("📅 Pregnancy started: \(startDate)")
+        print("📅 Pregnancy started: \(pregnancyStartDate)")
+        print("📅 Initial pregnancy week: \(initialPregnancyWeek)")
         print("📅 Current pregnancy week (calculated): \(currentPregnancyWeek)")
+        print("📅 Weeks elapsed: \(currentPregnancyWeek - initialPregnancyWeek)")
 
         // Group recordings by pregnancy week
         let grouped = Dictionary(grouping: raw) { recording -> Int in
             // Calculate how many weeks since pregnancy started
-            let weeksSinceStart = calendar.dateComponents([.weekOfYear], from: startDate, to: recording.createdAt).weekOfYear ?? 0
+            let weeksSinceStart = calendar.dateComponents([.weekOfYear], from: pregnancyStartDate, to: recording.createdAt).weekOfYear ?? 0
             let pregnancyWeek = weeksSinceStart
             print("   Recording from \(recording.createdAt) -> Pregnancy week \(pregnancyWeek)")
             return pregnancyWeek
