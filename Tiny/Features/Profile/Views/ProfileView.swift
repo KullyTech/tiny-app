@@ -15,6 +15,7 @@ struct ProfileView: View {
     @State private var showingDeleteAccountConfirmation = false
     @State private var showingDeleteError = false
     @State private var deleteErrorMessage = ""
+    @State private var isDeletingAccount = false
     
     @Environment(\.modelContext) private var modelContext
     @EnvironmentObject var authService: AuthenticationService
@@ -49,6 +50,24 @@ struct ProfileView: View {
                 
                 // SETTINGS LIST
                 settingsList
+            }
+            if isDeletingAccount {
+                Color.black.opacity(0.7)
+                    .ignoresSafeArea()
+                    .zIndex(100)
+                
+                VStack(spacing: 20) {
+                    ProgressView()
+                        .scaleEffect(1.5)
+                        .tint(.white)
+                    Text("Deleting Account...")
+                        .font(.headline)
+                        .foregroundColor(.white)
+                }
+                .frame(width: 200, height: 160)
+                .background(Color.black.opacity(0.8))
+                .cornerRadius(20)
+                .zIndex(101)
             }
         }
         .onAppear {
@@ -222,24 +241,16 @@ struct ProfileView: View {
                 Text("This will permanently delete your account and all associated data. This action cannot be undone.")
             }
             
-            if authService.isLoading {
-                HStack {
-                    Spacer()
-                    ProgressView()
-                    Text("Processing...")
-                        .font(.caption)
-                        .foregroundColor(.gray)
-                    Spacer()
-                }
-                .listRowBackground(Color.clear)
-            }
+
         }
         .disabled(authService.isLoading)
     }
     
     private func deleteAccount() async {
+        isDeletingAccount = true
+        defer { isDeletingAccount = false }
+        
         do {
-            
             try await authService.deleteAccount()
             
             viewModel.manager.deleteAllData()
