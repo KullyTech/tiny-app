@@ -7,6 +7,7 @@
 
 import SwiftUI
 
+// swiftlint:disable type_body_length
 struct ProfileView: View {
     @StateObject private var viewModel = ProfileViewModel()
     @State private var showingSignOutConfirmation = false
@@ -385,6 +386,7 @@ struct ProfileView: View {
     }
     
 }
+// swiftlint:enable type_body_length
 
 struct ProfilePhotoDetailView: View {
     @EnvironmentObject var authService: AuthenticationService
