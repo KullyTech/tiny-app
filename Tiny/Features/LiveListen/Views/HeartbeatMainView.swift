@@ -33,7 +33,7 @@ struct HeartbeatMainView: View {
                         viewModel.allowTabViewSwipe = !disable
                     },
                     isMother: isMother,
-                    inputWeek: authService.currentUser?.pregnancyWeeks
+                    inputWeek: isMother ? authService.currentUser?.pregnancyWeeks : authService.partnerPregnancyWeeks
                 )
                 .tag(0)
                 .transition(.asymmetric(

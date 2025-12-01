@@ -15,6 +15,7 @@ struct ProfileView: View {
     @State private var showingDeleteAccountConfirmation = false
     @State private var showingDeleteError = false
     @State private var deleteErrorMessage = ""
+    @State private var isDeletingAccount = false
     
     @Environment(\.modelContext) private var modelContext
     @EnvironmentObject var authService: AuthenticationService
@@ -49,6 +50,24 @@ struct ProfileView: View {
                 
                 // SETTINGS LIST
                 settingsList
+            }
+            if isDeletingAccount {
+                Color.black.opacity(0.7)
+                    .ignoresSafeArea()
+                    .zIndex(100)
+                
+                VStack(spacing: 20) {
+                    ProgressView()
+                        .scaleEffect(1.5)
+                        .tint(.white)
+                    Text("Deleting Account...")
+                        .font(.headline)
+                        .foregroundColor(.white)
+                }
+                .frame(width: 200, height: 160)
+                .background(Color.black.opacity(0.8))
+                .cornerRadius(20)
+                .zIndex(101)
             }
         }
         .onAppear {
@@ -222,11 +241,14 @@ struct ProfileView: View {
                 Text("This will permanently delete your account and all associated data. This action cannot be undone.")
             }
         }
+        .disabled(authService.isLoading)
     }
     
     private func deleteAccount() async {
+        isDeletingAccount = true
+        defer { isDeletingAccount = false }
+        
         do {
-            
             try await authService.deleteAccount()
             
             viewModel.manager.deleteAllData()
@@ -245,10 +267,15 @@ struct ProfileView: View {
                 viewModel.signIn()
             } label: {
                 HStack {
-                    Image(systemName: "applelogo")
-                        .font(.system(size: 20, weight: .medium))
-                    Text("Sign in with Apple")
-                        .font(.system(size: 17, weight: .semibold))
+                    if authService.isLoading {
+                        ProgressView()
+                            .tint(.black)
+                    } else {
+                        Image(systemName: "applelogo")
+                            .font(.system(size: 20, weight: .medium))
+                        Text("Sign in with Apple")
+                            .font(.system(size: 17, weight: .semibold))
+                    }
                 }
                 .frame(maxWidth: .infinity)
                 .frame(height: 44)
@@ -257,6 +284,7 @@ struct ProfileView: View {
                 .cornerRadius(8)
             }
             .buttonStyle(.plain)
+            .disabled(authService.isLoading)
         }
         .padding(.vertical, 8)
     }
@@ -405,7 +433,13 @@ struct ProfilePhotoDetailView: View {
                         dismiss()
                     }
                 }
-                .disabled(tempUserName.trimmingCharacters(in: .whitespaces).isEmpty)
+                .disabled(tempUserName.trimmingCharacters(in: .whitespaces).isEmpty || authService.isLoading)
+                .opacity(authService.isLoading ? 0.5 : 1.0)
+                .overlay {
+                    if authService.isLoading {
+                        ProgressView()
+                    }
+                }
             }
         }
         .onAppear {

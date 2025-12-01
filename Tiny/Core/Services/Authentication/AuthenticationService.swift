@@ -13,10 +13,13 @@ import AuthenticationServices
 import CryptoKit
 internal import Combine
 
+// swiftlint:disable type_body_length
 @MainActor
 class AuthenticationService: ObservableObject {
     @Published var currentUser: User?
     @Published var isAuthenticated = false
+    @Published var isLoading = false
+    @Published var partnerPregnancyWeeks: Int?
     
     private let auth = Auth.auth()
     private let database = Firestore.firestore()
@@ -34,6 +37,9 @@ class AuthenticationService: ObservableObject {
     }
     
     func signInWithApple(authorization: ASAuthorization) async throws {
+        isLoading = true
+        defer { isLoading = false }
+        
         guard let appleIDCredential = authorization.credential as? ASAuthorizationAppleIDCredential else {
             throw NSError(domain: "AuthError", code: -1, userInfo: [NSLocalizedDescriptionKey: "Invalid Credentials"])
         }
@@ -92,6 +98,9 @@ class AuthenticationService: ObservableObject {
     }
     
     func updateUserRole(role: UserRole, pregnancyWeeks: Int? = nil, roomCode: String? = nil) async throws {
+        isLoading = true
+        defer { isLoading = false }
+        
         guard let userId = auth.currentUser?.uid else {
             return
         }
@@ -111,6 +120,9 @@ class AuthenticationService: ObservableObject {
     }
     
     func updateUserName(name: String) async throws {
+        isLoading = true
+        defer { isLoading = false }
+        
         guard let userId = auth.currentUser?.uid else {
             return
         }
@@ -120,6 +132,9 @@ class AuthenticationService: ObservableObject {
     }
     
     func createRoom() async throws -> String {
+        isLoading = true
+        defer { isLoading = false }
+        
         guard let userId = auth.currentUser?.uid,
               currentUser?.role == .mother else {
             throw NSError(domain: "AuthError", code: -1, userInfo: [NSLocalizedDescriptionKey: "Only mothers can create rooms!"])
@@ -147,8 +162,11 @@ class AuthenticationService: ObservableObject {
         currentUser = nil
         isAuthenticated = false
     }
-    
+    // swiftlint:disable cyclomatic_complexity
     func deleteAccount() async throws {
+        isLoading = true
+        defer { isLoading = false }
+        
         guard let user = auth.currentUser else {
             throw NSError(domain: "AuthError", code: -1, userInfo: [NSLocalizedDescriptionKey: "No user is currently signed in"])
         }
@@ -158,93 +176,98 @@ class AuthenticationService: ObservableObject {
         do {
             print("🗑️ Starting account deletion for user: \(userId)")
             
-            // 1. Delete all heartbeat recordings from Firestore and Storage
-            print("🗑️ Deleting heartbeat recordings...")
-            
-            // Query by motherUserId (the field used in your schema)
-            var heartbeatsSnapshot = try await database.collection("heartbeats")
-                .whereField("motherUserId", isEqualTo: userId)
-                .getDocuments()
-            
-            print("   Found \(heartbeatsSnapshot.documents.count) heartbeats by motherUserId")
-            
-            // Also check for any heartbeats with userId field (legacy/fallback)
-            let legacyHeartbeats = try await database.collection("heartbeats")
-                .whereField("userId", isEqualTo: userId)
-                .getDocuments()
-            
-            if !legacyHeartbeats.documents.isEmpty {
-                print("   Found \(legacyHeartbeats.documents.count) heartbeats by userId (legacy)")
-            }
-            
-            // Combine both results
-            var allHeartbeatDocs = heartbeatsSnapshot.documents
-            allHeartbeatDocs.append(contentsOf: legacyHeartbeats.documents)
-            
-            for document in allHeartbeatDocs {
-                let data = document.data()
+            // Only delete shared data (heartbeats/moments) if user is NOT a father
+            if currentUser?.role != .father {
+                // 1. Delete all heartbeat recordings from Firestore and Storage
+                print("🗑️ Deleting heartbeat recordings...")
                 
-                // Delete from Firebase Storage if audioURL exists
-                if let audioURL = data["firebaseStorageURL"] as? String, !audioURL.isEmpty {
-                    do {
-                        let storageRef = Storage.storage().reference(forURL: audioURL)
-                        try await storageRef.delete()
-                        print("   ✅ Deleted audio file from Storage: \(document.documentID)")
-                    } catch {
-                        print("   ⚠️ Failed to delete audio file \(document.documentID): \(error.localizedDescription)")
-                    }
+                // Query by motherUserId (the field used in your schema)
+                var heartbeatsSnapshot = try await database.collection("heartbeats")
+                    .whereField("motherUserId", isEqualTo: userId)
+                    .getDocuments()
+                
+                print("   Found \(heartbeatsSnapshot.documents.count) heartbeats by motherUserId")
+                
+                // Also check for any heartbeats with userId field (legacy/fallback)
+                let legacyHeartbeats = try await database.collection("heartbeats")
+                    .whereField("userId", isEqualTo: userId)
+                    .getDocuments()
+                
+                if !legacyHeartbeats.documents.isEmpty {
+                    print("   Found \(legacyHeartbeats.documents.count) heartbeats by userId (legacy)")
                 }
                 
-                // Delete from Firestore
-                try await database.collection("heartbeats").document(document.documentID).delete()
-                print("   ✅ Deleted heartbeat document: \(document.documentID)")
-            }
-            
-            print("🗑️ Deleted \(allHeartbeatDocs.count) heartbeat recordings")
-            
-            // 2. Delete all moments from Firestore and Storage
-            print("🗑️ Deleting moments...")
-            
-            // Query by motherUserId (the field used in your schema)
-            var momentsSnapshot = try await database.collection("moments")
-                .whereField("motherUserId", isEqualTo: userId)
-                .getDocuments()
-            
-            print("   Found \(momentsSnapshot.documents.count) moments by motherUserId")
-            
-            // Also check for any moments with userId field (legacy/fallback)
-            let legacyMoments = try await database.collection("moments")
-                .whereField("userId", isEqualTo: userId)
-                .getDocuments()
-            
-            if !legacyMoments.documents.isEmpty {
-                print("   Found \(legacyMoments.documents.count) moments by userId (legacy)")
-            }
-            
-            // Combine both results
-            var allMomentDocs = momentsSnapshot.documents
-            allMomentDocs.append(contentsOf: legacyMoments.documents)
-            
-            for document in allMomentDocs {
-                let data = document.data()
+                // Combine both results
+                var allHeartbeatDocs = heartbeatsSnapshot.documents
+                allHeartbeatDocs.append(contentsOf: legacyHeartbeats.documents)
                 
-                // Delete from Firebase Storage if imageURL exists
-                if let imageURL = data["firebaseStorageURL"] as? String, !imageURL.isEmpty {
-                    do {
-                        let storageRef = Storage.storage().reference(forURL: imageURL)
-                        try await storageRef.delete()
-                        print("   ✅ Deleted moment image from Storage: \(document.documentID)")
-                    } catch {
-                        print("   ⚠️ Failed to delete moment image \(document.documentID): \(error.localizedDescription)")
+                for document in allHeartbeatDocs {
+                    let data = document.data()
+                    
+                    // Delete from Firebase Storage if audioURL exists
+                    if let audioURL = data["firebaseStorageURL"] as? String, !audioURL.isEmpty {
+                        do {
+                            let storageRef = Storage.storage().reference(forURL: audioURL)
+                            try await storageRef.delete()
+                            print("   ✅ Deleted audio file from Storage: \(document.documentID)")
+                        } catch {
+                            print("   ⚠️ Failed to delete audio file \(document.documentID): \(error.localizedDescription)")
+                        }
                     }
+                    
+                    // Delete from Firestore
+                    try await database.collection("heartbeats").document(document.documentID).delete()
+                    print("   ✅ Deleted heartbeat document: \(document.documentID)")
                 }
                 
-                // Delete from Firestore
-                try await database.collection("moments").document(document.documentID).delete()
-                print("   ✅ Deleted moment document: \(document.documentID)")
+                print("🗑️ Deleted \(allHeartbeatDocs.count) heartbeat recordings")
+                
+                // 2. Delete all moments from Firestore and Storage
+                print("🗑️ Deleting moments...")
+                
+                // Query by motherUserId (the field used in your schema)
+                var momentsSnapshot = try await database.collection("moments")
+                    .whereField("motherUserId", isEqualTo: userId)
+                    .getDocuments()
+                
+                print("   Found \(momentsSnapshot.documents.count) moments by motherUserId")
+                
+                // Also check for any moments with userId field (legacy/fallback)
+                let legacyMoments = try await database.collection("moments")
+                    .whereField("userId", isEqualTo: userId)
+                    .getDocuments()
+                
+                if !legacyMoments.documents.isEmpty {
+                    print("   Found \(legacyMoments.documents.count) moments by userId (legacy)")
+                }
+                
+                // Combine both results
+                var allMomentDocs = momentsSnapshot.documents
+                allMomentDocs.append(contentsOf: legacyMoments.documents)
+                
+                for document in allMomentDocs {
+                    let data = document.data()
+                    
+                    // Delete from Firebase Storage if imageURL exists
+                    if let imageURL = data["firebaseStorageURL"] as? String, !imageURL.isEmpty {
+                        do {
+                            let storageRef = Storage.storage().reference(forURL: imageURL)
+                            try await storageRef.delete()
+                            print("   ✅ Deleted moment image from Storage: \(document.documentID)")
+                        } catch {
+                            print("   ⚠️ Failed to delete moment image \(document.documentID): \(error.localizedDescription)")
+                        }
+                    }
+                    
+                    // Delete from Firestore
+                    try await database.collection("moments").document(document.documentID).delete()
+                    print("   ✅ Deleted moment document: \(document.documentID)")
+                }
+                
+                print("🗑️ Deleted \(allMomentDocs.count) moments")
+            } else {
+                print("ℹ️ User is father, skipping deletion of shared heartbeats and moments")
             }
-            
-            print("🗑️ Deleted \(allMomentDocs.count) moments")
             
             // 3. Handle room cleanup
             if let roomCode = currentUser?.roomCode {
@@ -303,7 +326,8 @@ class AuthenticationService: ObservableObject {
             throw error
         }
     }
-    
+    // swiftlint:enable cyclomatic_complexity
+
     private func fetchUserData(userId: String) {
         database.collection("users").document(userId).addSnapshotListener { [weak self] snapshot, error in
             guard let snapshot = snapshot, snapshot.exists, let data = snapshot.data() else {
@@ -323,6 +347,43 @@ class AuthenticationService: ObservableObject {
             )
             
             self?.currentUser = user
+            
+            // If user is a father, fetch the mother's pregnancy weeks via the room
+            if user.role == .father, let roomCode = user.roomCode {
+                self?.fetchPartnerPregnancyWeeks(roomCode: roomCode)
+            }
+        }
+    }
+    
+    private func fetchPartnerPregnancyWeeks(roomCode: String) {
+        Task {
+            do {
+                // 1. Find the room
+                let roomSnapshot = try await database.collection("rooms")
+                    .whereField("code", isEqualTo: roomCode)
+                    .limit(to: 1)
+                    .getDocuments()
+                
+                guard let roomDoc = roomSnapshot.documents.first else { return }
+                let roomData = roomDoc.data()
+                
+                // 2. Get mother's ID
+                guard let motherUserId = roomData["motherUserId"] as? String else { return }
+                
+                // 3. Fetch mother's user doc
+                let motherDoc = try await database.collection("users").document(motherUserId).getDocument()
+                guard let motherData = motherDoc.data() else { return }
+                
+                // 4. Get pregnancy weeks
+                if let weeks = motherData["pregnancyWeeks"] as? Int {
+                    await MainActor.run {
+                        self.partnerPregnancyWeeks = weeks
+                        print("✅ Fetched partner's pregnancy weeks: \(weeks)")
+                    }
+                }
+            } catch {
+                print("❌ Error fetching partner pregnancy weeks: \(error)")
+            }
         }
     }
     
@@ -357,6 +418,9 @@ class AuthenticationService: ObservableObject {
     }
     
     func joinRoom(roomCode: String) async throws {
+        isLoading = true
+        defer { isLoading = false }
+        
         guard let userId = auth.currentUser?.uid else {
             throw NSError(domain: "AuthError", code: -1, userInfo: [NSLocalizedDescriptionKey: "User not authenticated"])
         }
@@ -391,3 +455,4 @@ class AuthenticationService: ObservableObject {
     }
     
 }
+// swiftlint:enable type_body_length

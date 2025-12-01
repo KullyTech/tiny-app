@@ -22,6 +22,11 @@ class HeartbeatMainViewModel: ObservableObject {
         roomCode: String?,
         userRole: UserRole?
     ) {
+        print("🛠️ setupManager called with:")
+        print("   - UserId: \(userId ?? "nil")")
+        print("   - RoomCode: \(roomCode ?? "nil")")
+        print("   - UserRole: \(userRole?.rawValue ?? "nil")")
+        
         heartbeatSoundManager.modelContext = modelContext
         heartbeatSoundManager.syncManager = syncManager
         heartbeatSoundManager.currentUserId = userId

@@ -87,6 +87,9 @@ class HeartbeatSyncManager: ObservableObject {
     
     /// Marks a heartbeat as shared so the father can see it
     func shareHeartbeat(_ heartbeat: SavedHeartbeat) async throws {
+        isSyncing = true
+        defer { isSyncing = false }
+        
         guard let firebaseId = heartbeat.firebaseId else {
             throw SyncError.notSynced
         }
@@ -104,6 +107,9 @@ class HeartbeatSyncManager: ObservableObject {
     
     /// Updates the display name of a heartbeat in Firestore
     func updateHeartbeatName(_ heartbeat: SavedHeartbeat, newName: String) async throws {
+        isSyncing = true
+        defer { isSyncing = false }
+        
         guard let firebaseId = heartbeat.firebaseId else {
             throw SyncError.notSynced
         }
@@ -126,6 +132,9 @@ class HeartbeatSyncManager: ObservableObject {
     
     /// Marks a heartbeat as not shared
     func unshareHeartbeat(_ heartbeat: SavedHeartbeat) async throws {
+        isSyncing = true
+        defer { isSyncing = false }
+        
         guard let firebaseId = heartbeat.firebaseId else {
             throw SyncError.notSynced
         }
@@ -243,6 +252,9 @@ class HeartbeatSyncManager: ObservableObject {
     
     /// Deletes a heartbeat from both Storage and Firestore
     func deleteHeartbeat(_ heartbeat: SavedHeartbeat) async throws {
+        isSyncing = true
+        defer { isSyncing = false }
+        
         // Delete from Storage if synced
         if let storageURL = heartbeat.firebaseStorageURL {
             try await storageService.deleteHeartbeat(downloadURL: storageURL)
@@ -262,6 +274,9 @@ class HeartbeatSyncManager: ObservableObject {
         modelContext: ModelContext,
         isMother: Bool = true
     ) async throws -> [SavedHeartbeat] {
+        isSyncing = true
+        defer { isSyncing = false }
+        
         print("🔄 Syncing heartbeats from cloud...")
         print("   Room Code: \(roomCode)")
         print("   Is Mother: \(isMother)")
@@ -392,6 +407,9 @@ class HeartbeatSyncManager: ObservableObject {
     }
     
     func deleteMoment(_ moment: SavedMoment) async throws {
+        isSyncing = true
+        defer { isSyncing = false }
+        
         // Delete from Storage if synced
         if let storageURL = moment.firebaseStorageURL {
             try await storageService.deleteMomentImage(downloadURL: storageURL)
@@ -440,6 +458,9 @@ class HeartbeatSyncManager: ObservableObject {
         roomCode: String,
         modelContext: ModelContext
     ) async throws -> [SavedMoment] {
+        isSyncing = true
+        defer { isSyncing = false }
+        
         print("🔄 Syncing moments from cloud...")
         
         let metadataList = try await fetchAllMomentsForRoom(roomCode: roomCode)
