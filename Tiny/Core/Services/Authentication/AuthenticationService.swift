@@ -175,93 +175,98 @@ class AuthenticationService: ObservableObject {
         do {
             print("🗑️ Starting account deletion for user: \(userId)")
             
-            // 1. Delete all heartbeat recordings from Firestore and Storage
-            print("🗑️ Deleting heartbeat recordings...")
-            
-            // Query by motherUserId (the field used in your schema)
-            var heartbeatsSnapshot = try await database.collection("heartbeats")
-                .whereField("motherUserId", isEqualTo: userId)
-                .getDocuments()
-            
-            print("   Found \(heartbeatsSnapshot.documents.count) heartbeats by motherUserId")
-            
-            // Also check for any heartbeats with userId field (legacy/fallback)
-            let legacyHeartbeats = try await database.collection("heartbeats")
-                .whereField("userId", isEqualTo: userId)
-                .getDocuments()
-            
-            if !legacyHeartbeats.documents.isEmpty {
-                print("   Found \(legacyHeartbeats.documents.count) heartbeats by userId (legacy)")
-            }
-            
-            // Combine both results
-            var allHeartbeatDocs = heartbeatsSnapshot.documents
-            allHeartbeatDocs.append(contentsOf: legacyHeartbeats.documents)
-            
-            for document in allHeartbeatDocs {
-                let data = document.data()
+            // Only delete shared data (heartbeats/moments) if user is NOT a father
+            if currentUser?.role != .father {
+                // 1. Delete all heartbeat recordings from Firestore and Storage
+                print("🗑️ Deleting heartbeat recordings...")
                 
-                // Delete from Firebase Storage if audioURL exists
-                if let audioURL = data["firebaseStorageURL"] as? String, !audioURL.isEmpty {
-                    do {
-                        let storageRef = Storage.storage().reference(forURL: audioURL)
-                        try await storageRef.delete()
-                        print("   ✅ Deleted audio file from Storage: \(document.documentID)")
-                    } catch {
-                        print("   ⚠️ Failed to delete audio file \(document.documentID): \(error.localizedDescription)")
-                    }
+                // Query by motherUserId (the field used in your schema)
+                var heartbeatsSnapshot = try await database.collection("heartbeats")
+                    .whereField("motherUserId", isEqualTo: userId)
+                    .getDocuments()
+                
+                print("   Found \(heartbeatsSnapshot.documents.count) heartbeats by motherUserId")
+                
+                // Also check for any heartbeats with userId field (legacy/fallback)
+                let legacyHeartbeats = try await database.collection("heartbeats")
+                    .whereField("userId", isEqualTo: userId)
+                    .getDocuments()
+                
+                if !legacyHeartbeats.documents.isEmpty {
+                    print("   Found \(legacyHeartbeats.documents.count) heartbeats by userId (legacy)")
                 }
                 
-                // Delete from Firestore
-                try await database.collection("heartbeats").document(document.documentID).delete()
-                print("   ✅ Deleted heartbeat document: \(document.documentID)")
-            }
-            
-            print("🗑️ Deleted \(allHeartbeatDocs.count) heartbeat recordings")
-            
-            // 2. Delete all moments from Firestore and Storage
-            print("🗑️ Deleting moments...")
-            
-            // Query by motherUserId (the field used in your schema)
-            var momentsSnapshot = try await database.collection("moments")
-                .whereField("motherUserId", isEqualTo: userId)
-                .getDocuments()
-            
-            print("   Found \(momentsSnapshot.documents.count) moments by motherUserId")
-            
-            // Also check for any moments with userId field (legacy/fallback)
-            let legacyMoments = try await database.collection("moments")
-                .whereField("userId", isEqualTo: userId)
-                .getDocuments()
-            
-            if !legacyMoments.documents.isEmpty {
-                print("   Found \(legacyMoments.documents.count) moments by userId (legacy)")
-            }
-            
-            // Combine both results
-            var allMomentDocs = momentsSnapshot.documents
-            allMomentDocs.append(contentsOf: legacyMoments.documents)
-            
-            for document in allMomentDocs {
-                let data = document.data()
+                // Combine both results
+                var allHeartbeatDocs = heartbeatsSnapshot.documents
+                allHeartbeatDocs.append(contentsOf: legacyHeartbeats.documents)
                 
-                // Delete from Firebase Storage if imageURL exists
-                if let imageURL = data["firebaseStorageURL"] as? String, !imageURL.isEmpty {
-                    do {
-                        let storageRef = Storage.storage().reference(forURL: imageURL)
-                        try await storageRef.delete()
-                        print("   ✅ Deleted moment image from Storage: \(document.documentID)")
-                    } catch {
-                        print("   ⚠️ Failed to delete moment image \(document.documentID): \(error.localizedDescription)")
+                for document in allHeartbeatDocs {
+                    let data = document.data()
+                    
+                    // Delete from Firebase Storage if audioURL exists
+                    if let audioURL = data["firebaseStorageURL"] as? String, !audioURL.isEmpty {
+                        do {
+                            let storageRef = Storage.storage().reference(forURL: audioURL)
+                            try await storageRef.delete()
+                            print("   ✅ Deleted audio file from Storage: \(document.documentID)")
+                        } catch {
+                            print("   ⚠️ Failed to delete audio file \(document.documentID): \(error.localizedDescription)")
+                        }
                     }
+                    
+                    // Delete from Firestore
+                    try await database.collection("heartbeats").document(document.documentID).delete()
+                    print("   ✅ Deleted heartbeat document: \(document.documentID)")
                 }
                 
-                // Delete from Firestore
-                try await database.collection("moments").document(document.documentID).delete()
-                print("   ✅ Deleted moment document: \(document.documentID)")
+                print("🗑️ Deleted \(allHeartbeatDocs.count) heartbeat recordings")
+                
+                // 2. Delete all moments from Firestore and Storage
+                print("🗑️ Deleting moments...")
+                
+                // Query by motherUserId (the field used in your schema)
+                var momentsSnapshot = try await database.collection("moments")
+                    .whereField("motherUserId", isEqualTo: userId)
+                    .getDocuments()
+                
+                print("   Found \(momentsSnapshot.documents.count) moments by motherUserId")
+                
+                // Also check for any moments with userId field (legacy/fallback)
+                let legacyMoments = try await database.collection("moments")
+                    .whereField("userId", isEqualTo: userId)
+                    .getDocuments()
+                
+                if !legacyMoments.documents.isEmpty {
+                    print("   Found \(legacyMoments.documents.count) moments by userId (legacy)")
+                }
+                
+                // Combine both results
+                var allMomentDocs = momentsSnapshot.documents
+                allMomentDocs.append(contentsOf: legacyMoments.documents)
+                
+                for document in allMomentDocs {
+                    let data = document.data()
+                    
+                    // Delete from Firebase Storage if imageURL exists
+                    if let imageURL = data["firebaseStorageURL"] as? String, !imageURL.isEmpty {
+                        do {
+                            let storageRef = Storage.storage().reference(forURL: imageURL)
+                            try await storageRef.delete()
+                            print("   ✅ Deleted moment image from Storage: \(document.documentID)")
+                        } catch {
+                            print("   ⚠️ Failed to delete moment image \(document.documentID): \(error.localizedDescription)")
+                        }
+                    }
+                    
+                    // Delete from Firestore
+                    try await database.collection("moments").document(document.documentID).delete()
+                    print("   ✅ Deleted moment document: \(document.documentID)")
+                }
+                
+                print("🗑️ Deleted \(allMomentDocs.count) moments")
+            } else {
+                print("ℹ️ User is father, skipping deletion of shared heartbeats and moments")
             }
-            
-            print("🗑️ Deleted \(allMomentDocs.count) moments")
             
             // 3. Handle room cleanup
             if let roomCode = currentUser?.roomCode {
