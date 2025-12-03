@@ -21,6 +21,7 @@ struct User: Codable, Identifiable {
     var pregnancyWeeks: Int?
     var roomCode: String?
     var createdAt: Date
+    var isGuest: Bool = false
     
     init(id: String? = nil,
          email: String,
@@ -28,7 +29,8 @@ struct User: Codable, Identifiable {
          role: UserRole? = nil,
          pregnancyWeeks: Int? = nil,
          roomCode: String? = nil,
-         createdAt: Date) {
+         createdAt: Date,
+         isGuest: Bool = false) {
         self.id = id
         self.email = email
         self.name = name
@@ -36,5 +38,6 @@ struct User: Codable, Identifiable {
         self.pregnancyWeeks = pregnancyWeeks
         self.roomCode = roomCode
         self.createdAt = createdAt
+        self.isGuest = isGuest
     }
 }

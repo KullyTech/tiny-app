@@ -34,14 +34,18 @@ class AuthenticationService: ObservableObject {
     func checkAuthStatus() {
         if let firebaseUser = auth.currentUser {
             print("🔄 Found existing session for user: \(firebaseUser.uid)")
-            isAuthenticated = true
+            print("🔄 Is anonymous: \(firebaseUser.isAnonymous)")
+
+            // If anonymous user exists but no data, sign them out
             fetchUserData(userId: firebaseUser.uid)
         } else {
             print("ℹ️ No existing session found")
             isRestoringSession = false
+            isAuthenticated = false
+            currentUser = nil  // Explicitly clear
         }
     }
-    
+
     func signInWithApple(authorization: ASAuthorization) async throws {
         isLoading = true
         defer { isLoading = false }
@@ -95,6 +99,44 @@ class AuthenticationService: ObservableObject {
             fetchUserData(userId: result.user.uid)
         }
         isAuthenticated = true
+    }
+    
+    func signInAnonymously() async throws {
+        isLoading = true
+        defer { isLoading = false }
+
+        do {
+            let result = try await auth.signInAnonymously()
+            let firebaseUser = result.user
+
+            let userDocRef = database.collection("users").document(firebaseUser.uid)
+            let userDoc = try await userDocRef.getDocument()
+
+            if userDoc.exists {
+                // User document already exists, fetch and set current user
+                fetchUserData(userId: firebaseUser.uid)
+            } else {
+                // Create a new user document for the anonymous user
+                let newUser = User(
+                    id: firebaseUser.uid,
+                    email: firebaseUser.email ?? "guest_\(firebaseUser.uid)@example.com", // Provide a default email for guest
+                    name: "Guest User",
+                    role: nil,
+                    pregnancyWeeks: nil,
+                    roomCode: nil,
+                    createdAt: Date(),
+                    isGuest: true
+                )
+                try userDocRef.setData(from: newUser)
+                self.currentUser = newUser
+            }
+            self.isAuthenticated = false // Guests are not considered fully authenticated to bypass SignInView
+            print("✅ Signed in anonymously with UID: \(firebaseUser.uid)")
+
+        } catch {
+            print("❌ Error signing in anonymously: \(error.localizedDescription)")
+            throw error
+        }
     }
     
     func startSignInWithAppleFlow() -> String {
@@ -352,12 +394,13 @@ class AuthenticationService: ObservableObject {
                 role: (data["role"] as? String).flatMap { UserRole(rawValue: $0) },
                 pregnancyWeeks: data["pregnancyWeeks"] as? Int,
                 roomCode: data["roomCode"] as? String,
-                createdAt: (data["createdAt"] as? Timestamp)?.dateValue() ?? Date()
+                createdAt: (data["createdAt"] as? Timestamp)?.dateValue() ?? Date(),
+                isGuest: data["isGuest"] as? Bool ?? false
             )
             
             self?.currentUser = user
+            self?.isAuthenticated = !user.isGuest // Only authenticated if not a guest
             
-            // If user is a father, fetch the mother's pregnancy weeks via the room
             if user.role == .father, let roomCode = user.roomCode {
                 self?.fetchPartnerPregnancyWeeks(roomCode: roomCode)
             }

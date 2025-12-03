@@ -94,6 +94,23 @@ struct SignInView: View {
                         .frame(height: 50)
                         .cornerRadius(12)
                         .padding(.horizontal, 40)
+
+                        Button(action: {
+                            Task {
+                                do {
+                                    try await authService.signInAnonymously()
+                                } catch {
+                                    errorMessage = error.localizedDescription
+                                }
+                            }
+                        }, label: {
+                            Text("Continue as Guest")
+                                .font(.system(size: 17, weight: .semibold))
+                                .foregroundColor(.white)
+                                .glassEffect()
+                        })
+                        .padding(.horizontal, 40)
+                        .padding(.top, 10) // Add some spacing from the Apple button
                     }
                 }
             }

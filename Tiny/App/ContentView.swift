@@ -33,6 +33,21 @@ struct ContentView: View {
         .onAppear {
             heartbeatSoundManager.modelContext = modelContext
             heartbeatSoundManager.loadFromSwiftData()
+
+            // DEBUG: Force sign out to clear any cached sessions
+                if !hasShownOnboarding {
+                    // If showing onboarding, ensure we start fresh
+                    Task {
+                        try? await authService.signOut()
+                        print("🧹 Cleared any existing auth session before onboarding")
+                    }
+                }
+
+            // DEBUG: Print auth state
+            print("📊 ContentView - hasShownOnboarding: \(hasShownOnboarding)")
+            print("📊 ContentView - isAuthenticated: \(authService.isAuthenticated)")
+            print("📊 ContentView - currentUser: \(String(describing: authService.currentUser))")
+            print("📊 ContentView - isRestoringSession: \(authService.isRestoringSession)")
         }
     }
 }
@@ -48,15 +63,27 @@ struct RootView: View {
                     ProgressView()
                         .tint(.white)
                 }
-            } else if !authService.isAuthenticated {
+                .onAppear {
+                    print("🔄 RootView: Showing loading (isRestoringSession)")
+                }
+            } else if authService.currentUser == nil {
                 // Step 1: Landing screen with Sign in with Apple
                 SignInView()
+                    .onAppear {
+                        print("🔐 RootView: Showing SignInView (currentUser is nil)")
+                    }
             } else if authService.currentUser?.role == nil {
                 // Step 2-4: Onboarding flow (role selection, name input, room code)
                 OnboardingCoordinator()
+                    .onAppear {
+                        print("👤 RootView: Showing OnboardingCoordinator (user exists, no role)")
+                    }
             } else {
                 // Step 5: Main app - go to HeartbeatMainView
                 HeartbeatMainView()
+                    .onAppear {
+                        print("🏠 RootView: Showing HeartbeatMainView (fully onboarded)")
+                    }
             }
         }
     }
