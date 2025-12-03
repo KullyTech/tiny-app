@@ -6,6 +6,8 @@
 //
 
 import SwiftUI
+import AuthenticationServices
+
 
 // swiftlint:disable type_body_length
 struct ProfileView: View {
@@ -16,6 +18,7 @@ struct ProfileView: View {
     @State private var showingDeleteError = false
     @State private var deleteErrorMessage = ""
     @State private var isDeletingAccount = false
+    @State private var errorMessage: String? // Added for Apple Sign-In errors
     
     @Environment(\.modelContext) private var modelContext
     @EnvironmentObject var authService: AuthenticationService
@@ -264,28 +267,39 @@ struct ProfileView: View {
     
     private var signInView: some View {
         VStack(spacing: 12) {
-            Button {
-                viewModel.signIn()
-            } label: {
-                HStack {
-                    if authService.isLoading {
-                        ProgressView()
-                            .tint(.black)
-                    } else {
-                        Image(systemName: "applelogo")
-                            .font(.system(size: 20, weight: .medium))
-                        Text("Sign in with Apple")
-                            .font(.system(size: 17, weight: .semibold))
+            // MARK: SignIn With Apple Button
+            SignInWithAppleButton(
+                onRequest: { request in
+                    request.requestedScopes = [.email, .fullName]
+                    request.nonce = authService.startSignInWithAppleFlow()
+                },
+                onCompletion: { result in
+                    switch result {
+                    case .success(let authorization):
+                        Task {
+                            do {
+                                try await authService.signInWithApple(authorization: authorization)
+                                // After successful sign-in, ensure ProfileViewModel's isSignedIn state is updated
+                                viewModel.isSignedIn = true
+                            } catch {
+                                errorMessage = error.localizedDescription
+                            }
+                        }
+                    case .failure(let error):
+                        errorMessage = error.localizedDescription
                     }
                 }
-                .frame(maxWidth: .infinity)
-                .frame(height: 44)
-                .foregroundStyle(.black)
-                .background(Color.white)
-                .cornerRadius(8)
+            )
+            .signInWithAppleButtonStyle(.white)
+            .frame(height: 44)
+            .cornerRadius(8)
+            
+            if let error = errorMessage {
+                Text(error)
+                    .foregroundColor(.red)
+                    .font(.caption)
+                    .padding(.top, 5)
             }
-            .buttonStyle(.plain)
-            .disabled(authService.isLoading)
         }
         .padding(.vertical, 8)
     }

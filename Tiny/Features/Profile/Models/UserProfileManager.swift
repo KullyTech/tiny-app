@@ -11,13 +11,11 @@ internal import Combine
 class UserProfileManager: ObservableObject {
     static let shared = UserProfileManager()
     @Published var profileImage: UIImage?
-    @Published var userName: String = "Guest"
-    @Published var userEmail: String?
+
     @Published var isSignedIn: Bool = false
 
     // Persistence Keys
-    private let kUserName = "savedUserName"
-    private let kUserEmail = "savedUserEmail"
+
     private let kIsSignedIn = "isUserSignedIn"
     
     private init() {
@@ -29,14 +27,7 @@ class UserProfileManager: ObservableObject {
     func loadUserData() {
         let defaults = UserDefaults.standard
         isSignedIn = defaults.bool(forKey: kIsSignedIn)
-        
-        if let savedName = defaults.string(forKey: kUserName) {
-            userName = savedName
-        }
-        
-        if let savedEmail = defaults.string(forKey: kUserEmail) {
-            userEmail = savedEmail
-        }
+
         
         loadProfileImageFromDisk()
     }
@@ -44,8 +35,7 @@ class UserProfileManager: ObservableObject {
     func saveUserData() {
         let defaults = UserDefaults.standard
         defaults.set(isSignedIn, forKey: kIsSignedIn)
-        defaults.set(userName, forKey: kUserName)
-        defaults.set(userEmail, forKey: kUserEmail)
+
     }
 
     func saveProfileImage(_ image: UIImage?) {
@@ -87,34 +77,24 @@ class UserProfileManager: ObservableObject {
     // MARK: - Actions
     func signOut() {
         isSignedIn = false
-        userName = "Guest"
-        userEmail = nil
         profileImage = nil
 
         saveUserData()
         deleteProfileImageFromDisk()
     }
     
-    func signInDummy() {
-        isSignedIn = true
-        userName = "John Doe"
-        userEmail = "john.doe@example.com"
-        saveUserData()
-    }
+
     
     // MARK: - Delete Account
     func deleteAllData() {
         // Clear all published properties
         isSignedIn = false
-        userName = "Guest"
-        userEmail = nil
         profileImage = nil
         
         // Clear UserDefaults
         let defaults = UserDefaults.standard
         defaults.removeObject(forKey: kIsSignedIn)
-        defaults.removeObject(forKey: kUserName)
-        defaults.removeObject(forKey: kUserEmail)
+
         defaults.removeObject(forKey: "pregnancyStartDate")
         
         // Delete profile image from disk

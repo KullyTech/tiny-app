@@ -27,17 +27,13 @@ class ProfileViewModel: ObservableObject {
     // MARK: - Computed Properties for View Bindings
     
     var isSignedIn: Bool {
-        manager.isSignedIn
+        get { manager.isSignedIn }
+        set { manager.isSignedIn = newValue }
     }
     
-    var userName: String {
-        get { manager.userName }
-        set { manager.userName = newValue }
-    }
 
-    var userEmail: String? {
-        manager.userEmail
-    }
+
+
 
     // For ImagePicker binding
     var profileImage: UIImage? {
@@ -46,15 +42,9 @@ class ProfileViewModel: ObservableObject {
     }
 
     // MARK: - Actions
-    func saveName() {
-        manager.saveUserData()
-        print("Name saved: \(manager.userName)")
-    }
 
-    func signIn() {
-        manager.signInDummy()
-        print("User signed in (dummy)")
-    }
+
+
 
     func signOut() {
         manager.signOut()
