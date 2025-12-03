@@ -258,13 +258,21 @@ class HeartbeatSoundManager: NSObject, ObservableObject {
                     let filePath = savedItem.filePath
                     let fileURL = URL(fileURLWithPath: filePath)
                     
-                    // Verify file exists
-                    if !FileManager.default.fileExists(atPath: filePath) {
+                    // For dummy data (offline guests), allow missing files
+                    let isDummyData = filePath.hasPrefix("/dummy/")
+                    
+                    // Verify file exists (skip check for dummy data)
+                    if !isDummyData && !FileManager.default.fileExists(atPath: filePath) {
                         print("⚠️ File missing: \(filePath)")
                         return nil
                     }
                     
-                    print("✅ Found recording: \(fileURL.lastPathComponent)")
+                    if isDummyData {
+                        print("✅ Found dummy recording: \(fileURL.lastPathComponent)")
+                    } else {
+                        print("✅ Found recording: \(fileURL.lastPathComponent)")
+                    }
+                    
                     if let displayName = savedItem.displayName {
                         print("   Custom name: \(displayName)")
                     }

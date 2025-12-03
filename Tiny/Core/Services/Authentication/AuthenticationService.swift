@@ -32,6 +32,16 @@ class AuthenticationService: ObservableObject {
     }
     
     func checkAuthStatus() {
+        // First check for offline guest session
+        if let guestUser = GuestSessionManager.shared.getCurrentGuestSession() {
+            print("🔄 Found offline guest session: \(guestUser.id ?? "unknown")")
+            self.currentUser = guestUser
+            self.isAuthenticated = false
+            self.isRestoringSession = false
+            return
+        }
+        
+        // Then check for Firebase session
         if let firebaseUser = auth.currentUser {
             print("🔄 Found existing session for user: \(firebaseUser.uid)")
             print("🔄 Is anonymous: \(firebaseUser.isAnonymous)")
@@ -101,42 +111,15 @@ class AuthenticationService: ObservableObject {
         isAuthenticated = true
     }
     
-    func signInAnonymously() async throws {
+    func signInAsOfflineGuest() {
         isLoading = true
         defer { isLoading = false }
-
-        do {
-            let result = try await auth.signInAnonymously()
-            let firebaseUser = result.user
-
-            let userDocRef = database.collection("users").document(firebaseUser.uid)
-            let userDoc = try await userDocRef.getDocument()
-
-            if userDoc.exists {
-                // User document already exists, fetch and set current user
-                fetchUserData(userId: firebaseUser.uid)
-            } else {
-                // Create a new user document for the anonymous user
-                let newUser = User(
-                    id: firebaseUser.uid,
-                    email: firebaseUser.email ?? "guest_\(firebaseUser.uid)@example.com", // Provide a default email for guest
-                    name: "Guest User",
-                    role: nil,
-                    pregnancyWeeks: nil,
-                    roomCode: nil,
-                    createdAt: Date(),
-                    isGuest: true
-                )
-                try userDocRef.setData(from: newUser)
-                self.currentUser = newUser
-            }
-            self.isAuthenticated = false // Guests are not considered fully authenticated to bypass SignInView
-            print("✅ Signed in anonymously with UID: \(firebaseUser.uid)")
-
-        } catch {
-            print("❌ Error signing in anonymously: \(error.localizedDescription)")
-            throw error
-        }
+        
+        let guestUser = GuestSessionManager.shared.createGuestSession()
+        self.currentUser = guestUser
+        self.isAuthenticated = false // Guests are not considered fully authenticated
+        
+        print("✅ Signed in as offline guest")
     }
     
     func startSignInWithAppleFlow() -> String {
@@ -149,6 +132,18 @@ class AuthenticationService: ObservableObject {
         isLoading = true
         defer { isLoading = false }
         
+        // Handle offline guest users
+        if currentUser?.isOfflineGuest == true {
+            GuestSessionManager.shared.updateGuestUser(role: role, pregnancyWeeks: pregnancyWeeks)
+            
+            // Update current user object
+            if let guestUser = GuestSessionManager.shared.getCurrentGuestSession() {
+                self.currentUser = guestUser
+            }
+            return
+        }
+        
+        // Handle Firebase users
         guard let userId = auth.currentUser?.uid else {
             return
         }
@@ -171,6 +166,18 @@ class AuthenticationService: ObservableObject {
         isLoading = true
         defer { isLoading = false }
         
+        // Handle offline guest users
+        if currentUser?.isOfflineGuest == true {
+            GuestSessionManager.shared.updateGuestUser(name: name)
+            
+            // Update current user object
+            if let guestUser = GuestSessionManager.shared.getCurrentGuestSession() {
+                self.currentUser = guestUser
+            }
+            return
+        }
+        
+        // Handle Firebase users
         guard let userId = auth.currentUser?.uid else {
             return
         }
@@ -206,6 +213,14 @@ class AuthenticationService: ObservableObject {
     }
     
     func signOut() throws {
+        // Handle offline guest sign out (don't clear data here, just sign out)
+        if currentUser?.isOfflineGuest == true {
+            currentUser = nil
+            isAuthenticated = false
+            return
+        }
+        
+        // Handle Firebase sign out
         try auth.signOut()
         currentUser = nil
         isAuthenticated = false

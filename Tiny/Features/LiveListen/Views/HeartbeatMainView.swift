@@ -111,6 +111,47 @@ struct HeartbeatMainView: View {
                     print("❌ Error creating room: \(error)")
                 }
             }
+            
+            
+            // Generate dummy data for offline guest fathers
+            print("🔍 Checking dummy data generation:")
+            print("   isMother: \(isMother)")
+            print("   isOfflineGuest: \(authService.currentUser?.isOfflineGuest ?? false)")
+            print("   currentUser role: \(authService.currentUser?.role?.rawValue ?? "nil")")
+            
+            if !isMother && authService.currentUser?.isOfflineGuest == true {
+                print("✅ Conditions met for dummy data generation")
+                
+                let hasDummy = GuestDummyDataGenerator.hasDummyData(modelContext: modelContext)
+                print("   hasDummyData: \(hasDummy)")
+                
+                if !hasDummy {
+                    // Use a default pregnancy week of 20 for offline guests
+                    let pregnancyWeeks = authService.partnerPregnancyWeeks ?? 20
+                    print("🎭 Generating dummy data for guest father (week \(pregnancyWeeks))")
+                    
+                    GuestDummyDataGenerator.generateDummyHeartbeats(
+                        modelContext: modelContext,
+                        pregnancyWeeks: pregnancyWeeks
+                    )
+                    GuestDummyDataGenerator.generateDummyMoments(
+                        modelContext: modelContext,
+                        pregnancyWeeks: pregnancyWeeks
+                    )
+                    
+                    // Set partner pregnancy weeks so timeline can display the data
+                    await MainActor.run {
+                        authService.partnerPregnancyWeeks = pregnancyWeeks
+                        print("✅ Set partnerPregnancyWeeks to \(pregnancyWeeks) for timeline display")
+                    }
+                    
+                    print("✅ Dummy data generation complete")
+                } else {
+                    print("⚠️ Dummy data already exists, skipping generation")
+                }
+            } else {
+                print("❌ Conditions NOT met for dummy data generation")
+            }
 
             // Wait a bit for room code to be set
             try? await Task.sleep(nanoseconds: 500_000_000) // 0.5 seconds

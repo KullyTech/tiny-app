@@ -20,6 +20,8 @@ struct TinyApp: App {
 
     init() {
         FirebaseApp.configure()
+        // Wire up authService reference in syncManager
+        syncManager.authService = authService
     }
 
     // Define the container configuration

@@ -191,9 +191,14 @@ struct ProfileView: View {
     
     private var accountSection: some View {
         Section {
-            if authService.isAuthenticated {
+            if authService.currentUser?.isOfflineGuest == true {
+                // Offline guest users - show only End Guest Session
+                guestSessionView
+            } else if authService.isAuthenticated {
+                // Regular authenticated users
                 signedInView
             } else {
+                // Not signed in - show sign in options
                 signInView
             }
         }
@@ -263,6 +268,40 @@ struct ProfileView: View {
             showingDeleteError = true
             print("❌ Error deleting account: \(error)")
         }
+    }
+    
+    private var guestSessionView: some View {
+        Button(role: .destructive) {
+            showingSignOutConfirmation = true
+        } label: {
+            Label("End Guest Session", systemImage: "xmark.circle.fill")
+                .foregroundStyle(.red)
+        }
+        .confirmationDialog(
+            "End Guest Session",
+            isPresented: $showingSignOutConfirmation,
+            titleVisibility: .visible
+        ) {
+            Button("End Session", role: .destructive) {
+                endGuestSession()
+            }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("All guest data will be permanently deleted. This cannot be undone.")
+        }
+    }
+    
+    private func endGuestSession() {
+        // Clear all guest data
+        GuestSessionManager.shared.clearGuestSession(modelContext: modelContext)
+        
+        // Clear profile manager data
+        viewModel.manager.deleteAllData()
+        
+        // Sign out
+        try? authService.signOut()
+        
+        print("✅ Guest session ended")
     }
     
     private var signInView: some View {

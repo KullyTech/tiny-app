@@ -96,13 +96,7 @@ struct SignInView: View {
                         .padding(.horizontal, 40)
 
                         Button(action: {
-                            Task {
-                                do {
-                                    try await authService.signInAnonymously()
-                                } catch {
-                                    errorMessage = error.localizedDescription
-                                }
-                            }
+                            authService.signInAsOfflineGuest()
                         }, label: {
                             Text("Continue as Guest")
                                 .font(.system(size: 17, weight: .semibold))

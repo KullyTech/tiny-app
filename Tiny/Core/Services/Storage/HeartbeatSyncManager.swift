@@ -16,6 +16,9 @@ class HeartbeatSyncManager: ObservableObject {
     private let dbf = Firestore.firestore()
     private let storageService = FirebaseStorageService()
     
+    // Reference to auth service to check for offline guests
+    weak var authService: AuthenticationService?
+    
     @Published var isSyncing = false
     @Published var syncError: String?
     
@@ -27,6 +30,12 @@ class HeartbeatSyncManager: ObservableObject {
         motherUserId: String,
         roomCode: String
     ) async throws {
+        // Skip Firebase sync for offline guests
+        guard authService?.currentUser?.isOfflineGuest != true else {
+            print("⚠️ Skipping heartbeat upload - offline guest mode")
+            return
+        }
+        
         isSyncing = true
         defer { isSyncing = false }
         
@@ -87,6 +96,13 @@ class HeartbeatSyncManager: ObservableObject {
     
     /// Marks a heartbeat as shared so the father can see it
     func shareHeartbeat(_ heartbeat: SavedHeartbeat) async throws {
+        // Skip Firebase sync for offline guests
+        guard authService?.currentUser?.isOfflineGuest != true else {
+            print("⚠️ Skipping heartbeat share - offline guest mode")
+            heartbeat.isShared = true // Update locally only
+            return
+        }
+        
         isSyncing = true
         defer { isSyncing = false }
         
@@ -364,6 +380,12 @@ class HeartbeatSyncManager: ObservableObject {
         motherUserId: String,
         roomCode: String
     ) async throws {
+        // Skip Firebase sync for offline guests
+        guard authService?.currentUser?.isOfflineGuest != true else {
+            print("⚠️ Skipping moment upload - offline guest mode")
+            return
+        }
+        
         isSyncing = true
         defer { isSyncing = false }
         
